@@ -21,6 +21,7 @@ import {
   FileText,
   Edit,
   UserCircle,
+  X
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -173,38 +174,39 @@ export function ResidentDetail({
 
   return (
     <div className="flex h-full flex-col">
-      <CardHeader className="px-4 sm:px-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+      <CardHeader className="sticky top-0 z-10 bg-background px-4 sm:px-6 pb-0">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div>
             <CardTitle>Chi tiết khách hàng</CardTitle>
-            <CardDescription>Thông tin về khách hàng đã chọn</CardDescription>
+            <CardDescription className="hidden sm:block">Thông tin về khách hàng đã chọn</CardDescription>
           </div>
-          <div className="flex gap-2 mt-4 sm:mt-0">
-            <Button variant="outline" size="sm">
-              <Edit className="mr-2 h-4 w-4" />
+          <div className="flex gap-2 sm:mt-0">
+            <Button variant="outline" size="sm" className="h-8">
+              <Edit className="mr-2 h-3.5 w-3.5" />
               Sửa
             </Button>
-            <Button variant="outline" size="sm" onClick={onClose}>
-              Đóng
+            <Button variant="outline" size="sm" className="h-8" onClick={onClose}>
+              <X className="lg:hidden mr-2 h-3.5 w-3.5" />
+              <span className="hidden lg:inline">Đóng</span>
             </Button>
           </div>
         </div>
       </CardHeader>
-      <CardContent className="flex-1 overflow-hidden px-0 sm:px-6">
-        <div className="px-4 sm:px-0">
-          <div className="flex flex-col sm:flex-row sm:items-start gap-4 mb-6">
+      <CardContent className="flex-1 px-0 pt-4 overflow-hidden">
+        <div className="px-4 sm:px-6">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6">
             <Avatar className="h-16 w-16">
               <AvatarImage src={resident.avatar || "/placeholder.svg"} alt={resident.hoTen} />
               <AvatarFallback>{resident.hoTen.charAt(0)}</AvatarFallback>
             </Avatar>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-lg font-semibold">{resident.hoTen}</h2>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="text-lg font-semibold truncate">{resident.hoTen}</h2>
                 <Badge variant={resident.isCaNhan ? "default" : "secondary"}>
                   {resident.isCaNhan ? "Cá nhân" : "Tổ chức"}
                 </Badge>
               </div>
-              <p className="text-muted-foreground">{resident.email}</p>
+              <p className="text-muted-foreground truncate">{resident.email}</p>
               <p className="text-muted-foreground">{resident.dienThoai}</p>
               {resident.maSoThue && <p className="text-muted-foreground">MST: {resident.maSoThue}</p>}
             </div>
@@ -213,62 +215,66 @@ export function ResidentDetail({
 
         <Tabs defaultValue="info" value={activeTab} onValueChange={setActiveTab} className="w-full">
           <div className="border-b px-4">
-            <TabsList className="h-10 w-full justify-start rounded-none bg-transparent p-0">
-              <TabsTrigger
-                value="info"
-                className="h-10 rounded-none border-b-2 border-b-transparent data-[state=active]:border-b-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
-              >
-                Thông tin cá nhân
-              </TabsTrigger>
-              <TabsTrigger
-                value="premises"
-                className="h-10 rounded-none border-b-2 border-b-transparent data-[state=active]:border-b-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
-              >
-                Mặt bằng
-              </TabsTrigger>
-              <TabsTrigger
-                value="meters"
-                className="h-10 rounded-none border-b-2 border-b-transparent data-[state=active]:border-b-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
-              >
-                Đồng hồ
-              </TabsTrigger>
-              <TabsTrigger
-                value="services"
-                className="h-10 rounded-none border-b-2 border-b-transparent data-[state=active]:border-b-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
-              >
-                Dịch vụ
-              </TabsTrigger>
-            </TabsList>
+            <ScrollArea className="w-full">
+              <div className="min-w-max">
+                <TabsList className="h-10 w-full justify-start rounded-none bg-transparent p-0">
+                  <TabsTrigger
+                    value="info"
+                    className="h-10 rounded-none border-b-2 border-b-transparent data-[state=active]:border-b-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+                  >
+                    Thông tin cá nhân
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="premises"
+                    className="h-10 rounded-none border-b-2 border-b-transparent data-[state=active]:border-b-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+                  >
+                    Mặt bằng
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="meters"
+                    className="h-10 rounded-none border-b-2 border-b-transparent data-[state=active]:border-b-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+                  >
+                    Đồng hồ
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="services"
+                    className="h-10 rounded-none border-b-2 border-b-transparent data-[state=active]:border-b-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+                  >
+                    Dịch vụ
+                  </TabsTrigger>
+                </TabsList>
+              </div>
+            </ScrollArea>
           </div>
 
-          <ScrollArea className="h-[calc(100vh-350px)] min-h-[400px]">
-            <TabsContent value="info" className="p-4">
+          <ScrollArea className="h-[calc(100vh-360px)] sm:h-[calc(100vh-350px)] min-h-[350px]">
+            <TabsContent value="info" className="p-4 sm:p-6 mt-0">
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-lg font-medium mb-3">Thông tin cơ bản</h3>
+                  <h3 className="text-base sm:text-lg font-medium mb-3">Thông tin cơ bản</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {resident.isCaNhan ? (
                       <>
                         <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <UserCircle className="h-4 w-4 text-muted-foreground" />
+                          <div className="flex items-start sm:items-center gap-2">
+                            <UserCircle className="h-4 w-4 mt-0.5 sm:mt-0 text-muted-foreground flex-shrink-0" />
                             <span className="text-sm font-medium">Họ tên:</span>
-                            <span>{resident.hoTen}</span>
+                            <span className="text-sm break-words">{resident.hoTen}</span>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <CreditCard className="h-4 w-4 text-muted-foreground" />
+                          <div className="flex items-start sm:items-center gap-2">
+                            <CreditCard className="h-4 w-4 mt-0.5 sm:mt-0 text-muted-foreground flex-shrink-0" />
                             <span className="text-sm font-medium">CCCD:</span>
-                            <span>{resident.cccd}</span>
+                            <span className="text-sm break-words">{resident.cccd}</span>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Calendar className="h-4 w-4 text-muted-foreground" />
+                          <div className="flex items-start sm:items-center gap-2">
+                            <Calendar className="h-4 w-4 mt-0.5 sm:mt-0 text-muted-foreground flex-shrink-0" />
                             <span className="text-sm font-medium">Ngày cấp:</span>
-                            <span>{formatDate(resident.ngayCap)}</span>
+                            <span className="text-sm break-words">{formatDate(resident.ngayCap)}</span>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <MapPin className="h-4 w-4 text-muted-foreground" />
+                          <div className="flex items-start sm:items-center gap-2">
+                            <MapPin className="h-4 w-4 mt-0.5 sm:mt-0 text-muted-foreground flex-shrink-0" />
                             <span className="text-sm font-medium">Nơi cấp:</span>
-                            <span className="text-sm">{resident.noiCap}</span>
+                            <span className="text-sm break-words">{resident.noiCap}</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <User className="h-4 w-4 text-muted-foreground" />
@@ -370,13 +376,13 @@ export function ResidentDetail({
                 </div>
 
                 {premises.length > 0 ? (
-                  <div className="border rounded-md">
+                  <div className="border rounded-md overflow-x-auto">
                     <Table>
                       <TableHeader>
                         <TableRow>
                           <TableHead>Mã VT</TableHead>
                           <TableHead>Diện tích</TableHead>
-                          <TableHead>Hợp đồng</TableHead>
+                          <TableHead className="hidden sm:table-cell">Hợp đồng</TableHead>
                           <TableHead>Trạng thái</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -385,7 +391,7 @@ export function ResidentDetail({
                           <TableRow key={premise.id}>
                             <TableCell className="font-medium">{premise.maVT}</TableCell>
                             <TableCell>{premise.dienTichThongThuy} m²</TableCell>
-                            <TableCell>{premise.soHopDong || "Chưa có"}</TableCell>
+                            <TableCell className="hidden sm:table-cell">{premise.soHopDong || "Chưa có"}</TableCell>
                             <TableCell>
                               <Badge variant={premise.isBanGiao ? "default" : "secondary"}>
                                 {premise.isBanGiao ? "Đã bàn giao" : "Chưa bàn giao"}
@@ -500,13 +506,13 @@ export function ResidentDetail({
                 <div>
                   <h3 className="text-lg font-medium mb-3">Thẻ xe</h3>
                   {parkingCards.length > 0 ? (
-                    <div className="border rounded-md">
+                    <div className="border rounded-md overflow-x-auto">
                       <Table>
                         <TableHeader>
                           <TableRow>
                             <TableHead>Mã thẻ</TableHead>
                             <TableHead>Loại xe</TableHead>
-                            <TableHead>Biển số</TableHead>
+                            <TableHead className="hidden sm:table-cell">Biển số</TableHead>
                             <TableHead>Vị trí</TableHead>
                           </TableRow>
                         </TableHeader>
@@ -515,7 +521,7 @@ export function ResidentDetail({
                             <TableRow key={card.id}>
                               <TableCell className="font-medium">{card.cardNumber}</TableCell>
                               <TableCell>{card.vehicleType}</TableCell>
-                              <TableCell>{card.licensePlate}</TableCell>
+                              <TableCell className="hidden sm:table-cell">{card.licensePlate}</TableCell>
                               <TableCell>{card.parkingSpace}</TableCell>
                             </TableRow>
                           ))}
@@ -538,13 +544,13 @@ export function ResidentDetail({
                 <div>
                   <h3 className="text-lg font-medium mb-3">Yêu cầu sửa chữa</h3>
                   {maintenanceRequests.length > 0 ? (
-                    <div className="border rounded-md">
+                    <div className="border rounded-md overflow-x-auto">
                       <Table>
                         <TableHeader>
                           <TableRow>
                             <TableHead>Ngày</TableHead>
                             <TableHead>Loại</TableHead>
-                            <TableHead>Mô tả</TableHead>
+                            <TableHead className="hidden sm:table-cell">Mô tả</TableHead>
                             <TableHead>Trạng thái</TableHead>
                           </TableRow>
                         </TableHeader>
@@ -553,7 +559,9 @@ export function ResidentDetail({
                             <TableRow key={request.id}>
                               <TableCell>{formatDate(request.date)}</TableCell>
                               <TableCell>{request.type}</TableCell>
-                              <TableCell>{request.description}</TableCell>
+                              <TableCell className="hidden sm:table-cell max-w-[200px] truncate">
+                                {request.description}
+                              </TableCell>
                               <TableCell>
                                 <Badge
                                   variant={
@@ -584,13 +592,13 @@ export function ResidentDetail({
                 <div>
                   <h3 className="text-lg font-medium mb-3">Dịch vụ sử dụng</h3>
                   {servicesUsage.length > 0 ? (
-                    <div className="border rounded-md">
+                    <div className="border rounded-md overflow-x-auto">
                       <Table>
                         <TableHeader>
                           <TableRow>
                             <TableHead>Tháng</TableHead>
-                            <TableHead>Loại dịch vụ</TableHead>
-                            <TableHead>Sử dụng</TableHead>
+                            <TableHead>Loại DV</TableHead>
+                            <TableHead className="hidden sm:table-cell">Sử dụng</TableHead>
                             <TableHead>Thành tiền</TableHead>
                             <TableHead>Trạng thái</TableHead>
                           </TableRow>
@@ -600,7 +608,7 @@ export function ResidentDetail({
                             <TableRow key={service.id}>
                               <TableCell>{service.month}</TableCell>
                               <TableCell>{service.serviceType}</TableCell>
-                              <TableCell>
+                              <TableCell className="hidden sm:table-cell">
                                 {service.usage} {service.unit}
                               </TableCell>
                               <TableCell>{formatCurrency(service.amount)}</TableCell>

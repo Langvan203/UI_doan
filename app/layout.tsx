@@ -4,7 +4,8 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { LanguageProvider } from "@/app/providers/language-provider"
 import { AuthProvider } from "@/app/providers/auth-provider"
 import "@/app/globals.css"
-
+import { Toaster } from "@/components/ui/toaster"
+import { ToastContainer } from "react-toastify"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata = {
@@ -23,7 +24,9 @@ export default function RootLayout({
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="light">
           <LanguageProvider>
-            <AuthProvider>{children}</AuthProvider>
+            <AuthProvider>{children}
+              <ToastContainer />
+            </AuthProvider>
           </LanguageProvider>
         </ThemeProvider>
       </body>

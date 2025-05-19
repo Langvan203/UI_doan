@@ -20,13 +20,15 @@ interface Building {
   id: number
   name: string
   address: string
-  totalBlocks: number
-  totalFloors: number
-  totalPremises: number
   occupancyRate: number
-  totalResidents: number
   constructionYear: number
   status: string
+  soTangHam: number
+  soTangNoi: number
+  dienTichXayDung: number
+  tongDienTichSan: number
+  tongDienTichChoThueNET: number
+  tongDienTichChoThueGross: number
 }
 
 interface BuildingOverviewProps {
@@ -61,18 +63,15 @@ const COLORS = ["#2563eb", "#0ea5e9", "#7c3aed", "#059669", "#f97316"]
 export function BuildingOverview({ building }: BuildingOverviewProps) {
   // Update chart data based on the building
   const updatedBuildingStatsData = [
-    { name: "Blocks", value: building.totalBlocks },
-    { name: "Floors", value: building.totalFloors },
-    { name: "Premises", value: building.totalPremises },
-    { name: "Residents", value: building.totalResidents },
+    { name: "Tầng nổi", value: building.soTangNoi },
+    { name: "Tầng hầm", value: building.soTangHam },
+    { name: "Diện tích xây dựng", value: building.dienTichXayDung },
+    { name: "Diện tích sàn", value: building.tongDienTichSan },
   ]
 
   const updatedOccupancyData = [
-    { name: "Occupied", value: Math.round((building.totalPremises * building.occupancyRate) / 100) },
-    {
-      name: "Vacant",
-      value: building.totalPremises - Math.round((building.totalPremises * building.occupancyRate) / 100),
-    },
+    { name: "Diện tích cho thuê NET", value: building.tongDienTichChoThueNET },
+    { name: "Diện tích cho thuê Gross", value: building.tongDienTichChoThueGross },
   ]
 
   // Format currency
@@ -88,8 +87,8 @@ export function BuildingOverview({ building }: BuildingOverviewProps) {
     <div className="grid gap-4 md:grid-cols-2">
       <Card>
         <CardHeader>
-          <CardTitle>Building Statistics</CardTitle>
-          <CardDescription>Distribution of building components</CardDescription>
+          <CardTitle>Thống kê tòa nhà</CardTitle>
+          <CardDescription>Phân bố các thành phần của tòa nhà</CardDescription>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
@@ -109,8 +108,8 @@ export function BuildingOverview({ building }: BuildingOverviewProps) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Occupancy Status</CardTitle>
-          <CardDescription>Current occupancy distribution</CardDescription>
+          <CardTitle>Diện tích cho thuê</CardTitle>
+          <CardDescription>Phân bổ diện tích cho thuê</CardDescription>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
@@ -138,15 +137,15 @@ export function BuildingOverview({ building }: BuildingOverviewProps) {
 
       <Card className="col-span-2">
         <CardHeader>
-          <CardTitle>Monthly Expenses</CardTitle>
-          <CardDescription>Building maintenance and operational costs</CardDescription>
+          <CardTitle>Chi phí hàng tháng</CardTitle>
+          <CardDescription>Chi phí vận hành và bảo trì tòa nhà</CardDescription>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={expensesData}>
               <XAxis dataKey="month" />
-              <YAxis tickFormatter={(value) => formatCurrency(value).replace("₫", "")} />
-              <Tooltip formatter={(value) => [formatCurrency(value), "Amount"]} />
+              <YAxis tickFormatter={(value: number) => formatCurrency(value).replace("₫", "")} />
+              <Tooltip formatter={(value: number) => [formatCurrency(value), "Số tiền"]} />
               <Line type="monotone" dataKey="amount" stroke="#2563eb" strokeWidth={2} />
             </LineChart>
           </ResponsiveContainer>

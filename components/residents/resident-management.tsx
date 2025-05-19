@@ -10,6 +10,9 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { FileText, LayoutGrid, Plus, Search, User, Users } from "lucide-react"
 import { ResidentFilters } from "@/components/residents/resident-filters"
 import { ResidentDetail } from "@/components/residents/resident-detail"
+import { useRouter } from "next/navigation"
+import { ResidentForm } from "@/components/residents/resident-form"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 // Sample data for buildings, blocks, floors, and residents
 export const buildingsData = [
@@ -346,6 +349,7 @@ export const residentsData = [
 ]
 
 export function ResidentManagement() {
+  const router = useRouter()
   const [filters, setFilters] = useState({
     buildingId: "",
     blockId: "",
@@ -357,6 +361,7 @@ export function ResidentManagement() {
   const [selectedResidentId, setSelectedResidentId] = useState<number | null>(null)
   const [isDetailOpen, setIsDetailOpen] = useState(false)
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
 
   // Get filtered residents
   const filteredResidents = residentsData.filter((resident) => {
@@ -469,11 +474,33 @@ export function ResidentManagement() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <h1 className="text-2xl font-bold">Quản lý khách hàng</h1>
-        <Button>
+        <Button onClick={() => setIsAddDialogOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
           Thêm khách hàng
         </Button>
       </div>
+
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto p-0">
+          <DialogHeader className="p-6 pb-0">
+            <DialogTitle>Thêm khách hàng mới</DialogTitle>
+            <DialogDescription>Điền thông tin khách hàng vào form dưới đây</DialogDescription>
+          </DialogHeader>
+          <div className="p-6">
+            <ResidentForm
+              buildings={buildingsData}
+              blocks={blocksData}
+              floors={floorsData}
+              onSubmit={(values) => {
+                console.log("Form values:", values);
+                // Xử lý thêm khách hàng mới
+                setIsAddDialogOpen(false);
+              }}
+              isLoading={false}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <ResidentFilters
         filters={filters}

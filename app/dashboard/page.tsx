@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 import { getCurrentUser } from "@/lib/auth"
-import { DashboardSuperAdmin } from "@/components/dashboard/dashboard-super-admin"
+import DashboardSuperAdmin from "@/components/dashboard/dashboard-super-admin"
 import { DashboardBuildingManager } from "@/components/dashboard/dashboard-building-manager"
 import { DashboardServiceManager } from "@/components/dashboard/dashboard-service-manager"
 import { DashboardFinancialManager } from "@/components/dashboard/dashboard-financial-manager"
@@ -20,21 +20,25 @@ export default async function DashboardPage() {
     redirect("/login")
   }
 
-  // Render different dashboard based on user role
-  switch (user.role) {
-    case "SUPER_ADMIN":
-      return <DashboardSuperAdmin />
-    case "BUILDING_MANAGER":
-      return <DashboardBuildingManager />
-    case "SERVICE_MANAGER":
-      return <DashboardServiceManager />
-    case "FINANCIAL_MANAGER":
-      return <DashboardFinancialManager />
-    case "CUSTOMER_SERVICE":
-      return <DashboardCustomerService />
-    case "TENANT":
-      return <DashboardTenant />
-    default:
-      return <div>Unknown role</div>
+  // roleName is now an array, so we need to check if it includes specific roles
+  // Priority order for dashboard display
+  if (user.roleName.includes("Quản lý tòa nhà")) {
+    return <DashboardSuperAdmin />
+  } else if (user.roleName.includes("Kế toán")) {
+    return <DashboardFinancialManager />
+  } else if (user.roleName.includes("Nhân viên kỹ thuật")) {
+    return <DashboardServiceManager />
+  } else if (user.roleName.includes("Nhân viên tòa nhà")) {
+    return <DashboardCustomerService />
+  } else if (user.roleName.includes("Cư dân")) {
+    return <DashboardTenant />
+  } else {
+    // Fallback for unknown roles
+    return (
+      <div className="p-6">
+        <h1 className="text-2xl font-bold mb-4">Chào mừng đến với Hệ thống Quản lý tòa nhà</h1>
+        <p>Vai trò của bạn: {user.roleName.join(", ")}</p>
+      </div>
+    )
   }
 }

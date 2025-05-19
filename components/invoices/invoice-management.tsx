@@ -7,11 +7,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { InvoiceList } from "./invoice-list"
 import { InvoiceStats } from "./invoice-stats"
 import { InvoiceFilters } from "./invoice-filters"
-import { PlusCircle } from "lucide-react"
+import { PlusCircle, FileText } from "lucide-react"
 import { CreateInvoiceDialog } from "./create-invoice-dialog"
+import { InvoiceTemplateDialog } from "./invoice-template-dialog"
+import { InvoiceTemplateList } from "./invoice-template-list"
 
 export function InvoiceManagement() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+  const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false)
   const [activeTab, setActiveTab] = useState("all")
   const [filters, setFilters] = useState({
     status: "all",
@@ -30,6 +33,10 @@ export function InvoiceManagement() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => setIsTemplateDialogOpen(true)}>
+            <FileText className="mr-2 h-4 w-4" />
+            Create Template
+          </Button>
           <Button onClick={() => setIsCreateDialogOpen(true)}>
             <PlusCircle className="mr-2 h-4 w-4" />
             Create Invoice
@@ -44,8 +51,9 @@ export function InvoiceManagement() {
             <TabsTrigger value="pending">Pending</TabsTrigger>
             <TabsTrigger value="paid">Paid</TabsTrigger>
             <TabsTrigger value="overdue">Overdue</TabsTrigger>
+            <TabsTrigger value="templates">Templates</TabsTrigger>
           </TabsList>
-          <InvoiceFilters filters={filters} setFilters={setFilters} />
+          {activeTab !== "templates" && <InvoiceFilters filters={filters} setFilters={setFilters} />}
         </div>
 
         <TabsContent value="all" className="space-y-4">
@@ -101,9 +109,14 @@ export function InvoiceManagement() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        <TabsContent value="templates" className="space-y-4">
+          <InvoiceTemplateList />
+        </TabsContent>
       </Tabs>
 
       <CreateInvoiceDialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen} />
+      <InvoiceTemplateDialog open={isTemplateDialogOpen} onOpenChange={setIsTemplateDialogOpen} />
     </div>
   )
 }

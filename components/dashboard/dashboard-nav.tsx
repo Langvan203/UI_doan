@@ -1,6 +1,6 @@
 "use client"
 
-import type React from "react"
+import React from "react"
 
 import { usePathname } from "next/navigation"
 import Link from "next/link"
@@ -26,13 +26,18 @@ import {
   ChevronDown,
   ChevronRight,
   List,
+  LogOut,
 } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { ScrollArea } from "@/components/ui/scroll-area"
 
 interface NavItem {
   title: string
   href: string
   icon: React.ReactNode
   roles: string[]
+  color: string
+  bgColor: string
   children?: NavItem[]
 }
 
@@ -41,113 +46,149 @@ const navItems: NavItem[] = [
     title: "Dashboard",
     href: "/dashboard",
     icon: <LayoutDashboard className="h-5 w-5" />,
-    roles: ["SUPER_ADMIN", "BUILDING_MANAGER", "SERVICE_MANAGER", "FINANCIAL_MANAGER", "CUSTOMER_SERVICE", "TENANT"],
+    roles: ["Quản lý tòa nhà", "Kế toán", "Cư dân", "Nhân viên kỹ thuật", "Nhân viên tòa nhà"],
+    color: "text-sky-500",
+    bgColor: "bg-sky-500/10",
   },
   {
-    title: "Buildings",
+    title: "Dự án tòa nhà",
     href: "/dashboard/buildings",
     icon: <Building2 className="h-5 w-5" />,
-    roles: ["SUPER_ADMIN", "BUILDING_MANAGER"],
+    roles: ["Quản lý tòa nhà"],
+    color: "text-emerald-500",
+    bgColor: "bg-emerald-500/10",
     children: [
       {
-        title: "Building List",
+        title: "Tòa nhà",
         href: "/dashboard/buildings/building-list",
         icon: <List className="h-5 w-5" />,
-        roles: ["SUPER_ADMIN", "BUILDING_MANAGER"],
+        roles: ["Quản lý tòa nhà"],
+        color: "text-emerald-500",
+        bgColor: "bg-emerald-500/10",
       },
       {
-        title: "Blocks",
+        title: "Khối nhà",
         href: "/dashboard/buildings/blocks",
         icon: <Layers className="h-5 w-5" />,
-        roles: ["SUPER_ADMIN", "BUILDING_MANAGER"],
+        roles: ["Quản lý tòa nhà"],
+        color: "text-emerald-500",
+        bgColor: "bg-emerald-500/10",
       },
       {
-        title: "Floors",
+        title: "Tầng lầu",
         href: "/dashboard/buildings/floors",
         icon: <Layers className="h-5 w-5" />,
-        roles: ["SUPER_ADMIN", "BUILDING_MANAGER"],
+        roles: ["Quản lý tòa nhà"],
+        color: "text-emerald-500",
+        bgColor: "bg-emerald-500/10",
       },
       {
-        title: "Premises",
+        title: "Căn hộ",
         href: "/dashboard/buildings/premises",
         icon: <Building className="h-5 w-5" />,
-        roles: ["SUPER_ADMIN", "BUILDING_MANAGER"],
+        roles: ["Quản lý tòa nhà"],
+        color: "text-emerald-500",
+        bgColor: "bg-emerald-500/10",
       },
     ],
   },
   {
-    title: "Staff",
+    title: "Nhân viên & Phòng ban",
     href: "/dashboard/staff",
     icon: <Users className="h-5 w-5" />,
-    roles: ["SUPER_ADMIN", "BUILDING_MANAGER"],
+    roles: ["Quản lý tòa nhà"],
+    color: "text-violet-500",
+    bgColor: "bg-violet-500/10",
   },
   {
-    title: "Residents",
+    title: "Cư dân căn hộ",
     href: "/dashboard/residents",
     icon: <Home className="h-5 w-5" />,
-    roles: ["SUPER_ADMIN", "BUILDING_MANAGER", "CUSTOMER_SERVICE"],
+    roles: ["Quản lý tòa nhà", "Nhân viên tòa nhà"],
+    color: "text-violet-500",
+    bgColor: "bg-violet-500/10",
   },
   {
-    title: "Services",
+    title: "Dịch vụ tòa nhà",
     href: "/dashboard/services",
     icon: <Bell className="h-5 w-5" />,
-    roles: ["SUPER_ADMIN", "SERVICE_MANAGER", "TENANT"],
+    roles: ["Quản lý tòa nhà", "Kế toán", "Nhân viên tòa nhà"],
+    color: "text-blue-500",
+    bgColor: "bg-blue-500/10",
   },
   {
-    title: "Building Systems",
+    title: "Hệ thống",
     href: "/dashboard/building-systems",
     icon: <Tool className="h-5 w-5" />,
-    roles: ["SUPER_ADMIN", "BUILDING_MANAGER", "SERVICE_MANAGER"],
+    roles: ["Quản lý tòa nhà", "Kế toán"],
+    color: "text-yellow-500",
+    bgColor: "bg-yellow-500/10",
     children: [
       {
-        title: "Systems List",
+        title: "Danh sách hệ thống",
         href: "/dashboard/building-systems/list",
         icon: <ClipboardList className="h-5 w-5" />,
-        roles: ["SUPER_ADMIN", "BUILDING_MANAGER", "SERVICE_MANAGER"],
+        roles: ["Quản lý tòa nhà", "Kế toán"],
+        color: "text-yellow-500",
+        bgColor: "bg-yellow-500/10",
       },
       {
-        title: "Maintenance",
+        title: "Kế hoạch bảo trì",
         href: "/dashboard/building-systems/maintenance",
         icon: <Wrench className="h-5 w-5" />,
-        roles: ["SUPER_ADMIN", "BUILDING_MANAGER", "SERVICE_MANAGER"],
+        roles: ["Quản lý tòa nhà", "Kế toán"],
+        color: "text-yellow-500",
+        bgColor: "bg-yellow-500/10",
       },
       {
-        title: "Maintenance Requests",
+        title: "Yêu cầu bảo trì",
         href: "/dashboard/building-systems/requests",
         icon: <ScrollText className="h-5 w-5" />,
-        roles: ["SUPER_ADMIN", "BUILDING_MANAGER", "SERVICE_MANAGER", "TENANT"],
+        roles: ["Quản lý tòa nhà", "Kế toán", "Cư dân"],
+        color: "text-yellow-500",
+        bgColor: "bg-yellow-500/10",
       },
     ],
   },
   {
-    title: "Invoices",
+    title: "Hóa đơn",
     href: "/dashboard/invoices",
     icon: <Receipt className="h-5 w-5" />,
-    roles: ["SUPER_ADMIN", "FINANCIAL_MANAGER", "SERVICE_MANAGER", "TENANT"],
+    roles: ["Kế toán", "Quản lý tòa nhà", "Cư dân"],
+    color: "text-pink-500",
+    bgColor: "bg-pink-500/10",
   },
   {
-    title: "Finances",
+    title: "Tài chính",
     href: "/dashboard/finances",
     icon: <Wallet className="h-5 w-5" />,
-    roles: ["SUPER_ADMIN", "FINANCIAL_MANAGER"],
+    roles: ["Quản lý tòa nhà", "Kế toán"],
+    color: "text-green-500",
+    bgColor: "bg-green-500/10",
   },
   {
-    title: "Reports",
+    title: "Báo cáo",
     href: "/dashboard/reports",
     icon: <BarChart3 className="h-5 w-5" />,
-    roles: ["SUPER_ADMIN", "BUILDING_MANAGER", "SERVICE_MANAGER", "FINANCIAL_MANAGER"],
+    roles: ["Quản lý tòa nhà", "Kế toán", "Nhân viên kỹ thuật"],
+    color: "text-orange-500",
+    bgColor: "bg-orange-500/10",
   },
   {
-    title: "Support",
+    title: "Hỗ trợ khách hàng",
     href: "/dashboard/support",
     icon: <MessageSquare className="h-5 w-5" />,
-    roles: ["SUPER_ADMIN", "CUSTOMER_SERVICE", "TENANT"],
+    roles: ["Quản lý tòa nhà", "Nhân viên tòa nhà", "Cư dân"],
+    color: "text-blue-500",
+    bgColor: "bg-blue-500/10",
   },
   {
-    title: "Settings",
+    title: "Cài đặt",
     href: "/dashboard/settings",
     icon: <Settings className="h-5 w-5" />,
-    roles: ["SUPER_ADMIN", "BUILDING_MANAGER", "SERVICE_MANAGER", "FINANCIAL_MANAGER", "CUSTOMER_SERVICE"],
+    roles: ["Quản lý tòa nhà", "Kế toán", "Nhân viên kỹ thuật", "Nhân viên tòa nhà"],
+    color: "text-gray-500",
+    bgColor: "bg-gray-500/10",
   },
 ]
 
@@ -161,7 +202,10 @@ export function DashboardNav({ role, className }: DashboardNavProps) {
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({})
 
   // Filter nav items based on user role
-  const filteredNavItems = navItems.filter((item) => item.roles.includes(role))
+  const filteredNavItems = navItems.filter((item) => {
+    // Check if user's role matches any of the allowed roles for this item
+    return item.roles.includes(role) || role === "Quản lý tòa nhà";
+  });
 
   const toggleExpand = (href: string) => {
     setExpandedItems((prev) => ({
@@ -176,98 +220,141 @@ export function DashboardNav({ role, className }: DashboardNavProps) {
   }
 
   return (
-    <nav className={cn("flex flex-col gap-2 px-4 py-2", className)}>
-      {filteredNavItems.map((item) => {
-        const isActive = isPathActive(item.href)
-        const hasChildren = item.children && item.children.length > 0
-        const isExpanded =
-          expandedItems[item.href] || (hasChildren && item.children!.some((child) => isPathActive(child.href)))
-        const bgColorClass = getBgColorByRole(role, isActive && !hasChildren)
+    <div className={cn("flex flex-col h-full bg-white border-r", className)}>
+      <div className="p-6">
+        <Link href="/dashboard" className="flex items-center gap-2 font-bold text-2xl">
+          <Building2 className="h-8 w-8 text-primary" />
+          <span>Menu</span>
+        </Link>
+      </div>
+      <ScrollArea className="flex-1 px-3">
+        <div className="space-y-1 py-2">
+          {filteredNavItems.map((item) => {
+            const isActive = isPathActive(item.href)
+            const hasChildren = item.children && item.children.length > 0
+            const isExpanded =
+              expandedItems[item.href] || (hasChildren && item.children!.some((child) => isPathActive(child.href)))
 
-        return (
-          <div key={item.href} className="flex flex-col">
-            <div className="flex items-center">
-              {hasChildren ? (
-                <button
-                  onClick={() => toggleExpand(item.href)}
-                  className={cn(
-                    "flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                    isActive && !isExpanded ? bgColorClass : "hover:bg-accent",
-                    isActive && !isExpanded ? "text-white" : "text-foreground",
+            return (
+              <div key={item.href} className="flex flex-col">
+                <div className="flex items-center">
+                  {hasChildren ? (
+                    <button
+                      onClick={() => toggleExpand(item.href)}
+                      className={cn(
+                        "group flex w-full items-center gap-x-3 rounded-lg px-3 py-2 text-sm font-medium",
+                        "transition-all duration-300 ease-in-out",
+                        isActive && !isExpanded
+                          ? cn(
+                              item.bgColor,
+                              item.color,
+                              "before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-current relative"
+                            )
+                          : "text-muted-foreground hover:text-primary hover:bg-accent",
+                      )}
+                    >
+                      <div className={cn(
+                        "flex items-center gap-3",
+                        isActive && !isExpanded ? item.color : "group-hover:text-primary"
+                      )}>
+                        <div className={cn("h-5 w-5 shrink-0", 
+                          isActive && !isExpanded
+                            ? item.color
+                            : "text-muted-foreground group-hover:text-primary"
+                        )}>
+                          {item.icon}
+                        </div>
+                        <span className="truncate">{item.title}</span>
+                      </div>
+                      {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                      {isActive && !isExpanded ? (
+                        <span className="absolute inset-y-0 right-0 w-1 bg-current rounded-l-full opacity-70" />
+                      ) : null}
+                    </button>
+                  ) : (
+                    <Link
+                      href={item.href}
+                      className={cn(
+                        "group flex w-full items-center gap-x-3 rounded-lg px-3 py-2 text-sm font-medium",
+                        "transition-all duration-300 ease-in-out",
+                        "hover:bg-accent",
+                        isActive
+                          ? cn(
+                              item.bgColor,
+                              item.color,
+                              "before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-current relative"
+                            )
+                          : "text-muted-foreground hover:text-primary",
+                      )}
+                    >
+                      <div className={cn("h-5 w-5 shrink-0", 
+                        isActive 
+                          ? item.color
+                          : "text-muted-foreground group-hover:text-primary"
+                      )}>
+                        {item.icon}
+                      </div>
+                      <span className="truncate">{item.title}</span>
+                      {isActive ? (
+                        <span className="absolute inset-y-0 right-0 w-1 bg-current rounded-l-full opacity-70" />
+                      ) : null}
+                    </Link>
                   )}
-                >
-                  <div className="flex items-center gap-3">
-                    {item.icon}
-                    {item.title}
+                </div>
+
+                {/* Render children if expanded */}
+                {hasChildren && isExpanded && (
+                  <div className="ml-6 mt-1 flex flex-col gap-1">
+                    {item
+                      .children!.filter((child) => child.roles.includes(role) || role === "Quản lý tòa nhà")
+                      .map((child) => {
+                        const isChildActive = isPathActive(child.href)
+
+                        return (
+                          <Link
+                            key={child.href}
+                            href={child.href}
+                            className={cn(
+                              "group flex items-center gap-x-3 rounded-lg px-3 py-2 text-sm font-medium",
+                              "transition-all duration-300 ease-in-out",
+                              isChildActive
+                                ? cn(
+                                    child.bgColor,
+                                    child.color,
+                                    "before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-current relative"
+                                  )
+                                : "text-muted-foreground hover:text-primary hover:bg-accent",
+                            )}
+                          >
+                            <div className={cn("h-5 w-5 shrink-0", 
+                              isChildActive
+                                ? child.color
+                                : "text-muted-foreground group-hover:text-primary"
+                            )}>
+                              {child.icon}
+                            </div>
+                            <span className="truncate">{child.title}</span>
+                            {isChildActive ? (
+                              <span className="absolute inset-y-0 right-0 w-1 bg-current rounded-l-full opacity-70" />
+                            ) : null}
+                          </Link>
+                        )
+                      })}
                   </div>
-                  {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                </button>
-              ) : (
-                <Link
-                  href={item.href}
-                  className={cn(
-                    "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                    isActive ? bgColorClass : "hover:bg-accent",
-                    isActive ? "text-white" : "text-foreground",
-                  )}
-                >
-                  {item.icon}
-                  {item.title}
-                </Link>
-              )}
-            </div>
-
-            {/* Render children if expanded */}
-            {hasChildren && isExpanded && (
-              <div className="ml-6 mt-1 flex flex-col gap-1">
-                {item
-                  .children!.filter((child) => child.roles.includes(role))
-                  .map((child) => {
-                    const isChildActive = isPathActive(child.href)
-                    const childBgColorClass = getBgColorByRole(role, isChildActive)
-
-                    return (
-                      <Link
-                        key={child.href}
-                        href={child.href}
-                        className={cn(
-                          "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                          isChildActive ? childBgColorClass : "hover:bg-accent",
-                          isChildActive ? "text-white" : "text-foreground",
-                        )}
-                      >
-                        {child.icon}
-                        {child.title}
-                      </Link>
-                    )
-                  })}
+                )}
               </div>
-            )}
-          </div>
-        )
-      })}
-    </nav>
+            )
+          })}
+        </div>
+      </ScrollArea>
+      <div className="mt-auto p-4 border-t">
+        <Button variant="outline" className="w-full justify-start gap-2 text-muted-foreground">
+          <LogOut className="h-4 w-4" />
+          <span>Đăng xuất</span>
+        </Button>
+      </div>
+    </div>
   )
 }
 
-// Function to get background color based on user role and active state
-function getBgColorByRole(role: string, isActive: boolean): string {
-  if (!isActive) return "transparent"
-
-  switch (role) {
-    case "SUPER_ADMIN":
-      return "bg-[#1a365d]"
-    case "BUILDING_MANAGER":
-      return "bg-[#2563eb]"
-    case "SERVICE_MANAGER":
-      return "bg-[#059669]"
-    case "FINANCIAL_MANAGER":
-      return "bg-[#f97316]"
-    case "CUSTOMER_SERVICE":
-      return "bg-[#7c3aed]"
-    case "TENANT":
-      return "bg-[#0ea5e9]"
-    default:
-      return "bg-primary"
-  }
-}
+// We don't need the color function anymore as we're using Tailwind classes directly

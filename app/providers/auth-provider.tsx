@@ -1,15 +1,19 @@
 "use client"
 
 import type React from "react"
-
 import { createContext, useContext, useState, useEffect } from "react"
+import { AUTH_API } from "@/lib/env"
+import { setCookie, deleteCookie } from "cookies-next"
+import { toast, Bounce } from 'react-toastify'
+import { useRouter } from 'next/navigation'
 
 interface User {
-  id: string
-  name: string
+  tenNV: string
+  userName: string
   email: string
-  role: string
-  avatarUrl?: string
+  sdt: string
+  accessToken: string
+  roleName: string[]
 }
 
 interface AuthContextType {
@@ -17,6 +21,8 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>
   logout: () => void
   isLoading: boolean
+  getToken: () => string | null
+  hasRole: (role: string) => boolean
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -24,12 +30,12 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState<boolean>(true)
+  const router = useRouter()
 
   useEffect(() => {
     // Check if user is logged in
     const checkAuth = async () => {
       try {
-        // In a real app, you would call your API to check auth status
         const storedUser = localStorage.getItem("user")
         if (storedUser) {
           setUser(JSON.parse(storedUser))
@@ -47,64 +53,56 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (email: string, password: string) => {
     setIsLoading(true)
     try {
-      // In a real app, you would call your API to authenticate
-      // and get a JWT token
+      console.log("Sending login request to:", AUTH_API.LOGIN);
+      const response = await fetch(AUTH_API.LOGIN, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
 
-      // Mock login - replace with actual API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      // Mock user data based on email
-      let mockUser: User
-
-      if (email.includes("admin")) {
-        mockUser = {
-          id: "1",
-          name: "Super Admin",
-          email: email,
-          role: "SUPER_ADMIN",
-        }
-      } else if (email.includes("building")) {
-        mockUser = {
-          id: "2",
-          name: "Building Manager",
-          email: email,
-          role: "BUILDING_MANAGER",
-        }
-      } else if (email.includes("service")) {
-        mockUser = {
-          id: "3",
-          name: "Service Manager",
-          email: email,
-          role: "SERVICE_MANAGER",
-        }
-      } else if (email.includes("finance")) {
-        mockUser = {
-          id: "4",
-          name: "Financial Manager",
-          email: email,
-          role: "FINANCIAL_MANAGER",
-        }
-      } else if (email.includes("customer")) {
-        mockUser = {
-          id: "5",
-          name: "Customer Service",
-          email: email,
-          role: "CUSTOMER_SERVICE",
-        }
-      } else {
-        mockUser = {
-          id: "6",
-          name: "Nguyễn Văn A",
-          email: email,
-          role: "TENANT",
-        }
+      if (!response.ok) {
+        console.error("Login failed with status:", response.status);
+        const errorText = await response.text();
+        console.error("Error response:", errorText);
+        throw new Error('Đăng nhập thất bại');
       }
 
-      setUser(mockUser)
-      localStorage.setItem("user", JSON.stringify(mockUser))
+      const userData = await response.json();
+      console.log("Login successful, user data:", userData);
+      
+      // Ensure userData has the expected structure
+      if (!userData.accessToken) {
+        throw new Error('Dữ liệu người dùng không hợp lệ');
+      }
+      
+      setUser(userData);
+      
+      // Store in localStorage for client-side access
+      localStorage.setItem("user", JSON.stringify(userData));
+      
+      // Store in cookie for server components
+      setCookie('auth-token', userData.accessToken, {
+        maxAge: 30 * 24 * 60 * 60, // 30 days
+        path: '/',
+      });
+      
+      // Store minimal user data in a separate cookie for server components
+      const serverUser = {
+        tenNV: userData.tenNV,
+        userName: userData.userName,
+        email: userData.email,
+        sdt: userData.sdt,
+        roleName: userData.roleName,
+      };
+      setCookie('user-data', JSON.stringify(serverUser), {
+        maxAge: 30 * 24 * 60 * 60, // 30 days
+        path: '/',
+      });
     } catch (error) {
       console.error("Login failed:", error)
-      throw new Error("Invalid credentials")
+      throw new Error("Tên đăng nhập hoặc mật khẩu không đúng")
     } finally {
       setIsLoading(false)
     }
@@ -113,9 +111,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = () => {
     setUser(null)
     localStorage.removeItem("user")
+    
+    // Clear cookies
+    deleteCookie('auth-token');
+    deleteCookie('user-data');
+    
+    // Hiển thị thông báo đăng xuất thành công
+    toast.info('Đăng xuất thành công', {
+      position: "top-right",
+      autoClose: 500,
+      hideProgressBar: false,
+      closeOnClick: false,
+      pauseOnHover: true,
+      draggable: true,
+      progress: undefined,
+      theme: "light",
+      transition: Bounce,
+    });
+    
+    // Chuyển hướng đến trang chủ
+    router.push('http://localhost:3000');
   }
 
-  return <AuthContext.Provider value={{ user, login, logout, isLoading }}>{children}</AuthContext.Provider>
+  const getToken = () => {
+    return user?.accessToken || null
+  }
+
+  const hasRole = (role: string) => {
+    if (!user || !user.roleName) return false;
+    return user.roleName.includes(role);
+  }
+
+  return <AuthContext.Provider value={{ user, login, logout, isLoading, getToken, hasRole }}>{children}</AuthContext.Provider>
 }
 
 export function useAuth() {

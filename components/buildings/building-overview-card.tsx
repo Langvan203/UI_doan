@@ -7,10 +7,13 @@ import { Badge } from "@/components/ui/badge"
 
 interface BuildingDetailed {
   id: number
-  tenTN: string
-  diaChi: string
-  soTangNoi: number
+  name: string
+  address: string
+  occupancyRate: number
+  constructionYear: number
+  status: string
   soTangHam: number
+  soTangNoi: number
   dienTichXayDung: number
   tongDienTichSan: number
   tongDienTichChoThueNET: number
@@ -18,8 +21,6 @@ interface BuildingDetailed {
   nganHangThanhToan: string
   soTaiKhoan: string
   noiDungChuyenKhoan: string
-  status: string
-  constructionYear: number
 }
 
 interface BuildingOverviewCardProps {
@@ -33,11 +34,11 @@ export function BuildingOverviewCard({ building, onEdit, onDelete, onSelect }: B
   // Hàm để hiển thị badge trạng thái với màu sắc phù hợp
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "active":
-        return <Badge className="bg-green-500">Đang hoạt động</Badge>
-      case "inactive":
+      case "Hoạt động":
+        return <Badge className="bg-green-500">Hoạt động</Badge>
+      case "Không hoạt động":
         return <Badge variant="secondary">Không hoạt động</Badge>
-      case "maintenance":
+      case "Bảo trì":
         return <Badge className="bg-yellow-500">Đang bảo trì</Badge>
       default:
         return <Badge variant="outline">{status}</Badge>
@@ -48,12 +49,12 @@ export function BuildingOverviewCard({ building, onEdit, onDelete, onSelect }: B
     <Card className="overflow-hidden hover:shadow-md transition-shadow duration-200">
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start">
-          <CardTitle className="text-lg font-bold">{building.tenTN}</CardTitle>
+          <CardTitle className="text-lg font-bold">{building.name}</CardTitle>
           {getStatusBadge(building.status)}
         </div>
         <CardDescription className="flex items-center mt-1">
           <MapPin className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
-          {building.diaChi}
+          {building.address}
         </CardDescription>
       </CardHeader>
       <CardContent className="pb-2">

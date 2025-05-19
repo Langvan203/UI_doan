@@ -3,17 +3,20 @@
 import { Building2, ChevronRight } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
-interface Building {
+export interface Building {
   id: number
   name: string
   address: string
-  totalBlocks: number
-  totalFloors: number
-  totalPremises: number
   occupancyRate: number
-  totalResidents: number
   constructionYear: number
   status: string
+  soTangHam: number
+  soTangNoi: number
+  dienTichXayDung: number
+  tongDienTichSan: number
+  tongDienTichChoThueNET: number
+  tongDienTichChoThueGross: number
+  totalResidents?: number
 }
 
 interface BuildingListProps {

@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Pencil, Trash2 } from "lucide-react"
+import { Pencil, Trash2, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -27,24 +27,27 @@ interface Building {
   id: number
   name: string
   address: string
-  totalBlocks: number
-  totalFloors: number
-  totalPremises: number
   occupancyRate: number
-  totalResidents: number
   constructionYear: number
   status: string
+  soTangHam: number
+  soTangNoi: number
+  dienTichXayDung: number
+  tongDienTichSan: number
+  tongDienTichChoThueNET: number
+  tongDienTichChoThueGross: number
 }
 
 interface BuildingDetailProps {
   building: Building
+  onClose?: () => void
 }
 
-export function BuildingDetail({ building }: BuildingDetailProps) {
+export function BuildingDetail({ building, onClose }: BuildingDetailProps) {
   const [selectedTab, setSelectedTab] = useState<string>("overview")
 
   return (
-    <Card className="col-span-3">
+    <Card className="col-span-3 relative">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
@@ -52,6 +55,16 @@ export function BuildingDetail({ building }: BuildingDetailProps) {
             <CardDescription>{building.address}</CardDescription>
           </div>
           <div className="flex gap-2">
+            {onClose && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={onClose}
+                className="absolute top-2 right-2"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
             <Dialog>
               <DialogTrigger asChild>
                 <Button variant="outline" size="sm">
@@ -82,12 +95,11 @@ export function BuildingDetail({ building }: BuildingDetailProps) {
                       <Label htmlFor="edit-status">Status</Label>
                       <Select defaultValue={building.status}>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select status" />
+                          <SelectValue placeholder="Chọn trạng thái" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="active">Active</SelectItem>
-                          <SelectItem value="inactive">Inactive</SelectItem>
-                          <SelectItem value="maintenance">Maintenance</SelectItem>
+                          <SelectItem value="active">Đang hoạt động</SelectItem>
+                          <SelectItem value="inactive">Không hoạt động</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>

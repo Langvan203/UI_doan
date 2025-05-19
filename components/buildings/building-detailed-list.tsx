@@ -15,10 +15,13 @@ import { Badge } from "@/components/ui/badge"
 
 interface BuildingDetailed {
   id: number
-  tenTN: string
-  diaChi: string
-  soTangNoi: number
+  name: string
+  address: string
+  occupancyRate: number
+  constructionYear: number
+  status: string
   soTangHam: number
+  soTangNoi: number
   dienTichXayDung: number
   tongDienTichSan: number
   tongDienTichChoThueNET: number
@@ -26,14 +29,12 @@ interface BuildingDetailed {
   nganHangThanhToan: string
   soTaiKhoan: string
   noiDungChuyenKhoan: string
-  status: string
-  constructionYear: number
 }
 
 interface BuildingDetailedListProps {
   buildings: BuildingDetailed[]
   onEdit: (building: BuildingDetailed) => void
-  onDelete: (id: number) => void
+  onDelete: (building: BuildingDetailed) => void
   onSelect: (building: BuildingDetailed) => void
 }
 
@@ -41,11 +42,11 @@ export function BuildingDetailedList({ buildings, onEdit, onDelete, onSelect }: 
   // Hàm để hiển thị badge trạng thái với màu sắc phù hợp
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "active":
-        return <Badge className="bg-green-500">Đang hoạt động</Badge>
-      case "inactive":
+      case "Hoạt động":
+        return <Badge className="bg-green-500">Hoạt động</Badge>
+      case "Không hoạt động":
         return <Badge variant="secondary">Không hoạt động</Badge>
-      case "maintenance":
+      case "Bảo trì":
         return <Badge className="bg-yellow-500">Đang bảo trì</Badge>
       default:
         return <Badge variant="outline">{status}</Badge>
@@ -80,10 +81,10 @@ export function BuildingDetailedList({ buildings, onEdit, onDelete, onSelect }: 
               <TableRow key={building.id} className="cursor-pointer" onClick={() => onSelect(building)}>
                 <TableCell className="font-medium">{index + 1}</TableCell>
                 <TableCell className="font-medium">
-                  {building.tenTN}
-                  <div className="md:hidden text-xs text-muted-foreground mt-1">{building.diaChi}</div>
+                  {building.name}
+                  <div className="md:hidden text-xs text-muted-foreground mt-1">{building.address}</div>
                 </TableCell>
-                <TableCell className="hidden md:table-cell">{building.diaChi}</TableCell>
+                <TableCell className="hidden md:table-cell">{building.address}</TableCell>
                 <TableCell className="hidden sm:table-cell">{building.soTangNoi}</TableCell>
                 <TableCell className="hidden sm:table-cell">{building.soTangHam}</TableCell>
                 <TableCell className="hidden lg:table-cell">{building.dienTichXayDung.toLocaleString()}</TableCell>
@@ -121,7 +122,7 @@ export function BuildingDetailedList({ buildings, onEdit, onDelete, onSelect }: 
                         className="text-red-600"
                         onClick={(e) => {
                           e.stopPropagation()
-                          onDelete(building.id)
+                          onDelete(building)
                         }}
                       >
                         <Trash2 className="mr-2 h-4 w-4" />

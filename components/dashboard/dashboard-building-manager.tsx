@@ -457,8 +457,8 @@ export function DashboardBuildingManager() {
                       <ResponsiveContainer width="100%" height={300}>
                         <LineChart data={expensesData}>
                           <XAxis dataKey="month" />
-                          <YAxis tickFormatter={(value) => formatCurrency(value).replace("₫", "")} />
-                          <Tooltip formatter={(value) => [formatCurrency(value), "Amount"]} />
+                          <YAxis tickFormatter={(value) => formatCurrency(Number(value)).replace("₫", "")} />
+                          <Tooltip formatter={(value) => [formatCurrency(Number(value)), "Amount"]} />
                           <Line type="monotone" dataKey="amount" stroke="#2563eb" strokeWidth={2} />
                         </LineChart>
                       </ResponsiveContainer>

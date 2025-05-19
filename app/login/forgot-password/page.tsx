@@ -1,12 +1,12 @@
 import type { Metadata } from "next"
-import { LoginForm } from "@/components/auth/login-form"
+import { ForgotPasswordForm } from "@/components/auth/forgot-password"
 
 export const metadata: Metadata = {
-  title: "Đăng nhập | Quản lý tòa nhà chung cư",
-  description: "Đăng nhập vào hệ thống quản lý tòa nhà chung cư",
+  title: "Quên mật khẩu | Quản lý tòa nhà chung cư",
+  description: "Khôi phục mật khẩu cho tài khoản quản lý tòa nhà chung cư",
 }
 
-export default function LoginPage() {
+export default function ForgotPasswordPage() {
   return (
     <div className="relative min-h-screen flex flex-col items-center justify-center">
       {/* Background gradient */}
@@ -25,7 +25,7 @@ export default function LoginPage() {
         </div>
 
         <div className="w-full max-w-md">
-          <LoginForm />
+          <ForgotPasswordForm />
         </div>
       </div>
     </div>

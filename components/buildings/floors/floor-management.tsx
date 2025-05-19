@@ -6,10 +6,10 @@ export function FloorManagement() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Floor Management</h1>
+        <h1 className="text-2xl font-bold">Quản lý Tầng lầu</h1>
         <Button>
           <Plus className="mr-2 h-4 w-4" />
-          Add Floor
+          Thêm tầng lầu
         </Button>
       </div>
       <FloorList />

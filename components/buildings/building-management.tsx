@@ -5,6 +5,7 @@ import { Building2, Home, Users, Layers, Plus } from "lucide-react"
 import { DashboardSummaryCard } from "@/components/dashboard/dashboard-summary-card"
 import { BuildingList } from "@/components/buildings/building-list"
 import { BuildingDetail } from "@/components/buildings/building-detail"
+import { Building } from "@/components/buildings/building-list"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -21,35 +22,42 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 
 // Mock data for buildings
-const buildingsData = [
+const buildingsData: Building[] = [
   {
     id: 1,
     name: "Happy Residence",
     address: "123 Main Street, District 1",
-    totalBlocks: 4,
-    totalFloors: 16,
-    totalPremises: 60,
     occupancyRate: 85,
-    totalResidents: 120,
     constructionYear: 2020,
     status: "active",
+    soTangHam: 1,
+    soTangNoi: 16,
+    dienTichXayDung: 1200,
+    tongDienTichSan: 5000,
+    tongDienTichChoThueNET: 4500,
+    tongDienTichChoThueGross: 4800,
+    totalResidents: 120,
   },
   {
     id: 2,
     name: "Sunshine Apartments",
     address: "456 Park Avenue, District 2",
-    totalBlocks: 4,
-    totalFloors: 16,
-    totalPremises: 60,
     occupancyRate: 78,
-    totalResidents: 110,
     constructionYear: 2019,
     status: "active",
+    soTangHam: 1,
+    soTangNoi: 16,
+    dienTichXayDung: 1100,
+    tongDienTichSan: 4800,
+    tongDienTichChoThueNET: 4300,
+    tongDienTichChoThueGross: 4600,
+    totalResidents: 110,
   },
 ]
 
 export function BuildingManagement() {
   const [selectedBuilding, setSelectedBuilding] = useState<number>(1)
+  const [showBuildingDetail, setShowBuildingDetail] = useState<boolean>(true)
 
   // Get the selected building data
   const building = buildingsData.find((b) => b.id === selectedBuilding) || buildingsData[0]
@@ -95,7 +103,6 @@ export function BuildingManagement() {
                     <SelectContent>
                       <SelectItem value="active">Active</SelectItem>
                       <SelectItem value="inactive">Inactive</SelectItem>
-                      <SelectItem value="maintenance">Maintenance</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -122,21 +129,21 @@ export function BuildingManagement() {
         />
         <DashboardSummaryCard
           title="Total Blocks"
-          value={building.totalBlocks.toString()}
+          value={building.soTangNoi.toString()}
           icon={<Layers className="h-5 w-5 text-[#2563eb]" />}
           description={`In ${building.name}`}
           trend={{ value: "+0", direction: "up", label: "from last month" }}
         />
         <DashboardSummaryCard
           title="Total Premises"
-          value={building.totalPremises.toString()}
+          value={building.tongDienTichSan.toString()}
           icon={<Home className="h-5 w-5 text-[#2563eb]" />}
-          description={`${Math.round((building.totalPremises * building.occupancyRate) / 100)} occupied (${building.occupancyRate}%)`}
+          description={`${Math.round((building.tongDienTichChoThueNET / building.tongDienTichSan) * 100)}% occupied`}
           trend={{ value: "+3", direction: "up", label: "from last month" }}
         />
         <DashboardSummaryCard
           title="Total Residents"
-          value={building.totalResidents.toString()}
+          value={building.totalResidents?.toString() || "0"}
           icon={<Users className="h-5 w-5 text-[#2563eb]" />}
           description={`In ${building.name}`}
           trend={{ value: "+5", direction: "up", label: "from last month" }}
@@ -147,9 +154,17 @@ export function BuildingManagement() {
         <BuildingList
           buildings={buildingsData}
           selectedBuildingId={selectedBuilding}
-          onSelectBuilding={setSelectedBuilding}
+          onSelectBuilding={(id) => {
+            setSelectedBuilding(id)
+            setShowBuildingDetail(true)
+          }}
         />
-        <BuildingDetail building={building} />
+        {showBuildingDetail && (
+          <BuildingDetail 
+            building={building} 
+            onClose={() => setShowBuildingDetail(false)} 
+          />
+        )}
       </div>
     </div>
   )

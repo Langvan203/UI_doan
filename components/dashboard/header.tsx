@@ -2,8 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-// Update the import path to the new location
-import { useAuth } from "@/app/hooks/use-auth"
+import { useAuth } from "@/app/providers/auth-provider"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -22,10 +21,10 @@ import { Badge } from "@/components/ui/badge"
 
 interface HeaderProps {
   user: {
-    name: string
-    email: string
-    role: string
-    avatarUrl?: string
+    tenNV: string;
+    userName: string;
+    email: string;
+    sdt: string;
   }
 }
 
@@ -53,7 +52,7 @@ export function Header({ user }: HeaderProps) {
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-64 sm:w-72">
-              <DashboardNav role={user.role} className="py-4" />
+              <DashboardNav role="TENANT" className="py-4" />
             </SheetContent>
           </Sheet>
           <Link href="/dashboard" className="flex items-center gap-2">
@@ -93,27 +92,31 @@ export function Header({ user }: HeaderProps) {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-9 w-9 rounded-full">
                 <Avatar className="h-9 w-9">
-                  <AvatarImage src={user.avatarUrl || "/placeholder.svg"} alt={user.name} />
-                  <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+                  <AvatarImage src="/placeholder.svg" alt={user.tenNV} />
+                  <AvatarFallback>{getInitials(user.tenNV)}</AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>
                 <div className="flex flex-col">
-                  <p>{user.name}</p>
+                  <p>{user.tenNV}</p>
                   <p className="text-xs font-normal text-muted-foreground">{user.email}</p>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem as={Link} href="/profile">
-                <User className="mr-2 h-4 w-4" />
-                Profile
-              </DropdownMenuItem>
-              <DropdownMenuItem as={Link} href="/settings">
-                <Settings className="mr-2 h-4 w-4" />
-                Settings
-              </DropdownMenuItem>
+              <Link href="/profile" passHref>
+                <DropdownMenuItem>
+                  <User className="mr-2 h-4 w-4" />
+                  Profile
+                </DropdownMenuItem>
+              </Link>
+              <Link href="/settings" passHref>
+                <DropdownMenuItem>
+                  <Settings className="mr-2 h-4 w-4" />
+                  Settings
+                </DropdownMenuItem>
+              </Link>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={logout}>
                 <LogOut className="mr-2 h-4 w-4" />
