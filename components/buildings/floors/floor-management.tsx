@@ -7,10 +7,10 @@ export function FloorManagement() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Quản lý Tầng lầu</h1>
-        <Button>
+        {/* <Button>
           <Plus className="mr-2 h-4 w-4" />
           Thêm tầng lầu
-        </Button>
+        </Button> */}
       </div>
       <FloorList />
     </div>

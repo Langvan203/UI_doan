@@ -90,6 +90,14 @@ const navItems: NavItem[] = [
         color: "text-emerald-500",
         bgColor: "bg-emerald-500/10",
       },
+      {
+        title: "Trạng thái & Loại",
+        href: "/dashboard/premises",
+        icon: <Layers className="h-5 w-5" />,
+        roles: ["Quản lý tòa nhà"],
+        color: "text-emerald-500",
+        bgColor: "bg-emerald-500/10",
+      },
     ],
   },
   {

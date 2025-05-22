@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -17,58 +17,63 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Pencil, Plus, Trash2, Search, Filter, Eye } from "lucide-react"
-import { useToast } from "@/components/ui/use-toast"
 import Link from "next/link"
+import type { FloorDetail } from "@/services/building-service"
+import { buildingService } from "@/services/building-service"
+import { useAuth } from "@/app/hooks/use-auth"
+import axios from "axios"
+import {toast, Bounce} from "react-toastify"
 
-// Mock data for floors based on tnTangLau model
-const floorsData = [
-  { MaTL: 1, TenTL: "Tầng 1", MaKN: 1, MaTN: 1, DienTichSan: 1200, DienTichKhuVucDungChung: 300, DienTichKyThuaPhuTro: 150 },
-  { MaTL: 2, TenTL: "Tầng 2", MaKN: 1, MaTN: 1, DienTichSan: 1200, DienTichKhuVucDungChung: 300, DienTichKyThuaPhuTro: 150 },
-  { MaTL: 3, TenTL: "Tầng 3", MaKN: 1, MaTN: 1, DienTichSan: 1200, DienTichKhuVucDungChung: 300, DienTichKyThuaPhuTro: 150 },
-  { MaTL: 4, TenTL: "Tầng 4", MaKN: 1, MaTN: 1, DienTichSan: 1200, DienTichKhuVucDungChung: 300, DienTichKyThuaPhuTro: 150 },
-  { MaTL: 5, TenTL: "Tầng 1", MaKN: 2, MaTN: 1, DienTichSan: 1000, DienTichKhuVucDungChung: 250, DienTichKyThuaPhuTro: 130 },
-  { MaTL: 6, TenTL: "Tầng 2", MaKN: 2, MaTN: 1, DienTichSan: 1000, DienTichKhuVucDungChung: 250, DienTichKyThuaPhuTro: 130 },
-]
+interface BuildingData {
+  maTN: number
+  tenTN: string
+  khoiNhaDetail: BlockData[]
+}
 
-// Mock data for buildings
-const buildingsData = [
-  { MaTN: 1, TenTN: "Chung cư Hạnh Phúc" },
-  { MaTN: 2, TenTN: "Chung cư Sunshine" },
-]
+interface BlockData {
+  maKN: number
+  tenKN: string
+  maTN: number
+}
 
-// Mock data for blocks
-const blocksData = [
-  { MaKN: 1, TenKN: "Khối A", MaTN: 1 },
-  { MaKN: 2, TenKN: "Khối B", MaTN: 1 },
-  { MaKN: 3, TenKN: "Khối C", MaTN: 1 },
-  { MaKN: 4, TenKN: "Khối D", MaTN: 1 },
-  { MaKN: 5, TenKN: "Khối A", MaTN: 2 },
-  { MaKN: 6, TenKN: "Khối B", MaTN: 2 },
-]
+interface FloorData {
+  maTL?: number
+  tenTL: string
+  maTN: number
+  maKN: number
+  dienTichSan: number
+  listMatBangInTanLaus: any[]
+}
 
-// Mock data for premises count
-const premisesCountData: Record<number, number> = {
-  1: 4,
-  2: 4,
-  3: 4,
-  4: 4,
-  5: 6,
-  6: 6,
+interface TransformedFloor {
+  maTL: number | string
+  tenTL: string
+  tenTN: string
+  tenKN: string
+  dienTichSan: number
+  totalPremises: number
+  maTN: number
+  maKN: number
 }
 
 interface FloorListProps {
   buildingId?: number
   blockId?: number
+  floors?: FloorDetail[]
 }
 
-export function FloorList({ buildingId, blockId }: FloorListProps) {
-  const { toast } = useToast()
+export function FloorList({ buildingId, blockId, floors: propFloors }: FloorListProps) {
   const [searchQuery, setSearchQuery] = useState<string>("")
   const [selectedBuildingFilter, setSelectedBuildingFilter] = useState<string>(buildingId?.toString() || "all")
   const [selectedBlockFilter, setSelectedBlockFilter] = useState<string>(blockId?.toString() || "all")
-  const [selectedFloor, setSelectedFloor] = useState<any>(null)
+  const [selectedFloor, setSelectedFloor] = useState<FloorDetail | null>(null)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [floors, setFloors] = useState<TransformedFloor[]>([])
+  const [buildings, setBuildings] = useState<{maTN: number, tenTN: string}[]>([])
+  const [blocks, setBlocks] = useState<{maKN: number, tenKN: string, maTN: number}[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const token = useAuth().getToken()
   const [newFloor, setNewFloor] = useState({
     TenTL: "",
     MaTN: "",
@@ -77,72 +82,470 @@ export function FloorList({ buildingId, blockId }: FloorListProps) {
     DienTichKhuVucDungChung: "0",
     DienTichKyThuaPhuTro: "0"
   })
+
+  // Fetch floors from API
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true)
+        
+        // If floors are provided via props, use those
+        if (propFloors && propFloors.length > 0) {
+          setFloors(propFloors.map((floor, index) => ({
+            ...floor,
+            maTL: floor.maTL || `temp-${index}`
+          })))
+          setIsLoading(false)
+          return
+        }
+
+        // Fetch buildings and blocks first
+        const buildingsResponse = await fetch('https://localhost:7246/api/KhoiNha/GetDSKhoiNhaDetail', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+        
+        if (!buildingsResponse.ok) {
+          throw new Error('Failed to fetch buildings')
+        }
+        
+        const buildingsData: BuildingData[] = await buildingsResponse.json()
+        
+        // Extract buildings and blocks
+        const extractedBuildings = buildingsData.map((building) => ({
+          maTN: building.maTN,
+          tenTN: building.tenTN
+        }))
+        
+        const extractedBlocks = buildingsData.flatMap((building) => 
+          building.khoiNhaDetail.map((block) => ({
+            maKN: block.maKN,
+            tenKN: block.tenKN,
+            maTN: building.maTN
+          }))
+        )
+        
+        setBuildings(extractedBuildings)
+        setBlocks(extractedBlocks)
+
+        // Fetch floors
+        const floorsResponse = await fetch('https://localhost:7246/api/TangLau/GetDSTangLau', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+        
+        if (!floorsResponse.ok) {
+          throw new Error('Failed to fetch floors')
+        }
+        
+        const floorsData: FloorData[] = await floorsResponse.json()
+        
+        // Transform API data to match FloorDetail type
+        const transformedFloors: TransformedFloor[] = floorsData.map((floor, index) => {
+          const building = extractedBuildings.find(b => b.maTN === floor.maTN)
+          const block = extractedBlocks.find(b => b.maKN === floor.maKN)
+          
+          return {
+            maTL: floor.maTL || `temp-${index}`, // Use unique key
+            tenTL: floor.tenTL,
+            tenTN: building?.tenTN || '',
+            tenKN: block?.tenKN || '',
+            dienTichSan: floor.dienTichSan,
+            totalPremises: floor.listMatBangInTanLaus.length,
+            maTN: floor.maTN,
+            maKN: floor.maKN
+          }
+        })
+        
+        setFloors(transformedFloors)
+        setIsLoading(false)
+      } catch (error) {
+        toast.error("Không thể tải danh sách tầng lầu", {
+          position: "top-right",
+          autoClose: 500,
+          hideProgressBar: false,
+          closeOnClick: false,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "light",
+          transition: Bounce,
+        })
+        setIsLoading(false)
+      }
+    }
+
+    // Only fetch if no prop floors are provided and token exists
+    if (token) {
+      fetchData()
+    } else {
+      setIsLoading(false)
+    }
+  }, [token, propFloors])
   
   // Get available blocks based on selected building
   const availableBlocks = newFloor.MaTN 
-    ? blocksData.filter(block => block.MaTN === parseInt(newFloor.MaTN))
-    : blocksData
+    ? blocks.filter(block => block.maTN === parseInt(newFloor.MaTN))
+    : blocks
 
   // Apply filters
-  const filteredFloors = floorsData
+  const filteredFloors = floors
     .filter((floor) => {
       // Filter by building if provided or selected
       if (buildingId) {
-        return floor.MaTN === buildingId;
+        return floor.maTN === buildingId
       } else if (selectedBuildingFilter !== "all") {
-        return floor.MaTN === parseInt(selectedBuildingFilter);
+        return floor.maTN === parseInt(selectedBuildingFilter)
       }
-      return true;
+      return true
     })
     .filter((floor) => {
       // Filter by block if provided or selected
       if (blockId) {
-        return floor.MaKN === blockId;
+        return floor.maKN === blockId
       } else if (selectedBlockFilter !== "all") {
-        return floor.MaKN === parseInt(selectedBlockFilter);
+        // Ensure both are converted to numbers for comparison
+        return floor.maKN === parseInt(selectedBlockFilter)
       }
-      return true;
+      return true
     })
     .filter((floor) => {
       // Filter by search query
-      if (searchQuery.trim() === "") return true;
-      return floor.TenTL.toLowerCase().includes(searchQuery.toLowerCase());
-    });
+      if (searchQuery.trim() === "") return true
+      return floor.tenTL.toLowerCase().includes(searchQuery.toLowerCase())
+    })
 
-  const handleAddFloor = () => {
-    // Add floor logic would go here - this is mock for now
-    toast({
-      title: "Tầng lầu đã được thêm",
-      description: `Tầng lầu ${newFloor.TenTL} đã được tạo thành công`,
-    })
-    
-    // Reset form
-    setNewFloor({
-      TenTL: "",
-      MaTN: "",
-      MaKN: "",
-      DienTichSan: "0",
-      DienTichKhuVucDungChung: "0",
-      DienTichKyThuaPhuTro: "0"
-    })
+  // Prepare building filter options
+  const buildingFilterOptions = [
+    { value: "all", label: "Tất cả tòa nhà" },
+    ...buildings.map(building => ({
+      value: building.maTN.toString(),
+      label: building.tenTN
+    }))
+  ]
+
+  // Prepare block filter options
+  const blockFilterOptions = [
+    { value: "all", label: "Tất cả khối nhà" },
+    ...blocks
+      .filter(block => 
+        selectedBuildingFilter === "all" || 
+        block.maTN === parseInt(selectedBuildingFilter)
+      )
+      .map(block => {
+        // Find the building name for this block
+        const buildingName = buildings.find(b => b.maTN === block.maTN)?.tenTN || 'Không xác định'
+        return {
+          value: block.maKN.toString(),
+          label: `${block.tenKN} (${buildingName})`
+        }
+      })]
+
+  const handleAddFloor = async () => {
+    try {
+      // Validate required fields
+      if (!newFloor.MaTN || !newFloor.MaKN || !newFloor.TenTL) {
+        toast.error("Vui lòng điền đầy đủ thông tin tầng lầu", {
+          position: "top-right",
+          autoClose: 500,
+          hideProgressBar: false,
+          closeOnClick: false,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "light",
+          transition: Bounce,
+        });
+        return;
+      }
+
+      // Prepare floor data for API
+      const floorData = {
+        tenTL: newFloor.TenTL,
+        dienTichSan: parseFloat(newFloor.DienTichSan) || 0,
+        dienTichKhuVucDungChung: parseFloat(newFloor.DienTichKhuVucDungChung) || 0,
+        dienTichKyThuaPhuTro: parseFloat(newFloor.DienTichKyThuaPhuTro) || 0,
+        maKN: parseInt(newFloor.MaKN),
+        maTN: parseInt(newFloor.MaTN)
+      };
+
+      // Send API request to create floor
+      const response = await axios.post(
+        'https://localhost:7246/api/TangLau/CreateTangLau', 
+        floorData,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+
+      // Refresh floors list
+      const fetchData = async () => {
+        try {
+          setIsLoading(true)
+          
+          // Fetch buildings and blocks first
+          const buildingsResponse = await fetch('https://localhost:7246/api/KhoiNha/GetDSKhoiNha', {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          })
+          
+          if (!buildingsResponse.ok) {
+            throw new Error('Failed to fetch buildings')
+          }
+          
+          const buildingsData: BuildingData[] = await buildingsResponse.json()
+          
+          // Extract buildings and blocks
+          const extractedBuildings = buildingsData.map((building) => ({
+            maTN: building.maTN,
+            tenTN: building.tenTN
+          }))
+          
+          const extractedBlocks = buildingsData.flatMap((building) => 
+            building.khoiNhaDetail.map((block) => ({
+              maKN: block.maKN,
+              tenKN: block.tenKN,
+              maTN: building.maTN
+            }))
+          )
+          
+          setBuildings(extractedBuildings)
+          setBlocks(extractedBlocks)
+
+          // Fetch floors
+          const floorsResponse = await fetch('https://localhost:7246/api/TangLau/GetDSTangLauDetail', {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          })
+          
+          if (!floorsResponse.ok) {
+            throw new Error('Failed to fetch floors')
+          }
+          
+          const floorsData: FloorData[] = await floorsResponse.json()
+          
+          // Transform API data to match FloorDetail type
+          const transformedFloors: TransformedFloor[] = floorsData.map((floor, index) => {
+            const building = extractedBuildings.find(b => b.maTN === floor.maTN)
+            const block = extractedBlocks.find(b => b.maKN === floor.maKN)
+            
+            return {
+              maTL: floor.maTL || `temp-${index}`, // Use unique key
+              tenTL: floor.tenTL,
+              tenTN: building?.tenTN || '',
+              tenKN: block?.tenKN || '',
+              dienTichSan: floor.dienTichSan,
+              totalPremises: floor.listMatBangInTanLaus.length,
+              maTN: floor.maTN,
+              maKN: floor.maKN
+            }
+          })
+          
+          setFloors(transformedFloors)
+          setIsLoading(false)
+        } catch (error) {
+          toast.error("Không thể tải danh sách tầng lầu", {
+            position: "top-right",
+            autoClose: 500,
+            hideProgressBar: false,
+            closeOnClick: false,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            theme: "light",
+            transition: Bounce,
+          })
+          setIsLoading(false)
+        }
+      }
+
+      // Call fetchData to refresh the list
+      await fetchData();
+
+      // Show success toast
+      toast.success("Đã thêm tầng lầu mới", {
+        position: "top-right",
+        autoClose: 500,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+        transition: Bounce,
+      });
+
+      // Close the dialog
+      setIsEditDialogOpen(false);
+    } catch (error) {
+      console.error('Error adding floor:', error);
+      toast.error("Không thể thêm tầng lầu. Vui lòng thử lại.", {
+        position: "top-right",
+        autoClose: 500,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+        transition: Bounce,
+      });
+    }
   }
 
-  const handleEditFloor = () => {
-    // Edit floor logic would go here - this is mock for now
-    toast({
-      title: "Đã cập nhật tầng lầu",
-      description: `Tầng lầu ${selectedFloor.TenTL} đã được cập nhật thành công`,
-    })
-    setIsEditDialogOpen(false)
+  const handleEditFloor = async () => {
+    try {
+      if (!selectedFloor) {
+        toast.error("Không tìm thấy tầng lầu để chỉnh sửa", {
+          position: "top-right",
+          autoClose: 500,
+          hideProgressBar: false,
+          closeOnClick: false,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "light",
+          transition: Bounce,
+        });
+        return;
+      }
+
+      // Get values from input fields
+      const editFloorNameInput = document.getElementById('edit-floor-name') as HTMLInputElement;
+      const editFloorAreaInput = document.getElementById('edit-floor-area') as HTMLInputElement;
+      const editFloorCommonAreaInput = document.getElementById('edit-floor-common-area') as HTMLInputElement;
+      const editFloorTechAreaInput = document.getElementById('edit-floor-tech-area') as HTMLInputElement;
+
+      // Prepare floor update data
+      const floorUpdateData = {
+        maTL: selectedFloor.maTL,
+        tenTL: editFloorNameInput.value,
+        dienTichSan: parseFloat(editFloorAreaInput.value) || 0,
+        dienTichKhuVucDungChung: parseFloat(editFloorCommonAreaInput.value) || 0,
+        dienTichKyThuaPhuTro: parseFloat(editFloorTechAreaInput.value) || 0
+      };
+
+      // Send API request to update floor
+      const response = await axios.put(
+        'https://localhost:7246/api/TangLau/UpdateTangLau', 
+        floorUpdateData,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+
+      // Update the floors list with the new data
+      setFloors(prevFloors => 
+        prevFloors.map(floor => 
+          floor.maTL === selectedFloor.maTL 
+            ? {
+                ...floor,
+                tenTL: floorUpdateData.tenTL,
+                dienTichSan: floorUpdateData.dienTichSan,
+              } 
+            : floor
+        )
+      );
+
+      // Show success toast
+      toast.success("Đã cập nhật thông tin tầng lầu", {
+        position: "top-right",
+        autoClose: 500,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+        transition: Bounce,
+      });
+
+      // Close the edit dialog
+      setIsEditDialogOpen(false);
+    } catch (error) {
+      console.error('Error updating floor:', error);
+      toast.error("Không thể cập nhật tầng lầu. Vui lòng thử lại.", {
+        position: "top-right",
+        autoClose: 500,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+        transition: Bounce,
+      });
+    }
   }
 
-  const handleDeleteFloor = () => {
-    // Delete floor logic would go here - this is mock for now
-    toast({
-      title: "Đã xóa tầng lầu",
-      description: `Tầng lầu ${selectedFloor.TenTL} đã được xóa thành công`,
-    })
-    setIsDeleteDialogOpen(false)
+  const handleDeleteFloor = async () => {
+    try {
+      if (!selectedFloor || !selectedFloor.maTL) {
+        toast.error("Không tìm thấy tầng lầu để xóa", {
+          position: "top-right",
+          autoClose: 500,
+          hideProgressBar: false,
+          closeOnClick: false,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "light",
+        });
+        return;
+      }
+
+      // Send API request to delete floor
+      const response = await axios.delete(
+        `https://localhost:7246/api/TangLau/DeleteTangLau/?MaTL=${selectedFloor.maTL}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+
+      // Show success toast
+      toast.success(`Đã xóa tầng lầu "${selectedFloor.tenTL}"`, {
+        position: "top-right",
+        autoClose: 500,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+      });
+
+      // Close the delete dialog
+      setIsDeleteDialogOpen(false);
+
+      // Optionally, remove the deleted floor from the list
+      setFloors(prevFloors => 
+        prevFloors.filter(floor => 
+          floor.maTL !== selectedFloor.maTL
+        )
+      );
+    } catch (error) {
+      console.error('Error deleting floor:', error);
+      toast.error("Không thể xóa tầng lầu. Vui lòng thử lại.", {
+        position: "top-right",
+        autoClose: 500,
+        hideProgressBar: false,
+        closeOnClick: false,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: "light",
+      });
+    }
   }
 
   // Handle building selection in add form
@@ -152,6 +555,42 @@ export function FloorList({ buildingId, blockId }: FloorListProps) {
       MaTN: value,
       MaKN: "" // Reset block when building changes
     })
+  }
+
+  const handleSelectFloorForEdit = (floor: TransformedFloor) => {
+    // Convert TransformedFloor to FloorDetail for editing
+    const floorDetail: FloorDetail = {
+      maTL: typeof floor.maTL === 'number' ? floor.maTL : 0,
+      tenTL: floor.tenTL,
+      tenTN: floor.tenTN,
+      tenKN: floor.tenKN,
+      dienTichSan: floor.dienTichSan,
+      totalPremises: floor.totalPremises,
+      maTN: floor.maTN,
+      maKN: floor.maKN
+    }
+    setSelectedFloor(floorDetail)
+    setIsEditDialogOpen(true)
+  }
+
+  const handleSelectFloorForDelete = (floor: TransformedFloor) => {
+    // Convert TransformedFloor to FloorDetail for deleting
+    const floorDetail: FloorDetail = {
+      maTL: typeof floor.maTL === 'number' ? floor.maTL : 0,
+      tenTL: floor.tenTL,
+      tenTN: floor.tenTN,
+      tenKN: floor.tenKN,
+      dienTichSan: floor.dienTichSan,
+      totalPremises: floor.totalPremises,
+      maTN: floor.maTN,
+      maKN: floor.maKN
+    }
+    setSelectedFloor(floorDetail)
+    setIsDeleteDialogOpen(true)
+  }
+
+  if (isLoading) {
+    return <div>Đang tải...</div>
   }
 
   return (
@@ -177,9 +616,9 @@ export function FloorList({ buildingId, blockId }: FloorListProps) {
                     <SelectValue placeholder="Chọn tòa nhà" />
                   </SelectTrigger>
                   <SelectContent>
-                    {buildingsData.map((building) => (
-                      <SelectItem key={building.MaTN} value={building.MaTN.toString()}>
-                        {building.TenTN}
+                    {buildings.map((building) => (
+                      <SelectItem key={building.maTN} value={building.maTN.toString()}>
+                        {building.tenTN}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -197,8 +636,8 @@ export function FloorList({ buildingId, blockId }: FloorListProps) {
                   </SelectTrigger>
                   <SelectContent>
                     {availableBlocks.map((block) => (
-                      <SelectItem key={block.MaKN} value={block.MaKN.toString()}>
-                        {block.TenKN}
+                      <SelectItem key={block.maKN} value={block.maKN.toString()}>
+                        {block.tenKN}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -265,18 +704,20 @@ export function FloorList({ buildingId, blockId }: FloorListProps) {
           </div>
           <div className="flex-1 flex items-center space-x-2">
             <Filter className="h-4 w-4 text-muted-foreground" />
-            <Select value={selectedBuildingFilter} onValueChange={(value) => {
+            <Select 
+              value={selectedBuildingFilter} 
+              onValueChange={(value) => {
               setSelectedBuildingFilter(value)
               setSelectedBlockFilter("all") // Reset block filter when building changes
-            }}>
+              }}
+            >
               <SelectTrigger className="h-9">
                 <SelectValue placeholder="Lọc theo tòa nhà" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Tất cả tòa nhà</SelectItem>
-                {buildingsData.map((building) => (
-                  <SelectItem key={building.MaTN} value={building.MaTN.toString()}>
-                    {building.TenTN}
+                {buildingFilterOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -293,12 +734,9 @@ export function FloorList({ buildingId, blockId }: FloorListProps) {
                 <SelectValue placeholder="Lọc theo khối nhà" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Tất cả khối nhà</SelectItem>
-                {blocksData
-                  .filter(block => selectedBuildingFilter === "all" || block.MaTN === parseInt(selectedBuildingFilter))
-                  .map((block) => (
-                    <SelectItem key={block.MaKN} value={block.MaKN.toString()}>
-                      {block.TenKN}
+                {blockFilterOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
                     </SelectItem>
                   ))}
               </SelectContent>
@@ -317,38 +755,30 @@ export function FloorList({ buildingId, blockId }: FloorListProps) {
           <div className="col-span-2">Thao tác</div>
         </div>
         {filteredFloors.map((floor) => (
-          <div key={floor.MaTL} className="grid grid-cols-12 border-b p-3 last:border-0">
+          <div key={floor.maTL} className="grid grid-cols-12 border-b p-3 last:border-0">
             <div className="col-span-2">
-              {floor.TenTL}
+              {floor.tenTL}
             </div>
             <div className="col-span-2 hidden sm:block">
-              {buildingsData.find((b) => b.MaTN === floor.MaTN)?.TenTN}
-              <div className="sm:hidden text-xs text-muted-foreground">
-                {buildingsData.find((b) => b.MaTN === floor.MaTN)?.TenTN}
-              </div>
+              {floor.tenTN}
             </div>
             <div className="col-span-2">
-              {blocksData.find((b) => b.MaKN === floor.MaKN)?.TenKN}
+              {floor.tenKN}
             </div>
-            <div className="col-span-2 hidden md:block">{floor.DienTichSan} m²</div>
-            <div className="col-span-2 hidden lg:block">{premisesCountData[floor.MaTL] || 0}</div>
+            <div className="col-span-2 hidden md:block">{floor.dienTichSan.toFixed(2)} m²</div>
+            <div className="col-span-2 hidden lg:block">{floor.totalPremises}</div>
             <div className="col-span-2">
               <div className="flex items-center gap-2">
-                <Link href={`/dashboard/buildings/floors/${floor.MaTL}`} passHref>
-                  <Button variant="ghost" size="sm" asChild>
-                    <div>
-                      <Eye className="h-4 w-4" />
-                      <span className="sr-only">Chi tiết</span>
-                    </div>
-                  </Button>
-                </Link>
+                <Button variant="ghost" size="sm" asChild>
+                  <Link href={`/dashboard/buildings/floors/${floor.maTL}`}>
+                    <Eye className="h-4 w-4" />
+                    <span className="sr-only">Chi tiết</span>
+                  </Link>
+                </Button>
                 <Button 
                   variant="ghost" 
                   size="sm"
-                  onClick={() => {
-                    setSelectedFloor(floor)
-                    setIsEditDialogOpen(true)
-                  }}
+                  onClick={() => handleSelectFloorForEdit(floor)}
                 >
                   <Pencil className="h-4 w-4" />
                   <span className="sr-only">Sửa</span>
@@ -356,10 +786,7 @@ export function FloorList({ buildingId, blockId }: FloorListProps) {
                 <Button 
                   variant="ghost" 
                   size="sm"
-                  onClick={() => {
-                    setSelectedFloor(floor)
-                    setIsDeleteDialogOpen(true)
-                  }}
+                  onClick={() => handleSelectFloorForDelete(floor)}
                 >
                   <Trash2 className="h-4 w-4 text-destructive" />
                   <span className="sr-only">Xóa</span>
@@ -381,14 +808,43 @@ export function FloorList({ buildingId, blockId }: FloorListProps) {
             <div className="grid gap-4 py-4">
               <div>
                 <Label htmlFor="edit-building">Tòa nhà</Label>
-                <Select defaultValue={selectedFloor.MaTN.toString()}>
+                <Select 
+                  defaultValue={selectedFloor.maTN.toString()}
+                  onValueChange={(value) => {
+                    // Update the available blocks when building changes
+                    const selectedBuilding = parseInt(value);
+                    const availableBlocksForBuilding = blocks.filter(block => block.maTN === selectedBuilding);
+                    
+                    // If the current block is not in the new building's blocks, reset block selection
+                    const currentBlockInBuilding = availableBlocksForBuilding.find(
+                      block => block.maKN === selectedFloor.maKN
+                    );
+                    
+                    if (!currentBlockInBuilding) {
+                      // Reset block selection to the first block of the selected building
+                      const firstBlock = availableBlocksForBuilding[0];
+                      if (firstBlock) {
+                        // Update the selected floor's block
+                        setSelectedFloor(prev => prev ? {
+                          ...prev,
+                          maTN: selectedBuilding,
+                          maKN: firstBlock.maKN,
+                          tenKN: firstBlock.tenKN
+                        } : null);
+                      }
+                    }
+                  }}
+                >
                   <SelectTrigger>
-                    <SelectValue />
+                    <SelectValue placeholder="Chọn tòa nhà" />
                   </SelectTrigger>
                   <SelectContent>
-                    {buildingsData.map((building) => (
-                      <SelectItem key={building.MaTN} value={building.MaTN.toString()}>
-                        {building.TenTN}
+                    {buildings.map((building) => (
+                      <SelectItem 
+                        key={building.maTN} 
+                        value={building.maTN.toString()}
+                      >
+                        {building.tenTN}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -396,36 +852,65 @@ export function FloorList({ buildingId, blockId }: FloorListProps) {
               </div>
               <div>
                 <Label htmlFor="edit-floor-block">Khối nhà</Label>
-                <Select defaultValue={selectedFloor.MaKN.toString()}>
+                <Select 
+                  value={selectedFloor.maKN.toString()}
+                  onValueChange={(value) => {
+                    // Update the selected floor's block
+                    setSelectedFloor(prev => prev ? {
+                      ...prev,
+                      maKN: parseInt(value),
+                      tenKN: blocks.find(block => block.maKN === parseInt(value))?.tenKN || ''
+                    } : null);
+                  }}
+                >
                   <SelectTrigger>
-                    <SelectValue />
+                    <SelectValue placeholder="Chọn khối nhà" />
                   </SelectTrigger>
                   <SelectContent>
-                    {blocksData
-                      .filter((block) => block.MaTN === selectedFloor.MaTN)
+                    {blocks
+                      .filter(block => block.maTN === selectedFloor.maTN)
                       .map((block) => (
-                        <SelectItem key={block.MaKN} value={block.MaKN.toString()}>
-                          {block.TenKN}
+                        <SelectItem 
+                          key={block.maKN} 
+                          value={block.maKN.toString()}
+                        >
+                          {block.tenKN}
                         </SelectItem>
-                      ))}
+                      ))
+                    }
                   </SelectContent>
                 </Select>
               </div>
               <div>
                 <Label htmlFor="edit-floor-name">Tên tầng lầu</Label>
-                <Input id="edit-floor-name" defaultValue={selectedFloor.TenTL} />
+                <Input 
+                  id="edit-floor-name" 
+                  defaultValue={selectedFloor.tenTL} 
+                />
               </div>
               <div>
                 <Label htmlFor="edit-floor-area">Diện tích sàn (m²)</Label>
-                <Input id="edit-floor-area" type="number" defaultValue={selectedFloor.DienTichSan} />
+                <Input 
+                  id="edit-floor-area" 
+                  type="number" 
+                  defaultValue={selectedFloor.dienTichSan.toFixed(2)} 
+                />
               </div>
               <div>
                 <Label htmlFor="edit-floor-common-area">Diện tích khu vực dùng chung (m²)</Label>
-                <Input id="edit-floor-common-area" type="number" defaultValue={selectedFloor.DienTichKhuVucDungChung} />
+                <Input 
+                  id="edit-floor-common-area" 
+                  type="number" 
+                  defaultValue="0"
+                />
               </div>
               <div>
                 <Label htmlFor="edit-floor-tech-area">Diện tích kỹ thuật phụ trợ (m²)</Label>
-                <Input id="edit-floor-tech-area" type="number" defaultValue={selectedFloor.DienTichKyThuaPhuTro} />
+                <Input 
+                  id="edit-floor-tech-area" 
+                  type="number" 
+                  defaultValue="0"
+                />
               </div>
             </div>
             <DialogFooter>
@@ -447,7 +932,7 @@ export function FloorList({ buildingId, blockId }: FloorListProps) {
             <DialogHeader>
               <DialogTitle>Xác nhận xóa</DialogTitle>
               <DialogDescription>
-                Bạn có chắc chắn muốn xóa tầng lầu "{selectedFloor.TenTL}"? Thao tác này không thể hoàn tác.
+                Bạn có chắc chắn muốn xóa tầng lầu "{selectedFloor.tenTL}"? Thao tác này không thể hoàn tác.
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>

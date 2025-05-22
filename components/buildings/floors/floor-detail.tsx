@@ -1,12 +1,15 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Building2, Building, ChevronRight, Home } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
+import { useToast } from "@/components/ui/use-toast"
+import { useAuth } from "@/app/hooks/use-auth"
+import type { FloorApartment } from "@/services/building-service"
 
 // Mock data for floors
 const floorsData = [
@@ -70,11 +73,64 @@ interface FloorDetailProps {
   id: number
 }
 
+interface FloorData {
+  maTL: number
+  tenTL: string
+  dienTichSan: number
+  dienTichKhuVucDungChung: number
+  dienTichKyThuaPhuTro: number
+  listMatBangInTanLaus: FloorApartment[]
+}
+
 export function FloorDetail({ id }: FloorDetailProps) {
+  const { toast } = useToast()
   const [activeTab, setActiveTab] = useState("overview")
+  const [floorData, setFloorData] = useState<FloorData | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const token = useAuth().getToken()
   
-  // Find the floor data
-  const floorData = floorsData.find(floor => floor.MaTL === id)
+  useEffect(() => {
+    const fetchFloorDetail = async () => {
+      try {
+        const response = await fetch(`https://localhost:7246/api/TangLau/GetDSTangLau`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch floor details')
+        }
+        
+        const data = await response.json()
+        
+        // Find the specific floor by ID
+        const foundFloor = data.find((floor: FloorData) => floor.maTL === id)
+        
+        if (!foundFloor) {
+          throw new Error('Floor not found')
+        }
+        
+        setFloorData(foundFloor)
+        setIsLoading(false)
+      } catch (error) {
+        toast({
+          title: "Lỗi",
+          description: "Không thể tải thông tin tầng lầu",
+          variant: "destructive"
+        })
+        setIsLoading(false)
+      }
+    }
+
+    if (token) {
+      fetchFloorDetail()
+    }
+  }, [id, token])
+  
+  if (isLoading) {
+    return <div>Đang tải...</div>
+  }
   
   if (!floorData) {
     return (
@@ -84,16 +140,11 @@ export function FloorDetail({ id }: FloorDetailProps) {
     )
   }
   
-  const building = buildingsData.find(b => b.MaTN === floorData.MaTN)
-  const block = blocksData.find(b => b.MaKN === floorData.MaKN)
-  const apartmentCount = apartmentCountData[id] || 0
-  const occupancyRate = occupancyRateData[id] || 0
-  
   // Calculate total usable area (subtract common and technical areas from total)
-  const totalUsableArea = floorData.DienTichSan - floorData.DienTichKhuVucDungChung - floorData.DienTichKyThuaPhuTro
+  const totalUsableArea = floorData.dienTichSan - floorData.dienTichKhuVucDungChung - floorData.dienTichKyThuaPhuTro
   
   // Get apartments for this floor
-  const floorApartments = apartmentsData.filter(apt => apt.floorId === id)
+  const floorApartments = floorData.listMatBangInTanLaus || []
   
   return (
     <div className="space-y-6">
@@ -107,32 +158,19 @@ export function FloorDetail({ id }: FloorDetailProps) {
           Khối nhà
         </Link>
         <ChevronRight className="h-4 w-4 mx-1" />
-        <Link href={`/dashboard/buildings/blocks/${floorData.MaKN}`} className="hover:text-foreground">
-          {block?.TenKN || "Không xác định"}
-        </Link>
-        <ChevronRight className="h-4 w-4 mx-1" />
-        <Link href="/dashboard/buildings/floors" className="hover:text-foreground">
-          Tầng lầu
-        </Link>
-        <ChevronRight className="h-4 w-4 mx-1" />
-        <span className="text-foreground font-medium">{floorData.TenTL}</span>
+        <span className="text-foreground font-medium">{floorData.tenTL}</span>
       </div>
       
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">{floorData.TenTL}</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{floorData.tenTL}</h1>
           <p className="text-muted-foreground">
-            {block?.TenKN || "Không xác định"}, {building?.TenTN || "Không xác định"}
+            {/* TODO: Add building and block names from API or additional fetch */}
+            Khối nhà, Tòa nhà
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" asChild>
-            <Link href={`/dashboard/buildings/floors/${id}/edit`}>
-              Chỉnh sửa
-            </Link>
-          </Button>
-        </div>
+        
       </div>
       
       {/* Tabs */}
@@ -151,7 +189,7 @@ export function FloorDetail({ id }: FloorDetailProps) {
                 <Building2 className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{floorData.DienTichSan} m²</div>
+                <div className="text-2xl font-bold">{floorData.dienTichSan} m²</div>
                 <p className="text-xs text-muted-foreground">
                   Tổng diện tích sàn của tầng
                 </p>
@@ -175,7 +213,7 @@ export function FloorDetail({ id }: FloorDetailProps) {
                 <Home className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{apartmentCount}</div>
+                <div className="text-2xl font-bold">{floorApartments.length}</div>
                 <p className="text-xs text-muted-foreground">
                   Căn hộ trong tầng lầu
                 </p>
@@ -187,25 +225,27 @@ export function FloorDetail({ id }: FloorDetailProps) {
           <Card>
             <CardHeader>
               <CardTitle>Thông tin tầng lầu</CardTitle>
-              <CardDescription>Thông tin chi tiết về {floorData.TenTL}</CardDescription>
+              <CardDescription>Thông tin chi tiết về {floorData.tenTL}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <h3 className="font-medium">Tên tầng lầu</h3>
-                  <p className="text-sm text-muted-foreground">{floorData.TenTL}</p>
+                  <p className="text-sm text-muted-foreground">{floorData.tenTL}</p>
                 </div>
                 <div>
                   <h3 className="font-medium">Khối nhà</h3>
-                  <p className="text-sm text-muted-foreground">{block?.TenKN || "Không xác định"}</p>
+                  <p className="text-sm text-muted-foreground">Khối nhà</p>
                 </div>
                 <div>
                   <h3 className="font-medium">Thuộc tòa nhà</h3>
-                  <p className="text-sm text-muted-foreground">{building?.TenTN || "Không xác định"}</p>
+                  <p className="text-sm text-muted-foreground">Tòa nhà</p>
                 </div>
                 <div>
                   <h3 className="font-medium">Tỷ lệ lấp đầy</h3>
-                  <p className="text-sm text-muted-foreground">{occupancyRate}%</p>
+                  <p className="text-sm text-muted-foreground">
+                    {floorApartments.filter((apt: FloorApartment) => apt.status === 'Đã bàn giao').length / floorApartments.length * 100 || 0}%
+                  </p>
                 </div>
               </div>
 
@@ -214,26 +254,26 @@ export function FloorDetail({ id }: FloorDetailProps) {
                 
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span>Diện tích khu vực dùng chung: {floorData.DienTichKhuVucDungChung} m²</span>
-                    <span>{((floorData.DienTichKhuVucDungChung / floorData.DienTichSan) * 100).toFixed(1)}%</span>
+                    <span>Diện tích khu vực dùng chung: {floorData.dienTichKhuVucDungChung} m²</span>
+                    <span>{((floorData.dienTichKhuVucDungChung / floorData.dienTichSan) * 100).toFixed(1)}%</span>
                   </div>
-                  <Progress value={(floorData.DienTichKhuVucDungChung / floorData.DienTichSan) * 100} className="h-2" />
+                  <Progress value={(floorData.dienTichKhuVucDungChung / floorData.dienTichSan) * 100} className="h-2" />
                 </div>
                 
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span>Diện tích kỹ thuật phụ trợ: {floorData.DienTichKyThuaPhuTro} m²</span>
-                    <span>{((floorData.DienTichKyThuaPhuTro / floorData.DienTichSan) * 100).toFixed(1)}%</span>
+                    <span>Diện tích kỹ thuật phụ trợ: {floorData.dienTichKyThuaPhuTro} m²</span>
+                    <span>{((floorData.dienTichKyThuaPhuTro / floorData.dienTichSan) * 100).toFixed(1)}%</span>
                   </div>
-                  <Progress value={(floorData.DienTichKyThuaPhuTro / floorData.DienTichSan) * 100} className="h-2" />
+                  <Progress value={(floorData.dienTichKyThuaPhuTro / floorData.dienTichSan) * 100} className="h-2" />
                 </div>
                 
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span>Diện tích sử dụng cho căn hộ: {totalUsableArea} m²</span>
-                    <span>{((totalUsableArea / floorData.DienTichSan) * 100).toFixed(1)}%</span>
+                    <span>{((totalUsableArea / floorData.dienTichSan) * 100).toFixed(1)}%</span>
                   </div>
-                  <Progress value={(totalUsableArea / floorData.DienTichSan) * 100} className="h-2" />
+                  <Progress value={(totalUsableArea / floorData.dienTichSan) * 100} className="h-2" />
                 </div>
               </div>
             </CardContent>
@@ -250,7 +290,7 @@ export function FloorDetail({ id }: FloorDetailProps) {
           <Card>
             <CardHeader>
               <CardTitle>Danh sách căn hộ</CardTitle>
-              <CardDescription>Các căn hộ thuộc {floorData.TenTL}</CardDescription>
+              <CardDescription>Các căn hộ thuộc {floorData.tenTL}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="rounded-md border overflow-x-auto">
@@ -261,18 +301,18 @@ export function FloorDetail({ id }: FloorDetailProps) {
                   <div className="col-span-3">Trạng thái</div>
                   <div className="col-span-2">Thao tác</div>
                 </div>
-                {floorApartments.map((apartment) => (
+                {floorApartments.map((apartment: FloorApartment) => (
                   <div key={apartment.id} className="grid grid-cols-12 border-b p-3 last:border-0">
                     <div className="col-span-2">{apartment.number}</div>
                     <div className="col-span-3">{apartment.type}</div>
                     <div className="col-span-2">{apartment.area} m²</div>
                     <div className="col-span-3">
                       <div className={`px-2 py-1 rounded-full text-xs inline-block ${
-                        apartment.status === 'occupied' 
+                        apartment.status === 'Đã bàn giao' 
                           ? 'bg-green-100 text-green-800' 
                           : 'bg-yellow-100 text-yellow-800'
                       }`}>
-                        {apartment.status === 'occupied' ? 'Đã cho thuê' : 'Còn trống'}
+                        {apartment.status}
                       </div>
                     </div>
                     <div className="col-span-2">

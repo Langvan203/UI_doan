@@ -78,7 +78,7 @@ export function BuildingListManagement() {
           return;
         }
 
-        const response = await axios.get('https://localhost:7246/api/ToaNha/lay-ds-toa-nha', {
+        const response = await axios.get('https://localhost:7246/api/ToaNha/GetDSToaNha', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -180,7 +180,7 @@ export function BuildingListManagement() {
         // Fetch updated building list
         const fetchBuildings = async () => {
           try {
-            const buildingsResponse = await axios.get('https://localhost:7246/api/ToaNha/lay-ds-toa-nha', {
+            const buildingsResponse = await axios.get('https://localhost:7246/api/ToaNha/GetDSToaNha', {
               headers: {
                 'Authorization': `Bearer ${token}`
               }
@@ -292,7 +292,7 @@ export function BuildingListManagement() {
         // Fetch updated building list
         const fetchBuildings = async () => {
           try {
-            const buildingsResponse = await axios.get('https://localhost:7246/api/ToaNha/lay-ds-toa-nha', {
+            const buildingsResponse = await axios.get('https://localhost:7246/api/ToaNha/GetDSToaNha', {
               headers: {
                 'Authorization': `Bearer ${token}`
               }

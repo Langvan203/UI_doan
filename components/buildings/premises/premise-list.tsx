@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -22,255 +22,292 @@ import { CalendarIcon, Eye, Pencil, Plus, Trash2 } from "lucide-react"
 import { format } from "date-fns"
 import { vi } from "date-fns/locale"
 import { cn } from "@/lib/utils"
+import { useAuth } from "@/app/providers/auth-provider"
+import { Block, Building, Floor, LoaiMatBang, KhachHang, premiseService, TrangThai, AddNewPremise, EditPremise } from "@/services/premise-service"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import {toast,Bounce} from "react-toastify"
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 
 // Định nghĩa interface cho Premise với các trường mới
 interface Premise {
-  id: number
-  buildingId: number
-  blockId: number
-  floorId: number
-  number: string
+  maMB: number
+  maTN: number
+  maKN: number
+  maTL: number
   maVT: string
   dienTichBG: number
   dienTichThongThuy: number
   dienTichTimTuong: number
-  isBanGiao: boolean
   soHopDong: string
   ngayBanGiao: Date | null
   ngayHetHanChoThue: Date | null
-  maTL: number
-  maKH: number | null
   maLMB: number
-  maTrangThai: number
-  maTN: number
-  owner: string | null
-  ownerContact: string | null
-  type: string
+  tenLMB: string
+  maKH: number
+  tenKH: string,
+  maTT: number,
+  tenTrangThai: string,
+  tenTN: string,
+  tenKN: string,
+  tenTL: string,
 }
-
-// Mock data cho premises
-const premisesData: Premise[] = [
-  {
-    id: 1,
-    buildingId: 1,
-    blockId: 1,
-    floorId: 1,
-    number: "A101",
-    maVT: "VT001",
-    dienTichBG: 85,
-    dienTichThongThuy: 80,
-    dienTichTimTuong: 90,
-    isBanGiao: true,
-    soHopDong: "HD001/2023",
-    ngayBanGiao: new Date("2023-01-15"),
-    ngayHetHanChoThue: new Date("2025-01-14"),
-    maTL: 1,
-    maKH: 101,
-    maLMB: 1,
-    maTrangThai: 1,
-    maTN: 1,
-    owner: "Nguyễn Văn A",
-    ownerContact: "0901234567",
-    type: "Apartment",
-  },
-  {
-    id: 2,
-    buildingId: 1,
-    blockId: 1,
-    floorId: 1,
-    number: "A102",
-    maVT: "VT002",
-    dienTichBG: 65,
-    dienTichThongThuy: 60,
-    dienTichTimTuong: 70,
-    isBanGiao: false,
-    soHopDong: "",
-    ngayBanGiao: null,
-    ngayHetHanChoThue: null,
-    maTL: 1,
-    maKH: null,
-    maLMB: 2,
-    maTrangThai: 2,
-    maTN: 1,
-    owner: null,
-    ownerContact: null,
-    type: "Apartment",
-  },
-  {
-    id: 3,
-    buildingId: 1,
-    blockId: 1,
-    floorId: 1,
-    number: "A103",
-    maVT: "VT003",
-    dienTichBG: 100,
-    dienTichThongThuy: 95,
-    dienTichTimTuong: 105,
-    isBanGiao: true,
-    soHopDong: "HD002/2023",
-    ngayBanGiao: new Date("2023-03-01"),
-    ngayHetHanChoThue: new Date("2025-02-28"),
-    maTL: 1,
-    maKH: 102,
-    maLMB: 1,
-    maTrangThai: 1,
-    maTN: 1,
-    owner: "Trần Thị B",
-    ownerContact: "0912345678",
-    type: "Apartment",
-  },
-  {
-    id: 4,
-    buildingId: 1,
-    blockId: 1,
-    floorId: 1,
-    number: "A104",
-    maVT: "VT004",
-    dienTichBG: 75,
-    dienTichThongThuy: 70,
-    dienTichTimTuong: 80,
-    isBanGiao: false,
-    soHopDong: "",
-    ngayBanGiao: null,
-    ngayHetHanChoThue: null,
-    maTL: 1,
-    maKH: null,
-    maLMB: 3,
-    maTrangThai: 3,
-    maTN: 1,
-    owner: null,
-    ownerContact: null,
-    type: "Apartment",
-  },
-]
-
-// Mock data cho buildings
-const buildingsData = [
-  { id: 1, name: "Happy Residence" },
-  { id: 2, name: "Sunshine Apartments" },
-]
-
-// Mock data cho blocks
-const blocksData = [
-  { id: 1, buildingId: 1, name: "Block A" },
-  { id: 2, buildingId: 1, name: "Block B" },
-  { id: 3, buildingId: 1, name: "Block C" },
-  { id: 4, buildingId: 1, name: "Block D" },
-]
-
-// Mock data cho floors
-const floorsData = [
-  { id: 1, buildingId: 1, blockId: 1, number: 1 },
-  { id: 2, buildingId: 1, blockId: 1, number: 2 },
-  { id: 3, buildingId: 1, blockId: 1, number: 3 },
-]
-
-// Mock data cho trạng thái
-const trangThaiData = [
-  { id: 1, name: "Đã cho thuê" },
-  { id: 2, name: "Trống" },
-  { id: 3, name: "Bảo trì" },
-  { id: 4, name: "Đặt chỗ" },
-]
-
-// Mock data cho loại mặt bằng
-const loaiMatBangData = [
-  { id: 1, name: "Căn hộ" },
-  { id: 2, name: "Văn phòng" },
-  { id: 3, name: "Thương mại" },
-]
-
-// Mock data cho thể loại
-const theLoaiData = [
-  { id: 1, name: "Studio" },
-  { id: 2, name: "1 Phòng ngủ" },
-  { id: 3, name: "2 Phòng ngủ" },
-  { id: 4, name: "3 Phòng ngủ" },
-  { id: 5, name: "Penthouse" },
-]
-
-// Mock data cho khách hàng
-const khachHangData = [
-  { id: 101, name: "Nguyễn Văn A", contact: "0901234567" },
-  { id: 102, name: "Trần Thị B", contact: "0912345678" },
-  { id: 103, name: "Lê Văn C", contact: "0923456789" },
-]
 
 interface PremiseListProps {
   buildingId?: number
 }
 
 export function PremiseList({ buildingId }: PremiseListProps) {
-  const [premises, setPremises] = useState<Premise[]>(premisesData)
+
+  const token = useAuth().getToken();
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [newPremise, setNewPremise] = useState<Premise>({
+    maMB: 0,
+    maTN: 0,
+    maKN: 0,
+    maTL: 0,
+    maVT: '',
+    dienTichBG: 0,
+    dienTichThongThuy: 0,
+    dienTichTimTuong: 0,
+    soHopDong: '',
+    ngayBanGiao: null,
+    ngayHetHanChoThue: null,
+    maLMB: 0,
+    tenLMB: '',
+    maKH: 0,
+    tenKH: '',
+    maTT: 2, // Mặc định là chưa bàn giao
+    tenTrangThai: '',
+    tenTN: '',
+    tenKN: '',
+    tenTL: ''
+  });
+
+  const [premises, setPremises] = useState<Premise[]>([])
+  const [buildingsData, setBuildingsData] = useState<Building[]>([])
+  const [selectedBuilding, setSelectedBuilding] = useState<number | null>(null)
+  const [blocksData, setBlocksData] = useState<Block[]>([])
+  const [filterBlocks, setFilterBlocks] = useState<Block[]>([])
+  const [selectedBlock, setSelectedBlock] = useState<Number | null>(null)
+  const [floorsData, setFloorsData] = useState<Floor[]>([])
+  const [filterFloors, setFilterFloors] = useState<Floor[]>([])
+  const [trangThaiData, setTrangThaiData] = useState<TrangThai[]>([])
+  const [loaiMatBangData, setLoaiMatBangData] = useState<LoaiMatBang[]>([])
+  const [khachHangData, setKhachHangData] = useState<KhachHang[]>([])
+  useEffect(() => {
+    if (token) {
+      premiseService.getPremisesList(token).then((data) => setPremises(data))
+      premiseService.getBuildings(token).then((data) => {
+        setBuildingsData(data);
+        if (data.length > 0) {
+          setSelectedBuilding(data[0].id);
+          setNewPremise(prev => ({...prev, maTN: data[0].id}));
+
+        }
+      })
+      premiseService.getBlocks(token).then((data) => {
+        setBlocksData(data);
+        if (data.length > 0) {
+          setSelectedBlock(data[0].maKN);
+          setNewPremise(prev => ({...prev, maKN: data[0].maKN}));
+        }
+      })
+      premiseService.getFloorList(token).then((data) => setFloorsData(data))
+      premiseService.getTrangThaiList(token).then((data) => {
+        setTrangThaiData(data);
+        // Mặc định trạng thái là chưa bàn giao (giả sử mã 2 là chưa bàn giao)
+        setNewPremise(prev => ({...prev, maTT: 2}));
+      })
+      premiseService.getLoaiMatBangList(token).then((data) => {
+        setLoaiMatBangData(data);
+        if (data.length > 0) {
+          setNewPremise(prev => ({...prev, maLMB: data[0].maLMB}));
+        }
+      })
+      premiseService.getKhachHangList(token).then((data) => setKhachHangData(data))
+    }
+  }, [token])
+
+  
   const [selectedPremise, setSelectedPremise] = useState<Premise | null>(null)
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [showEditDialog, setShowEditDialog] = useState(false)
   const [showDetailDialog, setShowDetailDialog] = useState(false)
-  const [newPremise, setNewPremise] = useState<Partial<Premise>>({
-    buildingId: buildingId || 1,
-    maTrangThai: 2, // Mặc định là trống
-    isBanGiao: false,
-  })
+  const [selectedPremiseId, setSelectedPremiseId] = useState<number | null>(null)
   const [ngayBanGiao, setNgayBanGiao] = useState<Date | undefined>(undefined)
   const [ngayHetHan, setNgayHetHan] = useState<Date | undefined>(undefined)
+  const [activeFilters, setActiveFilters] = useState<string[]>([])
+  const [selectedBuildingFilter, setSelectedBuildingFilter] = useState<number | null>(null)
+  const [selectedBlockFilter, setSelectedBlockFilter] = useState<number | null>(null)
+  const [selectedFloorFilter, setSelectedFloorFilter] = useState<number | null>(null)
+  const [selectedTypeFilter, setSelectedTypeFilter] = useState<number | null>(null)
+  const [selectedStatusFilter, setSelectedStatusFilter] = useState<number | null>(null)
+  const [filteredPremises, setFilteredPremises] = useState<Premise[]>([])
 
-  // Filter premises by building ID if provided
-  const filteredPremises = buildingId ? premises.filter((premise) => premise.buildingId === buildingId) : premises
+  const filterOptions = [
+    { id: 'building', label: 'Tòa nhà' },
+    { id: 'block', label: 'Khối nhà' },
+    { id: 'floor', label: 'Tầng' },
+    { id: 'type', label: 'Loại căn hộ' },
+    { id: 'status', label: 'Trạng thái' },
+  ]
+
+  const toggleFilter = (filterId: string) => {
+    setActiveFilters(current =>
+      current.includes(filterId)
+        ? current.filter(id => id !== filterId)
+        : [...current, filterId]
+    )
+  }
+
+  // Initialize filteredPremises with all premises
+  useEffect(() => {
+    setFilteredPremises(premises)
+  }, [premises])
+
+  // Update filteredPremises when filters change
+  useEffect(() => {
+    // If no filters are active, show all premises
+    if (!selectedBuildingFilter && !selectedBlockFilter && !selectedFloorFilter && 
+        !selectedTypeFilter && !selectedStatusFilter) {
+      setFilteredPremises(premises)
+      return
+    }
+
+    // Apply filters
+    const filtered = premises.filter((premise) => {
+      return (
+        (!selectedBuildingFilter || premise.maTN === selectedBuildingFilter) &&
+        (!selectedBlockFilter || premise.maKN === selectedBlockFilter) &&
+        (!selectedFloorFilter || premise.maTL === selectedFloorFilter) && 
+        (!selectedTypeFilter || premise.maLMB === selectedTypeFilter) &&
+        (!selectedStatusFilter || premise.maTT === selectedStatusFilter)
+      )
+    })
+    setFilteredPremises(filtered)
+  }, [premises, selectedBuildingFilter, selectedBlockFilter, selectedFloorFilter, selectedTypeFilter, selectedStatusFilter])
 
   // Xử lý thêm mặt bằng mới
   const handleAddPremise = () => {
-    const id = Math.max(...premises.map((p) => p.id)) + 1
-    const premiseToAdd = {
-      ...newPremise,
-      id,
-      ngayBanGiao: ngayBanGiao || null,
-      ngayHetHanChoThue: ngayHetHan || null,
-      dienTichBG: Number(newPremise.dienTichBG || 0),
-      dienTichThongThuy: Number(newPremise.dienTichThongThuy || 0),
-      dienTichTimTuong: Number(newPremise.dienTichTimTuong || 0),
-    } as Premise
+    if (!newPremise.maTN || !newPremise.maKN || !newPremise.maTL || !newPremise.maVT || !newPremise.maLMB) {
+      alert('Vui lòng điền đầy đủ thông tin bắt buộc');
+      return;
+    }
 
-    setPremises([...premises, premiseToAdd])
-    setNewPremise({
-      buildingId: buildingId || 1,
-      maTrangThai: 2,
-      isBanGiao: false,
+    const newPremiseData: AddNewPremise = {
+      MaTN: newPremise.maTN,
+      MaKN: newPremise.maKN,
+      MaTL: newPremise.maTL,
+      MaVT: newPremise.maVT,
+      MaLMB: newPremise.maLMB,
+      DienTichBG: newPremise.dienTichBG,
+      DienTichThongThuy: newPremise.dienTichThongThuy,
+      DienTichTimTuong: newPremise.dienTichTimTuong,
+      MaTrangThai: newPremise.maTT,
+      MaKH: newPremise.maKH || 0,
+      SoHopDong: newPremise.soHopDong || "",
+      NgayBanGiao: ngayBanGiao || new Date(),
+      NgayHetHanChoThue: ngayHetHan || new Date()
+    }
+    
+    console.log('Dữ liệu gửi đi:', newPremiseData);
+    
+    premiseService.createPremise(newPremiseData, token).then((data) => {
+      console.log('Kết quả từ server:', data);
+      if (data) {
+        // Cập nhật lại danh sách mặt bằng
+        premiseService.getPremisesList(token || '').then((updatedData) => setPremises(updatedData));
+        toast.success('Thêm mặt bằng thành công', {
+          position: "top-right",
+          autoClose: 500,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+        });
+        setShowAddDialog(false);
+        // Reset form
+        setNgayBanGiao(undefined);
+        setNgayHetHan(undefined);
+        setNewPremise({
+          ...newPremise,
+          maVT: '',
+          dienTichBG: 0,
+          dienTichThongThuy: 0,
+          dienTichTimTuong: 0,
+          soHopDong: '',
+          maKH: 0
+        });
+      }
+    }).catch(error => {
+      console.error('Lỗi khi tạo mặt bằng:', error);
+      alert('Có lỗi xảy ra khi tạo mặt bằng mới');
+    });
+  }
+
+  const handleEditPremise = () => {
+    const editPremiseData: EditPremise = {
+      MaMB: selectedPremise?.maMB || 0,
+      DienTichBG: selectedPremise?.dienTichBG || 0,
+      DienTichThongThuy: selectedPremise?.dienTichThongThuy || 0,
+      DienTichTimTuong: selectedPremise?.dienTichTimTuong || 0,
+      MaTrangThai: selectedPremise?.maTT || 0,
+      MaKhachHang: selectedPremise?.maKH || 0,
+      NgayBanGiao: ngayBanGiao || new Date(),
+      NgayHetHanChoThue: ngayHetHan || new Date()
+    }
+    console.log('Dữ liệu gửi đi:', editPremiseData);
+    premiseService.editPremise(editPremiseData, token).then((data) => {
+      if (data) {
+        // Cập nhật lại danh sách mặt bằng
+        premiseService.getPremisesList(token || '').then((updatedData) => setPremises(updatedData));
+        toast.success('Cập nhật mặt bằng thành công', {
+          position: "top-right",
+          autoClose: 500,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          onClose: () => {
+            setShowEditDialog(false);
+          }
+        });
+      }
     })
-    setNgayBanGiao(undefined)
-    setNgayHetHan(undefined)
-    setShowAddDialog(false)
   }
 
-  // Xử lý cập nhật mặt bằng
-  const handleUpdatePremise = () => {
-    if (!selectedPremise) return
-
-    const updatedPremises = premises.map((premise) => (premise.id === selectedPremise.id ? selectedPremise : premise))
-
-    setPremises(updatedPremises)
-    setShowEditDialog(false)
-  }
-
-  // Xử lý xóa mặt bằng
-  const handleDeletePremise = (id: number) => {
-    const updatedPremises = premises.filter((premise) => premise.id !== id)
-    setPremises(updatedPremises)
-  }
-
-  // Lấy tên trạng thái từ mã
-  const getTrangThaiName = (maTrangThai: number) => {
-    return trangThaiData.find((tt) => tt.id === maTrangThai)?.name || "Không xác định"
-  }
-
-  // Lấy tên loại mặt bằng từ mã
   const getLoaiMatBangName = (maLMB: number) => {
-    return loaiMatBangData.find((lmb) => lmb.id === maLMB)?.name || "Không xác định"
+    return loaiMatBangData.find((lmb) => lmb.maLMB === maLMB)?.tenLMB || "Không xác định"
   }
+
+  const handleDeletePremise = () => {
+    premiseService.deletePremise(selectedPremiseId || 0, token).then((data) => {
+      if (data) {
+        setPremises(premises.filter((premise) => premise.maMB !== selectedPremiseId))
+        toast.success('Xóa mặt bằng thành công', {
+          position: "top-right",
+          autoClose: 500,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+        });
+        setIsDeleteDialogOpen(false)
+      }
+    })
+  }
+  useEffect(() => {
+    const filterBlocks = blocksData.filter((block) => block.maTN === selectedBuilding)
+    setFilterBlocks(filterBlocks)
+    console.log(filterBlocks)
+  }, [selectedBuilding]);
+  useEffect(() => {
+    const filterFloors = floorsData.filter((floor) => floor.maKN === selectedBlock)
+    setFilterFloors(filterFloors)
+    console.log(filterFloors)
+  }, [selectedBlock]);
+
+
+  
 
   // Lấy tên thể loại từ mã
-  const getTheLoaiName = (maTL: number) => {
-    return theLoaiData.find((tl) => tl.id === maTL)?.name || "Không xác định"
-  }
 
   // Lấy tên khách hàng từ mã
   const getKhachHangName = (maKH: number | null) => {
@@ -278,19 +315,26 @@ export function PremiseList({ buildingId }: PremiseListProps) {
     return khachHangData.find((kh) => kh.id === maKH)?.name || "Không xác định"
   }
 
+  const getKhachhangContract = (maKH: number | null) => {
+    if (!maKH) return "Chưa có"
+    return khachHangData.find((kh) => kh.id === maKH)?.contract || "Không xác định"
+  }
+
   // Lấy badge trạng thái với màu sắc phù hợp
-  const getStatusBadge = (maTrangThai: number) => {
-    switch (maTrangThai) {
-      case 1: // Đã cho thuê
-        return <Badge className="bg-green-500">Đã cho thuê</Badge>
-      case 2: // Trống
-        return <Badge variant="outline">Trống</Badge>
-      case 3: // Bảo trì
-        return <Badge variant="destructive">Bảo trì</Badge>
-      case 4: // Đặt chỗ
-        return <Badge variant="secondary">Đặt chỗ</Badge>
+  const getStatusBadge = (tenTrangThai: string) => {
+    switch (tenTrangThai) {
+      case "Đã bàn giao": // Đã cho thuê
+        return <Badge className="bg-green-500">Đã bàn giao</Badge>
+      case "Chưa bàn giao": // Trống
+        return <Badge variant="outline">Chưa bàn giao</Badge>
+      case "Đang sửa chữa": // Bảo trì
+        return <Badge variant="destructive">Đang sửa chữa</Badge>
+      case "Đã thanh lý": // Đặt chỗ
+        return <Badge variant="secondary">Đã thanh lý</Badge>
+      case "Đã qua sử dụng":
+        return <Badge variant="secondary">Đã qua sử dụng</Badge>
       default:
-        return <Badge variant="outline">{getTrangThaiName(maTrangThai)}</Badge>
+        return <Badge variant="outline">Không xác định</Badge>
     }
   }
 
@@ -300,125 +344,332 @@ export function PremiseList({ buildingId }: PremiseListProps) {
         <div className="flex justify-end">
           <Button onClick={() => setShowAddDialog(true)}>
             <Plus className="mr-2 h-4 w-4" />
-            Thêm mặt bằng
+            Thêm căn hộ
           </Button>
         </div>
       )}
 
-      <div className="rounded-md border overflow-x-auto">
-        <table className="min-w-full divide-y divide-border">
-          <thead>
-            <tr className="bg-muted/50">
-              <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Mã VT
-              </th>
-              <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Vị trí
-              </th>
-              <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider hidden md:table-cell">
-                Diện tích (m²)
-              </th>
-              <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider hidden lg:table-cell">
-                Loại
-              </th>
-              <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider hidden sm:table-cell">
-                Khách hàng
-              </th>
-              <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Trạng thái
-              </th>
-              <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Thao tác
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-background divide-y divide-border">
-            {filteredPremises.map((premise) => (
-              <tr key={premise.id}>
-                <td className="px-3 py-3 whitespace-nowrap text-sm">{premise.maVT}</td>
-                <td className="px-3 py-3 whitespace-nowrap text-sm">
-                  <div>{premise.number}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {blocksData.find((b) => b.id === premise.blockId)?.name}, Tầng{" "}
-                    {floorsData.find((f) => f.id === premise.floorId)?.number}
-                  </div>
-                </td>
-                <td className="px-3 py-3 whitespace-nowrap text-sm hidden md:table-cell">
-                  <div>BG: {premise.dienTichBG} m²</div>
-                  <div className="text-xs text-muted-foreground">TT: {premise.dienTichThongThuy} m²</div>
-                </td>
-                <td className="px-3 py-3 whitespace-nowrap text-sm hidden lg:table-cell">
-                  <div>{getLoaiMatBangName(premise.maLMB)}</div>
-                  <div className="text-xs text-muted-foreground">{getTheLoaiName(premise.maTL)}</div>
-                </td>
-                <td className="px-3 py-3 whitespace-nowrap text-sm hidden sm:table-cell">
-                  {premise.maKH ? (
-                    <>
-                      <div>{getKhachHangName(premise.maKH)}</div>
-                      <div className="text-xs text-muted-foreground">{premise.ownerContact}</div>
-                    </>
-                  ) : (
-                    "Chưa có"
-                  )}
-                </td>
-                <td className="px-3 py-3 whitespace-nowrap text-sm">
-                  {getStatusBadge(premise.maTrangThai)}
-                  <div className="text-xs text-muted-foreground mt-1">
-                    {premise.isBanGiao ? "Đã bàn giao" : "Chưa bàn giao"}
-                  </div>
-                </td>
-                <td className="px-3 py-3 whitespace-nowrap text-sm">
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setSelectedPremise(premise)
-                        setShowDetailDialog(true)
-                      }}
-                    >
-                      <Eye className="h-4 w-4" />
-                      <span className="sr-only">Xem chi tiết</span>
-                    </Button>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm">
-                          <Pencil className="h-4 w-4" />
-                          <span className="sr-only">Chỉnh sửa</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() => {
+      <div className="space-y-4">
+        <div className="flex flex-col space-y-4">
+          {/* Thanh tìm kiếm và bộ lọc */}
+          <div className="flex items-center space-x-2">
+            <div className="flex-1 max-w-lg">
+              <Input 
+                placeholder="Tìm kiếm theo tên KH hoặc mã căn hộ..." 
+                onChange={(e) => {
+                  const searchTerm = e.target.value.toLowerCase();
+                  const filtered = premises.filter(
+                    (premise) => 
+                      premise.maMB.toString().includes(searchTerm) || 
+                      getKhachHangName(premise.maKH).toLowerCase().includes(searchTerm)
+                  );
+                  // Cần thêm logic để cập nhật danh sách hiển thị
+                }}
+              />
+            </div>
+
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="ml-auto">
+                  Lọc nâng cao {activeFilters.length > 0 && `(${activeFilters.length})`}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[200px] p-0" align="end">
+                <Command>
+                  <CommandInput placeholder="Tìm điều kiện lọc..." />
+                  <CommandList>
+                    <CommandEmpty>Không tìm thấy.</CommandEmpty>
+                    <CommandGroup>
+                      {filterOptions.map((option) => (
+                        <CommandItem
+                          key={option.id}
+                          onSelect={() => toggleFilter(option.id)}
+                        >
+                          <Checkbox
+                            checked={activeFilters.includes(option.id)}
+                            className="mr-2"
+                          />
+                          {option.label}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                    {activeFilters.length > 0 && (
+                      <CommandGroup>
+                        <CommandItem
+                          onSelect={() => {
+                            setActiveFilters([]);
+                            setSelectedBuildingFilter(null);
+                            setSelectedBlockFilter(null);
+                            setSelectedFloorFilter(null);
+                            setSelectedTypeFilter(null);
+                            setSelectedStatusFilter(null);
+                            setFilteredPremises(premises);
+                          }}
+                          className="justify-center text-center text-sm text-muted-foreground"
+                        >
+                          Hiển thị tất cả
+                        </CommandItem>
+                      </CommandGroup>
+                    )}
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+
+            {activeFilters.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setActiveFilters([]);
+                  setSelectedBuildingFilter(null);
+                  setSelectedBlockFilter(null);
+                  setSelectedFloorFilter(null);
+                  setSelectedTypeFilter(null);
+                  setSelectedStatusFilter(null);
+                  setFilteredPremises(premises);
+                }}
+              >
+                Xóa bộ lọc
+              </Button>
+            )}
+          </div>
+
+          {/* Các bộ lọc đã chọn */}
+          {activeFilters.length > 0 && (
+            <div className="flex flex-wrap gap-4">
+              {/* Lọc theo tòa nhà */}
+              {activeFilters.includes('building') && (
+                <div className="w-[200px]">
+                  <Select 
+                    value={selectedBuildingFilter?.toString() || ""}
+                    onValueChange={(value) => {
+                      const buildingId = Number(value);
+                      setSelectedBuildingFilter(buildingId);
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn tòa nhà" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {buildingsData.map((building) => (
+                        <SelectItem key={building.id} value={building.id.toString()}>
+                          {building.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {/* Lọc theo khối nhà */}
+              {activeFilters.includes('block') && (
+                <div className="w-[200px]">
+                  <Select 
+                    value={selectedBlock?.toString() || ""}
+                    onValueChange={(value) => {
+                      const blockId = Number(value);
+                      setSelectedBlock(blockId);
+                      setNewPremise(prev => ({...prev, maKN: blockId}));
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn khối nhà" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {blocksData.map((block) => (
+                        <SelectItem key={block.maKN} value={block.maKN.toString()}>
+                          {block.tenKN}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {/* Lọc theo tầng */}
+              {activeFilters.includes('floor') && (
+                <div className="w-[200px]">
+                  <Select 
+                    value={newPremise.maTL?.toString() || ""}
+                    onValueChange={(value) => {
+                      const floorId = Number(value);
+                      setNewPremise(prev => ({...prev, maTL: floorId}));
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn tầng" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {filterFloors.map((floor) => (
+                        <SelectItem key={floor.maTL} value={floor.maTL.toString()}>
+                          {floor.tenTL}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {/* Lọc theo loại căn hộ */}
+              {activeFilters.includes('type') && (
+                <div className="w-[200px]">
+                  <Select 
+                    value={newPremise.maLMB?.toString() || ""}
+                    onValueChange={(value) => {
+                      const loaiMBId = Number(value);
+                      setNewPremise(prev => ({...prev, maLMB: loaiMBId}));
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn loại căn hộ" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {loaiMatBangData.map((loaiMB) => (
+                        <SelectItem key={loaiMB.maLMB} value={loaiMB.maLMB.toString()}>
+                          {loaiMB.tenLMB}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {/* Lọc theo trạng thái */}
+              {activeFilters.includes('status') && (
+                <div className="w-[200px]">
+                  <Select 
+                    value={newPremise.maTT?.toString() || ""}
+                    onValueChange={(value) => {
+                      const statusId = Number(value);
+                      setNewPremise(prev => ({...prev, maTT: statusId}));
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn trạng thái" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {trangThaiData.map((status) => (
+                        <SelectItem key={status.maTrangThai} value={status.maTrangThai.toString()}>
+                          {status.tenTrangThai}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="rounded-md border">
+        <ScrollArea className="h-[600px]">
+          <table className="min-w-full divide-y divide-border">
+            <thead className="bg-muted/100 sticky top-0">
+              <tr className="bg-muted/50">
+                <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  ID
+                </th>
+                <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Vị trí
+                </th>
+                <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider hidden md:table-cell">
+                  Diện tích (m²)
+                </th>
+                <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider hidden lg:table-cell">
+                  Loại
+                </th>
+                <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider hidden sm:table-cell">
+                  Khách hàng
+                </th>
+                <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Trạng thái
+                </th>
+                <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Thao tác
+                </th>
+              </tr>
+            </thead>
+            
+            <tbody className="bg-background divide-y divide-border">
+              {filteredPremises.map((premise) => (
+                <tr key={premise.maMB}>
+                  <td className="px-3 py-3 whitespace-nowrap text-sm">{premise.maMB}</td>
+                  <td className="px-3 py-3 whitespace-nowrap text-sm">
+                    <div>{premise.maVT}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {premise.tenTN} - {premise.tenKN} - {premise.tenTL}
+                    </div>
+                  </td>
+                  <td className="px-3 py-3 whitespace-nowrap text-sm hidden md:table-cell">
+                    <div>BG: {premise.dienTichBG} m²</div>
+                    <div className="text-xs text-muted-foreground">TT: {premise.dienTichThongThuy} m²</div>
+                  </td>
+                  <td className="px-3 py-3 whitespace-nowrap text-sm hidden lg:table-cell">
+                    <div>{getLoaiMatBangName(premise.maLMB)}</div>
+                    <div className="text-xs text-muted-foreground">{premise.tenLMB}</div>
+                  </td>
+                  <td className="px-3 py-3 whitespace-nowrap text-sm hidden sm:table-cell">
+                    {premise.maKH ? (
+                      <>
+                        <div>{getKhachHangName(premise.maKH)}</div>
+                        <div className="text-xs text-muted-foreground">{premise.tenKH}</div>
+                      </>
+                    ) : (
+                      "Chưa có"
+                    )}
+                  </td>
+                  <td className="px-3 py-3 whitespace-nowrap text-sm">
+                    {getStatusBadge(premise.tenTrangThai)}
+                    
+                  </td>
+                  <td className="px-3 py-3 whitespace-nowrap text-sm">
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedPremise(premise)
+                          setShowDetailDialog(true)
+                        }}
+                      >
+                        <Eye className="h-4 w-4" />
+                        <span className="sr-only">Xem chi tiết</span>
+                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button onClick={() => {
                             setSelectedPremise(premise)
                             setShowEditDialog(true)
-                          }}
-                        >
-                          Chỉnh sửa
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>Gán khách hàng</DropdownMenuItem>
-                        <DropdownMenuItem>Cập nhật trạng thái</DropdownMenuItem>
-                        <DropdownMenuItem>Lịch sử bàn giao</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        if (confirm("Bạn có chắc chắn muốn xóa mặt bằng này?")) {
-                          handleDeletePremise(premise.id)
-                        }
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                      <span className="sr-only">Xóa</span>
-                    </Button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                          }} variant="ghost" size="sm">
+                            <Pencil className="h-4 w-4" />
+                            <span className="sr-only">Chỉnh sửa</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        
+                      </DropdownMenu>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedPremiseId(premise.maMB)
+                          setIsDeleteDialogOpen(true)
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                        <span onClick={() => {
+                          setSelectedPremiseId(premise.maMB)
+                          setIsDeleteDialogOpen(true)
+                        }} className="sr-only">Xóa</span>
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </ScrollArea>
       </div>
 
       {/* Dialog thêm mặt bằng mới */}
@@ -434,17 +685,33 @@ export function PremiseList({ buildingId }: PremiseListProps) {
                 <Label htmlFor="premise-building">Tòa nhà</Label>
                 <Select
                   defaultValue={buildingId?.toString() || "1"}
-                  onValueChange={(value) => setNewPremise({ ...newPremise, buildingId: Number(value) })}
+                  onValueChange={(value) => {
+                    console.log('Selected Building Value:', value);
+                    const selectedBuildingId = Number(value);
+                    setNewPremise({ ...newPremise, maTN: Number(value) });
+                    setSelectedBuilding(selectedBuildingId);
+                    console.log('Selected Building State:', selectedBuildingId);
+                  }}
+                  
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Chọn tòa nhà" />
                   </SelectTrigger>
                   <SelectContent>
-                    {buildingsData.map((building) => (
-                      <SelectItem key={building.id} value={building.id.toString()}>
-                        {building.name}
+                    {buildingsData && buildingsData.length > 0 ? (
+                      buildingsData.map((building, index) => (
+                        <SelectItem 
+                          key={index} 
+                          value={building.id?.toString() || "0"}
+                        >
+                          {building.name}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="0" disabled>
+                        Không có dữ liệu tòa nhà
                       </SelectItem>
-                    ))}
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -452,15 +719,19 @@ export function PremiseList({ buildingId }: PremiseListProps) {
                 <Label htmlFor="premise-block">Block</Label>
                 <Select
                   defaultValue="1"
-                  onValueChange={(value) => setNewPremise({ ...newPremise, blockId: Number(value) })}
+                  onValueChange={(value) =>  {
+                    setNewPremise({ ...newPremise, maKN: Number(selectedBlock) })
+                    setSelectedBlock(Number(value))
+                    console.log(selectedBlock)
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Chọn block" />
                   </SelectTrigger>
                   <SelectContent>
-                    {blocksData.map((block) => (
-                      <SelectItem key={block.id} value={block.id.toString()}>
-                        {block.name}
+                    {filterBlocks.map((block) => (
+                      <SelectItem key={block.maKN} value={block.maKN.toString()}>
+                        {block.tenKN}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -470,29 +741,21 @@ export function PremiseList({ buildingId }: PremiseListProps) {
                 <Label htmlFor="premise-floor">Tầng</Label>
                 <Select
                   defaultValue="1"
-                  onValueChange={(value) => setNewPremise({ ...newPremise, floorId: Number(value) })}
+                  onValueChange={(value) => setNewPremise({ ...newPremise, maTL: Number(value) })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Chọn tầng" />
                   </SelectTrigger>
                   <SelectContent>
-                    {floorsData.map((floor) => (
-                      <SelectItem key={floor.id} value={floor.id.toString()}>
-                        Tầng {floor.number}
+                    {filterFloors.map((floor) => (
+                      <SelectItem key={floor.maTL} value={floor.maTL.toString()}>
+                        {floor.tenTL}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-              <div>
-                <Label htmlFor="premise-number">Số mặt bằng</Label>
-                <Input
-                  id="premise-number"
-                  placeholder="VD: A101"
-                  value={newPremise.number || ""}
-                  onChange={(e) => setNewPremise({ ...newPremise, number: e.target.value })}
-                />
-              </div>
+              
               <div>
                 <Label htmlFor="premise-mavt">Mã vị trí</Label>
                 <Input
@@ -513,26 +776,8 @@ export function PremiseList({ buildingId }: PremiseListProps) {
                   </SelectTrigger>
                   <SelectContent>
                     {loaiMatBangData.map((loai) => (
-                      <SelectItem key={loai.id} value={loai.id.toString()}>
-                        {loai.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="premise-theloai">Thể loại</Label>
-                <Select
-                  defaultValue="1"
-                  onValueChange={(value) => setNewPremise({ ...newPremise, maTL: Number(value) })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Chọn thể loại" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {theLoaiData.map((theloai) => (
-                      <SelectItem key={theloai.id} value={theloai.id.toString()}>
-                        {theloai.name}
+                      <SelectItem key={loai.maLMB} value={loai.maLMB.toString()}>
+                        {loai.tenLMB}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -572,15 +817,18 @@ export function PremiseList({ buildingId }: PremiseListProps) {
                 <Label htmlFor="premise-trangthai">Trạng thái</Label>
                 <Select
                   defaultValue="2"
-                  onValueChange={(value) => setNewPremise({ ...newPremise, maTrangThai: Number(value) })}
+                  onValueChange={(value) => setNewPremise({ ...newPremise, maTT: Number(value) })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Chọn trạng thái" />
                   </SelectTrigger>
                   <SelectContent>
-                    {trangThaiData.map((trangthai) => (
-                      <SelectItem key={trangthai.id} value={trangthai.id.toString()}>
-                        {trangthai.name}
+                    {trangThaiData && trangThaiData.map((trangthai) => (
+                      <SelectItem 
+                        key={trangthai?.maTrangThai} 
+                        value={trangthai?.maTrangThai?.toString() || ""}
+                      >
+                        {trangthai?.tenTrangThai || "Không xác định"}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -590,7 +838,7 @@ export function PremiseList({ buildingId }: PremiseListProps) {
                 <Label htmlFor="premise-khachhang">Khách hàng</Label>
                 <Select
                   onValueChange={(value) =>
-                    setNewPremise({ ...newPremise, maKH: value === "null" ? null : Number(value) })
+                    setNewPremise({ ...newPremise, maKH: Number(value) })
                   }
                 >
                   <SelectTrigger>
@@ -600,7 +848,7 @@ export function PremiseList({ buildingId }: PremiseListProps) {
                     <SelectItem value="null">Chưa có khách hàng</SelectItem>
                     {khachHangData.map((kh) => (
                       <SelectItem key={kh.id} value={kh.id.toString()}>
-                        {kh.name} - {kh.contact}
+                        {kh.name} - {kh.contract}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -615,19 +863,7 @@ export function PremiseList({ buildingId }: PremiseListProps) {
                   onChange={(e) => setNewPremise({ ...newPremise, soHopDong: e.target.value })}
                 />
               </div>
-              <div className="flex items-center space-x-2 mt-6">
-                <Checkbox
-                  id="premise-isBanGiao"
-                  checked={newPremise.isBanGiao}
-                  onCheckedChange={(checked) => setNewPremise({ ...newPremise, isBanGiao: !!checked })}
-                />
-                <label
-                  htmlFor="premise-isBanGiao"
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  Đã bàn giao
-                </label>
-              </div>
+              
               <div>
                 <Label htmlFor="premise-ngayBanGiao">Ngày bàn giao</Label>
                 <Popover>
@@ -693,17 +929,20 @@ export function PremiseList({ buildingId }: PremiseListProps) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="edit-premise-building">Tòa nhà</Label>
-                  <Select
-                    defaultValue={selectedPremise.buildingId.toString()}
-                    onValueChange={(value) => setSelectedPremise({ ...selectedPremise, buildingId: Number(value) })}
+                  <Select disabled={true}
+                    defaultValue={selectedPremise.maTN.toString()}
+                    onValueChange={(value) => setSelectedPremise({ ...selectedPremise, maTN: Number(value) })}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Chọn tòa nhà" />
                     </SelectTrigger>
                     <SelectContent>
-                      {buildingsData.map((building) => (
-                        <SelectItem key={building.id} value={building.id.toString()}>
-                          {building.name}
+                      {buildingsData && buildingsData.map((building, index) => (
+                        <SelectItem 
+                          key={`building-${building?.id || index}`} 
+                          value={building?.id?.toString() || ""}
+                        >
+                          {building?.name || "Không xác định"}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -711,17 +950,17 @@ export function PremiseList({ buildingId }: PremiseListProps) {
                 </div>
                 <div>
                   <Label htmlFor="edit-premise-block">Block</Label>
-                  <Select
-                    defaultValue={selectedPremise.blockId.toString()}
-                    onValueChange={(value) => setSelectedPremise({ ...selectedPremise, blockId: Number(value) })}
+                  <Select disabled={true}
+                    defaultValue={selectedPremise.maKN.toString()}
+                    onValueChange={(value) => setSelectedPremise({ ...selectedPremise, maKN: Number(value) })}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Chọn block" />
                     </SelectTrigger>
                     <SelectContent>
                       {blocksData.map((block) => (
-                        <SelectItem key={block.id} value={block.id.toString()}>
-                          {block.name}
+                        <SelectItem key={block.maKN} value={block.maKN.toString()}>
+                          {block.tenKN}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -729,33 +968,26 @@ export function PremiseList({ buildingId }: PremiseListProps) {
                 </div>
                 <div>
                   <Label htmlFor="edit-premise-floor">Tầng</Label>
-                  <Select
-                    defaultValue={selectedPremise.floorId.toString()}
-                    onValueChange={(value) => setSelectedPremise({ ...selectedPremise, floorId: Number(value) })}
+                  <Select disabled={true}
+                    defaultValue={selectedPremise.maTL.toString()}
+                    onValueChange={(value) => setSelectedPremise({ ...selectedPremise, maTL: Number(value) })}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Chọn tầng" />
                     </SelectTrigger>
                     <SelectContent>
                       {floorsData.map((floor) => (
-                        <SelectItem key={floor.id} value={floor.id.toString()}>
-                          Tầng {floor.number}
+                        <SelectItem key={floor.maTL} value={floor.maTL.toString()}>
+                          Tầng {floor.tenTL}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
-                <div>
-                  <Label htmlFor="edit-premise-number">Số mặt bằng</Label>
-                  <Input
-                    id="edit-premise-number"
-                    value={selectedPremise.number}
-                    onChange={(e) => setSelectedPremise({ ...selectedPremise, number: e.target.value })}
-                  />
-                </div>
+                
                 <div>
                   <Label htmlFor="edit-premise-mavt">Mã vị trí</Label>
-                  <Input
+                  <Input disabled={true}
                     id="edit-premise-mavt"
                     value={selectedPremise.maVT}
                     onChange={(e) => setSelectedPremise({ ...selectedPremise, maVT: e.target.value })}
@@ -763,7 +995,7 @@ export function PremiseList({ buildingId }: PremiseListProps) {
                 </div>
                 <div>
                   <Label htmlFor="edit-premise-loai">Loại mặt bằng</Label>
-                  <Select
+                  <Select disabled={true}
                     defaultValue={selectedPremise.maLMB.toString()}
                     onValueChange={(value) => setSelectedPremise({ ...selectedPremise, maLMB: Number(value) })}
                   >
@@ -772,31 +1004,14 @@ export function PremiseList({ buildingId }: PremiseListProps) {
                     </SelectTrigger>
                     <SelectContent>
                       {loaiMatBangData.map((loai) => (
-                        <SelectItem key={loai.id} value={loai.id.toString()}>
-                          {loai.name}
+                        <SelectItem key={loai.maLMB} value={loai.maLMB.toString()}>
+                          {loai.tenLMB}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
-                <div>
-                  <Label htmlFor="edit-premise-theloai">Thể loại</Label>
-                  <Select
-                    defaultValue={selectedPremise.maTL.toString()}
-                    onValueChange={(value) => setSelectedPremise({ ...selectedPremise, maTL: Number(value) })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Chọn thể loại" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {theLoaiData.map((theloai) => (
-                        <SelectItem key={theloai.id} value={theloai.id.toString()}>
-                          {theloai.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                
                 <div>
                   <Label htmlFor="edit-premise-dienTichBG">Diện tích bàn giao (m²)</Label>
                   <Input
@@ -830,17 +1045,20 @@ export function PremiseList({ buildingId }: PremiseListProps) {
                 </div>
                 <div>
                   <Label htmlFor="edit-premise-trangthai">Trạng thái</Label>
-                  <Select
-                    defaultValue={selectedPremise.maTrangThai.toString()}
-                    onValueChange={(value) => setSelectedPremise({ ...selectedPremise, maTrangThai: Number(value) })}
+                  <Select 
+                    defaultValue={selectedPremise.maTT?.toString() || "null"}
+                    onValueChange={(value) => setSelectedPremise({ ...selectedPremise, maTT: Number(value) })}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Chọn trạng thái" />
                     </SelectTrigger>
                     <SelectContent>
-                      {trangThaiData.map((trangthai) => (
-                        <SelectItem key={trangthai.id} value={trangthai.id.toString()}>
-                          {trangthai.name}
+                      {trangThaiData && trangThaiData.map((trangthai) => (
+                        <SelectItem 
+                          key={trangthai?.maTrangThai} 
+                          value={trangthai?.maTrangThai?.toString() || ""}
+                        >
+                          {trangthai?.tenTrangThai || "Không xác định"}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -853,7 +1071,7 @@ export function PremiseList({ buildingId }: PremiseListProps) {
                     onValueChange={(value) =>
                       setSelectedPremise({
                         ...selectedPremise,
-                        maKH: value === "null" ? null : Number(value),
+                          maKH: Number(value),
                       })
                     }
                   >
@@ -864,7 +1082,7 @@ export function PremiseList({ buildingId }: PremiseListProps) {
                       <SelectItem value="null">Chưa có khách hàng</SelectItem>
                       {khachHangData.map((kh) => (
                         <SelectItem key={kh.id} value={kh.id.toString()}>
-                          {kh.name} - {kh.contact}
+                            {kh.name} - {kh.contract}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -872,37 +1090,25 @@ export function PremiseList({ buildingId }: PremiseListProps) {
                 </div>
                 <div>
                   <Label htmlFor="edit-premise-soHopDong">Số hợp đồng</Label>
-                  <Input
+                  <Input disabled={true}
                     id="edit-premise-soHopDong"
                     value={selectedPremise.soHopDong}
                     onChange={(e) => setSelectedPremise({ ...selectedPremise, soHopDong: e.target.value })}
                   />
                 </div>
-                <div className="flex items-center space-x-2 mt-6">
-                  <Checkbox
-                    id="edit-premise-isBanGiao"
-                    checked={selectedPremise.isBanGiao}
-                    onCheckedChange={(checked) => setSelectedPremise({ ...selectedPremise, isBanGiao: !!checked })}
-                  />
-                  <label
-                    htmlFor="edit-premise-isBanGiao"
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                  >
-                    Đã bàn giao
-                  </label>
-                </div>
+                
                 <div>
                   <Label htmlFor="edit-premise-ngayBanGiao">Ngày bàn giao</Label>
                   <Popover>
                     <PopoverTrigger asChild>
-                      <Button
+                      <Button 
                         variant={"outline"}
                         className={cn(
                           "w-full justify-start text-left font-normal",
                           !selectedPremise.ngayBanGiao && "text-muted-foreground",
                         )}
                       >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        <CalendarIcon className="mr-2 h-4 w-4"  />
                         {selectedPremise.ngayBanGiao
                           ? format(new Date(selectedPremise.ngayBanGiao), "dd/MM/yyyy")
                           : "Chọn ngày"}
@@ -912,7 +1118,7 @@ export function PremiseList({ buildingId }: PremiseListProps) {
                       <Calendar
                         mode="single"
                         selected={selectedPremise.ngayBanGiao ? new Date(selectedPremise.ngayBanGiao) : undefined}
-                        onSelect={(date) => setSelectedPremise({ ...selectedPremise, ngayBanGiao: date })}
+                        onSelect={(date) => setSelectedPremise({ ...selectedPremise, ngayBanGiao: date || null })}
                         initialFocus
                         locale={vi}
                       />
@@ -942,7 +1148,7 @@ export function PremiseList({ buildingId }: PremiseListProps) {
                         selected={
                           selectedPremise.ngayHetHanChoThue ? new Date(selectedPremise.ngayHetHanChoThue) : undefined
                         }
-                        onSelect={(date) => setSelectedPremise({ ...selectedPremise, ngayHetHanChoThue: date })}
+                        onSelect={(date) => setSelectedPremise({ ...selectedPremise, ngayHetHanChoThue: date || null })}
                         initialFocus
                         locale={vi}
                       />
@@ -956,7 +1162,7 @@ export function PremiseList({ buildingId }: PremiseListProps) {
             <Button variant="outline" onClick={() => setShowEditDialog(false)}>
               Hủy
             </Button>
-            <Button type="submit" onClick={handleUpdatePremise}>
+              <Button type="submit" onClick={handleEditPremise}>
               Lưu thay đổi
             </Button>
           </DialogFooter>
@@ -971,9 +1177,7 @@ export function PremiseList({ buildingId }: PremiseListProps) {
             <DialogDescription>
               {selectedPremise && (
                 <>
-                  {selectedPremise.maVT} - {selectedPremise.number} -{" "}
-                  {blocksData.find((b) => b.id === selectedPremise.blockId)?.name}, Tầng{" "}
-                  {floorsData.find((f) => f.id === selectedPremise.floorId)?.number}
+                  {selectedPremise.maVT} - Khối nhà {selectedPremise.maKN} - Tầng {selectedPremise.maTL}
                 </>
               )}
             </DialogDescription>
@@ -987,24 +1191,24 @@ export function PremiseList({ buildingId }: PremiseListProps) {
                     <div className="flex justify-between">
                       <span>Tòa nhà:</span>
                       <span className="font-medium">
-                        {buildingsData.find((b) => b.id === selectedPremise.buildingId)?.name}
+                        {selectedPremise.tenTN}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span>Block:</span>
+                      <span>Khối nhà:</span>
                       <span className="font-medium">
-                        {blocksData.find((b) => b.id === selectedPremise.blockId)?.name}
+                        {selectedPremise.tenKN}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span>Tầng:</span>
                       <span className="font-medium">
-                        {floorsData.find((f) => f.id === selectedPremise.floorId)?.number}
+                        {selectedPremise.tenTL}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span>Số mặt bằng:</span>
-                      <span className="font-medium">{selectedPremise.number}</span>
+                      <span className="font-medium">{selectedPremise.maMB}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Mã vị trí:</span>
@@ -1031,10 +1235,7 @@ export function PremiseList({ buildingId }: PremiseListProps) {
                       <span>Loại mặt bằng:</span>
                       <span className="font-medium">{getLoaiMatBangName(selectedPremise.maLMB)}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span>Thể loại:</span>
-                      <span className="font-medium">{getTheLoaiName(selectedPremise.maTL)}</span>
-                    </div>
+                    
                   </div>
                 </div>
               </div>
@@ -1050,7 +1251,7 @@ export function PremiseList({ buildingId }: PremiseListProps) {
                     </div>
                     <div className="flex justify-between">
                       <span>Liên hệ:</span>
-                      <span className="font-medium">{selectedPremise.ownerContact || "Chưa có"}</span>
+                      <span className="font-medium">{getKhachhangContract(selectedPremise.maKH)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Số hợp đồng:</span>
@@ -1058,7 +1259,7 @@ export function PremiseList({ buildingId }: PremiseListProps) {
                     </div>
                     <div className="flex justify-between">
                       <span>Trạng thái:</span>
-                      <span className="font-medium">{getTrangThaiName(selectedPremise.maTrangThai)}</span>
+                      <span className="font-medium">{selectedPremise.tenTrangThai}</span>
                     </div>
                   </div>
                 </div>
@@ -1067,7 +1268,7 @@ export function PremiseList({ buildingId }: PremiseListProps) {
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span>Trạng thái bàn giao:</span>
-                      <span className="font-medium">{selectedPremise.isBanGiao ? "Đã bàn giao" : "Chưa bàn giao"}</span>
+                      <span className="font-medium">{true}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Ngày bàn giao:</span>
@@ -1106,6 +1307,26 @@ export function PremiseList({ buildingId }: PremiseListProps) {
           )}
         </DialogContent>
       </Dialog>
+      {selectedPremiseId && (
+        <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Xác nhận xóa</DialogTitle>
+              <DialogDescription>
+                Bạn có chắc chắn muốn xóa mặt bằng "{selectedPremiseId}"? Thao tác này không thể hoàn tác.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+                Hủy
+              </Button>
+                  <Button variant="destructive" onClick={handleDeletePremise}>
+                Xóa
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   )
 }
