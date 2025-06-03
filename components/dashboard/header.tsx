@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { useAuth } from "@/app/providers/auth-provider"
+import { useAuth } from "@/components/context/AuthContext"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,

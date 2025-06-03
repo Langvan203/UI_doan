@@ -21,8 +21,8 @@ import { useToast } from "@/components/ui/use-toast"
 import Link from "next/link"
 import { buildingService, Building, BlockDetail, CreateBlockParams, UpdateBlockParams } from "@/services/building-service"
 import { Bounce, toast } from "react-toastify"
-import { useAuth } from "@/app/hooks/use-auth"
-
+import { useAuth } from "@/components/context/AuthContext"
+import { useBuilding } from "@/components/context/BuildingContext"
 
 interface BlockListProps {
   buildingId?: number
@@ -30,7 +30,7 @@ interface BlockListProps {
 
 export function BlockList({ buildingId }: BlockListProps) {
   // TODO: Replace this with actual token retrieval from your authentication context/hook
-  const token = useAuth().getToken()
+    const { token } = useAuth()
   const [buildings, setBuildings] = useState<Building[]>([])
   const [selectedBuildingFilter, setSelectedBuildingFilter] = useState<string>(buildingId?.toString() || "all")
   const [searchQuery, setSearchQuery] = useState<string>("")
@@ -48,6 +48,8 @@ export function BlockList({ buildingId }: BlockListProps) {
     tenKN: "",
     trangThaiKhoiNha: 1
   })
+
+  const {blocks, floors, createBlock, updateBlock, deleteBlock, getBuildingList, getFloorList, getBlockDetail, getBlockList} = useBuilding()
 
   // useEffect(() => {
   //   // Safely retrieve token only on client-side
@@ -396,10 +398,10 @@ export function BlockList({ buildingId }: BlockListProps) {
           <div className="col-span-2">Trạng thái</div>
           <div className="col-span-2">Thao tác</div>
         </div>
-        {filteredBlocks.map((block) => {
+        {buildings.flatMap(building => building.khoiNhaDetail).map((block, index) => {
           const building = buildings.find(b => b.maTN === block.maTN)
           return (
-            <div key={block.maKN} className="grid grid-cols-12 border-b p-3 last:border-0">
+            <div key={index} className="grid grid-cols-12 border-b p-3 last:border-0">
               <div className="col-span-3">
                 {block.tenKN}
               </div>

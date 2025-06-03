@@ -22,7 +22,7 @@ import { CalendarIcon, Eye, Pencil, Plus, Trash2 } from "lucide-react"
 import { format } from "date-fns"
 import { vi } from "date-fns/locale"
 import { cn } from "@/lib/utils"
-import { useAuth } from "@/app/providers/auth-provider"
+import { useAuth } from "@/components/context/AuthContext"
 import { Block, Building, Floor, LoaiMatBang, KhachHang, premiseService, TrangThai, AddNewPremise, EditPremise } from "@/services/premise-service"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import {toast,Bounce} from "react-toastify"
@@ -58,7 +58,7 @@ interface PremiseListProps {
 
 export function PremiseList({ buildingId }: PremiseListProps) {
 
-  const token = useAuth().getToken();
+  const { token } = useAuth()
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [newPremise, setNewPremise] = useState<Premise>({
     maMB: 0,
@@ -187,6 +187,18 @@ export function PremiseList({ buildingId }: PremiseListProps) {
     setFilteredPremises(filtered)
   }, [premises, selectedBuildingFilter, selectedBlockFilter, selectedFloorFilter, selectedTypeFilter, selectedStatusFilter])
 
+  useEffect(() => {
+    if(selectedBlockFilter && selectedBlockFilter){
+      const filtered = premises.filter((premise) => premise.maKN === selectedBlockFilter &&premise.maTN == selectedBuildingFilter)
+      setFilterBlocks(filterBlocks.filter((block) => block.maTN == selectedBuildingFilter))
+      setFilteredPremises(filtered)
+    }
+    if(selectedFloorFilter && selectedBlockFilter){
+      const filtered = premises.filter((premise) => premise.maTL === selectedFloorFilter &&premise.maKN == selectedBlockFilter)
+      setFilterFloors(filterFloors.filter((block) => block.maKN == selectedBlockFilter))
+      setFilteredPremises(filtered)
+    }
+  }, [selectedBlockFilter, selectedFloorFilter])
   // Xử lý thêm mặt bằng mới
   const handleAddPremise = () => {
     if (!newPremise.maTN || !newPremise.maKN || !newPremise.maTL || !newPremise.maVT || !newPremise.maLMB) {
@@ -204,7 +216,7 @@ export function PremiseList({ buildingId }: PremiseListProps) {
       DienTichThongThuy: newPremise.dienTichThongThuy,
       DienTichTimTuong: newPremise.dienTichTimTuong,
       MaTrangThai: newPremise.maTT,
-      MaKH: newPremise.maKH || 0,
+      MaKH: newPremise.maKH || null,
       SoHopDong: newPremise.soHopDong || "",
       NgayBanGiao: ngayBanGiao || new Date(),
       NgayHetHanChoThue: ngayHetHan || new Date()
@@ -360,10 +372,10 @@ export function PremiseList({ buildingId }: PremiseListProps) {
                   const searchTerm = e.target.value.toLowerCase();
                   const filtered = premises.filter(
                     (premise) => 
-                      premise.maMB.toString().includes(searchTerm) || 
+                      premise.maVT.toLowerCase().includes(searchTerm) || 
                       getKhachHangName(premise.maKH).toLowerCase().includes(searchTerm)
                   );
-                  // Cần thêm logic để cập nhật danh sách hiển thị
+                  setFilteredPremises(filtered)
                 }}
               />
             </div>
@@ -446,6 +458,17 @@ export function PremiseList({ buildingId }: PremiseListProps) {
                     onValueChange={(value) => {
                       const buildingId = Number(value);
                       setSelectedBuildingFilter(buildingId);
+                      // Reset các filter phụ thuộc
+                      setSelectedBlockFilter(null);
+                      setSelectedFloorFilter(null);
+                      setSelectedTypeFilter(null);
+                      setSelectedStatusFilter(null);
+                      // Lọc lại danh sách khối nhà dựa trên tòa nhà được chọn
+                      const filteredBlocks = blocksData.filter(block => block.maTN === buildingId);
+                      setFilterBlocks(filteredBlocks);
+                      // Lọc lại danh sách premises
+                      const filtered = premises.filter(premise => premise.maTN === buildingId);
+                      setFilteredPremises(filtered);
                     }}
                   >
                     <SelectTrigger>
@@ -466,18 +489,27 @@ export function PremiseList({ buildingId }: PremiseListProps) {
               {activeFilters.includes('block') && (
                 <div className="w-[200px]">
                   <Select 
-                    value={selectedBlock?.toString() || ""}
+                    value={selectedBlockFilter?.toString() || ""}
                     onValueChange={(value) => {
                       const blockId = Number(value);
-                      setSelectedBlock(blockId);
-                      setNewPremise(prev => ({...prev, maKN: blockId}));
+                      setSelectedBlockFilter(blockId);
+                      setSelectedFloorFilter(null);
+                      // Lọc lại danh sách tầng dựa trên khối nhà được chọn
+                      const filteredFloors = floorsData.filter(floor => floor.maKN === blockId);
+                      setFilterFloors(filteredFloors);
+                      // Lọc lại danh sách premises
+                      const filtered = premises.filter(premise => 
+                        premise.maKN === blockId && 
+                        (!selectedBuildingFilter || premise.maTN === selectedBuildingFilter)
+                      );
+                      setFilteredPremises(filtered);
                     }}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Chọn khối nhà" />
                     </SelectTrigger>
                     <SelectContent>
-                      {blocksData.map((block) => (
+                      {filterBlocks.map((block) => (
                         <SelectItem key={block.maKN} value={block.maKN.toString()}>
                           {block.tenKN}
                         </SelectItem>
@@ -491,10 +523,17 @@ export function PremiseList({ buildingId }: PremiseListProps) {
               {activeFilters.includes('floor') && (
                 <div className="w-[200px]">
                   <Select 
-                    value={newPremise.maTL?.toString() || ""}
+                    value={selectedFloorFilter?.toString() || ""}
                     onValueChange={(value) => {
                       const floorId = Number(value);
-                      setNewPremise(prev => ({...prev, maTL: floorId}));
+                      setSelectedFloorFilter(floorId);
+                      // Lọc lại danh sách premises
+                      const filtered = premises.filter(premise => 
+                        premise.maTL === floorId && 
+                        (!selectedBlockFilter || premise.maKN === selectedBlockFilter) &&
+                        (!selectedBuildingFilter || premise.maTN === selectedBuildingFilter)
+                      );
+                      setFilteredPremises(filtered);
                     }}
                   >
                     <SelectTrigger>
@@ -518,6 +557,7 @@ export function PremiseList({ buildingId }: PremiseListProps) {
                     value={newPremise.maLMB?.toString() || ""}
                     onValueChange={(value) => {
                       const loaiMBId = Number(value);
+                      setSelectedTypeFilter(loaiMBId)
                       setNewPremise(prev => ({...prev, maLMB: loaiMBId}));
                     }}
                   >
@@ -542,6 +582,7 @@ export function PremiseList({ buildingId }: PremiseListProps) {
                     value={newPremise.maTT?.toString() || ""}
                     onValueChange={(value) => {
                       const statusId = Number(value);
+                      setSelectedStatusFilter(statusId)
                       setNewPremise(prev => ({...prev, maTT: statusId}));
                     }}
                   >

@@ -11,8 +11,7 @@ import { FloorList } from "@/components/buildings/floors/floor-list"
 import type { BlockDetail, Building as BuildingType } from "@/services/building-service"
 import { buildingService } from "@/services/building-service"
 import { useToast } from "@/components/ui/use-toast"
-import { useAuth } from "@/app/hooks/use-auth"
-import { getAuthToken } from "@/lib/auth"
+import { useAuth } from "@/components/context/AuthContext"
 
 // Mock data for blocks
 const blocksData = [
@@ -84,7 +83,7 @@ export function BlockDetail({ id }: BlockDetailPageProps) {
   const [blockData, setBlockData] = useState<BlockDetail | null>(null)
   const [buildings, setBuildings] = useState<BuildingType[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const token = useAuth().getToken()
+  const {token} = useAuth()
   
   useEffect(() => {
     const fetchBlockDetail = async () => {

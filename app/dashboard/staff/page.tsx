@@ -1,5 +1,7 @@
 import type { Metadata } from "next"
-import { StaffManagement } from "@/components/staff/staff-management"
+import { EmployeeList } from "@/components/staff/employees/employee-list"
+import { EmployeeFilterForm } from "@/components/staff/employees/employee-filter-form"
+import StaffMangementPage from "@/components/staff/page"
 
 export const metadata: Metadata = {
   title: "Staff Management | Building Management System",
@@ -7,5 +9,5 @@ export const metadata: Metadata = {
 }
 
 export default function StaffPage() {
-  return <StaffManagement />
+  return <StaffMangementPage />
 }

@@ -88,7 +88,7 @@ export interface AddNewPremise
   DienTichThongThuy: number;
   DienTichTimTuong: number;
   MaTrangThai: number;
-  MaKH: number;
+  MaKH: number | null;
   SoHopDong: string;
   NgayBanGiao: Date;
   NgayHetHanChoThue: Date;

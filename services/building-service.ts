@@ -8,6 +8,7 @@ export interface Building {
   khoiNhaDetail: BlockDetail[];
 }
 
+
 export interface BuildingListItem {
   id: number;
   name: string;

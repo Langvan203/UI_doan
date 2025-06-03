@@ -1466,9 +1466,14 @@ export default function DashboardSuperAdmin() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-8">
-                    {filteredData.overview.recentTransactions.map((transaction) => (
-                      <div key={transaction.id} className="flex items-center">
-                        <div className="space-y-1">
+                    {filteredData.overview.recentTransactions.length === 0 ? (
+                      <div className="text-center text-muted-foreground">
+                        Không có giao dịch gần đây
+                      </div>
+                    ) : (
+                      filteredData.overview.recentTransactions.map((transaction) => (
+                        <div key={transaction.id} className="flex items-center">
+                          <div className="space-y-1">
                           <p className="text-sm font-medium leading-none">{transaction.resident}</p>
                           <p className="text-sm text-muted-foreground">
                             {transaction.apartment} • {transaction.date}
@@ -1479,7 +1484,8 @@ export default function DashboardSuperAdmin() {
                           {formatCurrency(transaction.amount ?? 0)}
                         </div>
                       </div>
-                    ))}
+                    )))
+                  }
                   </div>
                 </CardContent>
               </Card>
