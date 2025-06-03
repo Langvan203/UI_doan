@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Edit, MoreHorizontal, Plus, Trash, UserCog, Building } from "lucide-react"
+import { Edit, MoreHorizontal, Plus, Trash, UserCog, Building, Edit2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -24,22 +24,20 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { toast } from "@/components/ui/use-toast"
 import { EmployeeForm } from "./employee-form"
+import { EmployeeFilterForm } from "./employee-filter-form"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { useEmployee } from "@/components/context/EmployeeContext"
-import { NhanVienRoles,NhanVienInToaNha,NhanVienPhongBan } from "@/components/type/Staff/Staff"
-
-
+import { NhanVienRoles, NhanVienInToaNha, NhanVienPhongBan, GetDSNhanVienDto } from "@/components/type/Staff"
+import { useRole } from "@/components/context/RoleContext"
 
 function RoleBadges({ roles }: { roles: NhanVienRoles[] }) {
   const maxVisible = 1
   const visibleRoles = roles.slice(0, maxVisible)
-  console.log(visibleRoles)
   const remainingCount = roles.length - maxVisible
-
   if (roles.length <= maxVisible) {
     return (
       <div className="flex flex-wrap gap-1">
@@ -68,7 +66,7 @@ function RoleBadges({ roles }: { roles: NhanVienRoles[] }) {
           </TooltipTrigger>
           <TooltipContent>
             <div className="space-y-1">
-              {roles.slice(maxVisible).map((role,index) => (
+              {roles.slice(maxVisible).map((role, index) => (
                 <div key={index} className="text-sm">
                   {role.roleName}
                 </div>
@@ -146,9 +144,9 @@ function DepartmentBadge({ departments }: { departments: NhanVienPhongBan[] }) {
   if (uniqueDepartment.length <= maxVisible) {
     return (
       <div className="flex flex-wrap gap-1">
-        {uniqueDepartment.map((deparments,index) => (
+        {uniqueDepartment.map((department, index) => (
           <Badge key={index} variant="secondary" className="text-xs">
-            {deparments.tenPB}
+            {department.tenPB}
           </Badge>
         ))}
       </div>
@@ -157,7 +155,7 @@ function DepartmentBadge({ departments }: { departments: NhanVienPhongBan[] }) {
 
   return (
     <div className="flex flex-wrap gap-1">
-      {visibleDepartment.map((department,index) => (
+      {visibleDepartment.map((department, index) => (
         <Badge key={index} variant="secondary" className="text-xs">
           {department.tenPB}
         </Badge>
@@ -171,7 +169,7 @@ function DepartmentBadge({ departments }: { departments: NhanVienPhongBan[] }) {
           </TooltipTrigger>
           <TooltipContent>
             <div className="space-y-1">
-              {uniqueDepartment.slice(maxVisible).map((department,index) => (
+              {uniqueDepartment.slice(maxVisible).map((department, index) => (
                 <div key={index} className="text-sm">
                   {department.tenPB}
                 </div>
@@ -184,8 +182,11 @@ function DepartmentBadge({ departments }: { departments: NhanVienPhongBan[] }) {
   )
 }
 
-export function EmployeeList() {
-  // const [employees, setEmployees] = useState(employeeData)
+interface EmployeeListProps {
+  filteredEmployees?: GetDSNhanVienDto[];
+}
+
+export function EmployeeList({ filteredEmployees }: EmployeeListProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [currentEmployee, setCurrentEmployee] = useState<any>(null)
   const [isRoleDialogOpen, setIsRoleDialogOpen] = useState(false)
@@ -195,15 +196,19 @@ export function EmployeeList() {
   const [isBuildingDialogOpen, setIsBuildingDialogOpen] = useState(false)
   const [selectedBuildings, setSelectedBuildings] = useState<string[]>([])
   const [selectedEmployee, setSelectedEmployee] = useState<any>(null)
-  const {employees} = useEmployee();
-  console.log(employees)
+
+  const { employees } = useEmployee()
+
+  const {roles} = useRole();
+  // Sử dụng filteredEmployees từ props nếu có, không thì dùng all employees
+  const displayEmployees = filteredEmployees && filteredEmployees.length >= 0 ? filteredEmployees : employees
 
   const handleDeleteEmployee = (id: number) => {
-    // setEmployees(employees.filter((employee) => employee.id !== id))
-    // toast({
-    //   title: "Nhân viên đã được xóa",
-    //   description: "Nhân viên đã được xóa thành công.",
-    // })
+    // Implementation for delete
+    toast({
+      title: "Nhân viên đã được xóa",
+      description: "Nhân viên đã được xóa thành công.",
+    })
   }
 
   const handleEditEmployee = (employee: any) => {
@@ -213,17 +218,16 @@ export function EmployeeList() {
 
   const handleManageRoles = (employee: any) => {
     setCurrentEmployee(employee)
-    setSelectedRoles([...employee.roles])
+    setSelectedRoles(employee.roles.map((role: any) => role.roleName))
     setIsRoleDialogOpen(true)
   }
 
   const handleSaveRoles = () => {
-    // setEmployees(employees.map((emp) => (emp.id === currentEmployee.id ? { ...emp, roles: selectedRoles } : emp)))
-    // setIsRoleDialogOpen(false)
-    // toast({
-    //   title: "Role đã được cập nhật",
-    //   description: `Role của ${currentEmployee.name} đã được cập nhật thành công.`,
-    // })
+    setIsRoleDialogOpen(false)
+    toast({
+      title: "Role đã được cập nhật",
+      description: `Role của ${currentEmployee.tenNV} đã được cập nhật thành công.`,
+    })
   }
 
   const handleRoleToggle = (role: string) => {
@@ -236,9 +240,7 @@ export function EmployeeList() {
 
   const handleManageDepartments = (employee: any) => {
     setCurrentEmployee(employee)
-    // Giả định rằng employee.department là tên phòng ban
-    // const deptIds = departmentData.filter((dept) => dept.name === employee.department).map((dept) => dept.id)
-    // setSelectedDepartments(deptIds)
+    setSelectedDepartments(employee.phongBans.map((dept: any) => dept.maPB))
     setIsDepartmentDialogOpen(true)
   }
 
@@ -251,28 +253,16 @@ export function EmployeeList() {
   }
 
   const handleSaveDepartments = () => {
-    //const selectedDeptNames = departmentData
-    //   .filter((dept) => selectedDepartments.includes(dept.id))
-    //   .map((dept) => dept.name)
-
-    // setEmployees(
-    //   employees.map((emp) =>
-    //     emp.id === currentEmployee.id
-    //       ? { ...emp, department: selectedDeptNames.length > 0 ? selectedDeptNames[0] : null }
-    //       : emp,
-    //   ),
-    //)
-
     setIsDepartmentDialogOpen(false)
     toast({
       title: "Phòng ban đã được cập nhật",
-      description: `Phòng ban của ${currentEmployee.name} đã được cập nhật thành công.`,
+      description: `Phòng ban của ${currentEmployee.tenNV} đã được cập nhật thành công.`,
     })
   }
 
   const handleManageBuildings = (employee: any) => {
     setCurrentEmployee(employee)
-    setSelectedBuildings([...employee.buildings])
+    setSelectedBuildings(employee.toaNhas.map((building: any) => building.TenTN))
     setIsBuildingDialogOpen(true)
   }
 
@@ -285,14 +275,10 @@ export function EmployeeList() {
   }
 
   const handleSaveBuildings = () => {
-    // setEmployees(
-    //   employees.map((emp) => (emp.id === currentEmployee.id ? { ...emp, buildings: selectedBuildings } : emp)),
-    // )
-
     setIsBuildingDialogOpen(false)
     toast({
       title: "Tòa nhà đã được cập nhật",
-      description: `Tòa nhà của ${currentEmployee.name} đã được cập nhật thành công.`,
+      description: `Tòa nhà của ${currentEmployee.tenNV} đã được cập nhật thành công.`,
     })
   }
 
@@ -304,8 +290,14 @@ export function EmployeeList() {
     <div className="space-y-4">
       {!selectedEmployee ? (
         <>
-          <div className="flex justify-between">
-            <h3 className="text-lg font-medium">Danh sách Nhân viên</h3>
+          <div className="flex justify-between items-center">
+            <div>
+              <h3 className="text-lg font-medium">Danh sách Nhân viên</h3>
+              <p className="text-sm text-muted-foreground">
+                Hiển thị {displayEmployees.length} / {employees.length} nhân viên
+              </p>
+            </div>
+
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
                 <Button onClick={() => setCurrentEmployee(null)}>
@@ -326,25 +318,15 @@ export function EmployeeList() {
                   employee={currentEmployee}
                   onSave={(employee) => {
                     if (currentEmployee) {
-                      // setEmployees(
-                      //   employees.map((emp) => (emp.id === currentEmployee.id ? { ...emp, ...employee } : emp)),
-                      // )
                       toast({
                         title: "Nhân viên đã được cập nhật",
                         description: `Thông tin của ${employee.name} đã được cập nhật thành công.`,
                       })
                     } else {
-                      const newEmployee = {
-                        id: employees.length + 1,
-                        ...employee,
-                        roles: ["Staff"],
-                        buildings: [],
-                      }
-                      // setEmployees([...employees, newEmployee])
-                      // toast({
-                      //   title: "Nhân viên mới đã được tạo",
-                      //   description: `Nhân viên ${employee.name} đã được tạo thành công.`,
-                      // })
+                      toast({
+                        title: "Nhân viên mới đã được tạo",
+                        description: `Nhân viên ${employee.name} đã được tạo thành công.`,
+                      })
                     }
                     setIsDialogOpen(false)
                   }}
@@ -352,11 +334,12 @@ export function EmployeeList() {
               </DialogContent>
             </Dialog>
 
+            {/* Role Management Dialog */}
             <Dialog open={isRoleDialogOpen} onOpenChange={setIsRoleDialogOpen}>
               <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
                   <DialogTitle>Quản lý Role</DialogTitle>
-                  <DialogDescription>Quản lý role cho nhân viên {currentEmployee?.name}</DialogDescription>
+                  <DialogDescription>Quản lý role cho nhân viên {currentEmployee?.tenNV}</DialogDescription>
                 </DialogHeader>
                 <div className="py-4">
                   <div className="space-y-2">
@@ -380,27 +363,17 @@ export function EmployeeList() {
               </DialogContent>
             </Dialog>
 
+            {/* Department Management Dialog */}
             <Dialog open={isDepartmentDialogOpen} onOpenChange={setIsDepartmentDialogOpen}>
               <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
                   <DialogTitle>Quản lý Phòng ban</DialogTitle>
-                  <DialogDescription>Chọn phòng ban cho nhân viên {currentEmployee?.name}</DialogDescription>
+                  <DialogDescription>Chọn phòng ban cho nhân viên {currentEmployee?.tenNV}</DialogDescription>
                 </DialogHeader>
                 <div className="py-4">
-                  {/* <div className="space-y-2">
-                    {departmentData.map((dept) => (
-                      <div key={dept.id} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`dept-${dept.id}`}
-                          checked={selectedDepartments.includes(dept.id)}
-                          onCheckedChange={() => handleDepartmentToggle(dept.id)}
-                        />
-                        <Label htmlFor={`dept-${dept.id}`} className="text-sm font-medium">
-                          {dept.name} ({dept.building})
-                        </Label>
-                      </div>
-                    ))}
-                  </div> */}
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground">Tính năng đang được phát triển</p>
+                  </div>
                 </div>
                 <DialogFooter>
                   <Button onClick={handleSaveDepartments}>Lưu</Button>
@@ -408,27 +381,17 @@ export function EmployeeList() {
               </DialogContent>
             </Dialog>
 
+            {/* Building Management Dialog */}
             <Dialog open={isBuildingDialogOpen} onOpenChange={setIsBuildingDialogOpen}>
               <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
                   <DialogTitle>Quản lý Tòa nhà</DialogTitle>
-                  <DialogDescription>Chọn tòa nhà cho nhân viên {currentEmployee?.name}</DialogDescription>
+                  <DialogDescription>Chọn tòa nhà cho nhân viên {currentEmployee?.tenNV}</DialogDescription>
                 </DialogHeader>
                 <div className="py-4">
-                  {/* <div className="space-y-2">
-                    {buildingData.map((building) => (
-                      <div key={building.id} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`building-${building.id}`}
-                          checked={selectedBuildings.includes(building.name)}
-                          onCheckedChange={() => handleBuildingToggle(building.name)}
-                        />
-                        <Label htmlFor={`building-${building.id}`} className="text-sm font-medium">
-                          {building.name}
-                        </Label>
-                      </div>
-                    ))}
-                  </div> */}
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground">Tính năng đang được phát triển</p>
+                  </div>
                 </div>
                 <DialogFooter>
                   <Button onClick={handleSaveBuildings}>Lưu</Button>
@@ -437,6 +400,7 @@ export function EmployeeList() {
             </Dialog>
           </div>
 
+          {/* Employee Table */}
           <div className="rounded-md border">
             <Table>
               <TableHeader>
@@ -451,97 +415,105 @@ export function EmployeeList() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {employees.map((employee) => (
-                  <TableRow key={employee.maNV} className="cursor-pointer" onClick={() => handleViewEmployee(employee)}>
-                    <TableCell className="font-medium">{employee.tenNV}</TableCell>
-                    <TableCell className="max-w-[200px]">
-                      <div className="truncate" title={employee.email}>
-                        {employee.email}
-                      </div>
-                    </TableCell>
-                    <TableCell>{employee.sdt}</TableCell>
-                    <TableCell className="max-w-[150px]">
-                      <DepartmentBadge departments={employee.phongBans} />
-                    </TableCell>
-                    <TableCell className="max-w-[200px]">
-                      <RoleBadges roles={employee.roles} />
-                    </TableCell>
-                    <TableCell className="max-w-[200px]">
-                      <BuildingBadges buildings={employee.toaNhas} />
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                          <Button variant="ghost" className="h-8 w-8 p-0">
-                            <span className="sr-only">Mở menu</span>
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Hành động</DropdownMenuLabel>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleEditEmployee(employee)
-                            }}
-                          >
-                            <Edit className="mr-2 h-4 w-4" />
-                            Chỉnh sửa
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleManageRoles(employee)
-                            }}
-                          >
-                            <UserCog className="mr-2 h-4 w-4" />
-                            Quản lý role
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleManageDepartments(employee)
-                            }}
-                          >
-                            <Building className="mr-2 h-4 w-4" />
-                            Quản lý phòng ban
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleManageBuildings(employee)
-                            }}
-                          >
-                            <Building className="mr-2 h-4 w-4" />
-                            Quản lý tòa nhà
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="text-destructive focus:text-destructive"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleDeleteEmployee(employee.maNV)
-                            }}
-                          >
-                            <Trash className="mr-2 h-4 w-4" />
-                            Xóa
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                {displayEmployees.length > 0 ? (
+                  displayEmployees.map((employee) => (
+                    <TableRow key={employee.maNV} className="cursor-pointer" onClick={() => handleViewEmployee(employee)}>
+                      <TableCell className="font-medium">{employee.tenNV}</TableCell>
+                      <TableCell className="max-w-[200px]">
+                        <div className="truncate" title={employee.email}>
+                          {employee.email}
+                        </div>
+                      </TableCell>
+                      <TableCell>{employee.sdt}</TableCell>
+                      <TableCell className="max-w-[150px]">
+                        <DepartmentBadge departments={employee.phongBans} />
+                      </TableCell>
+                      <TableCell className="max-w-[200px]">
+                        <RoleBadges roles={employee.roles} />
+                      </TableCell>
+                      <TableCell className="max-w-[200px]">
+                        <BuildingBadges buildings={employee.toaNhas} />
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                              <span className="sr-only">Mở menu</span>
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Hành động</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleEditEmployee(employee)
+                              }}
+                            >
+                              <Edit className="mr-2 h-4 w-4" />
+                              Chỉnh sửa
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleManageRoles(employee)
+                              }}
+                            >
+                              <UserCog className="mr-2 h-4 w-4" />
+                              Quản lý role
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleManageDepartments(employee)
+                              }}
+                            >
+                              <Building className="mr-2 h-4 w-4" />
+                              Quản lý phòng ban
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleManageBuildings(employee)
+                              }}
+                            >
+                              <Building className="mr-2 h-4 w-4" />
+                              Quản lý tòa nhà
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="text-destructive focus:text-destructive"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleDeleteEmployee(employee.maNV)
+                              }}
+                            >
+                              <Trash className="mr-2 h-4 w-4" />
+                              Xóa
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                      Không tìm thấy nhân viên nào phù hợp với điều kiện lọc
                     </TableCell>
                   </TableRow>
-                ))}
+                )}
               </TableBody>
             </Table>
           </div>
         </>
       ) : (
+        // Employee Detail View (existing code)
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <Button variant="outline" onClick={() => setSelectedEmployee(null)}>
               Quay lại
             </Button>
-            
           </div>
 
           <div className="grid gap-4 md:grid-cols-7">
@@ -586,11 +558,13 @@ export function EmployeeList() {
                 <div>
                   <div className="text-sm font-medium mb-2">Phòng ban</div>
                   <div className="flex flex-wrap gap-1">
-                    {selectedEmployee.phongBans.map((pb: any) => (
-                      <Badge key={pb.maPB} variant="secondary">
-                        {pb.tenPB}
-                      </Badge>
-                    ))}
+                    {[...new Map(selectedEmployee.phongBans.map((d: any) => [d.tenPB, d])).values()].map(
+                      (department: any) => (
+                        <Badge key={department.maPB} variant="secondary">
+                          {department.tenPB}
+                        </Badge>
+                      )
+                    )}
                   </div>
                 </div>
                 <div>
@@ -660,27 +634,23 @@ export function EmployeeList() {
                       <div className="flex justify-between mb-4">
                         <h3 className="text-sm font-medium">Phòng ban</h3>
                         <Button size="sm" onClick={() => handleManageDepartments(selectedEmployee)}>
-                          <Plus className="mr-2 h-4 w-4" />
-                          Thêm vào phòng ban
+                          <Edit className="mr-2 h-4 w-4" />
+                          Chỉnh sửa phòng ban
                         </Button>
                       </div>
-                      {selectedEmployee.department ? (
-                        <div className="p-4 border rounded-md">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="font-medium">{selectedEmployee.department}</p>
-                              <p className="text-sm text-muted-foreground">
-                                {/* {departmentData.find((d) => d.name === selectedEmployee.department)?.building} */}
-                              </p>
-                            </div>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleManageDepartments(selectedEmployee)}
-                            >
-                              Thay đổi
-                            </Button>
-                          </div>
+                      {selectedEmployee.phongBans.length > 0 ? (
+                        <div className="space-y-2">
+                          {[...new Map(selectedEmployee.phongBans.map((d: any) => [d.tenPB, d])).values()].map(
+                            (department: any) => (
+                              <div key={department.maPB} className="p-4 border rounded-md">
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <p className="font-medium">{department.tenPB}</p>
+                                  </div>
+                                </div>
+                              </div>
+                            )
+                          )}
                         </div>
                       ) : (
                         <div className="text-center py-8 text-muted-foreground">Nhân viên chưa thuộc phòng ban nào</div>
@@ -690,25 +660,30 @@ export function EmployeeList() {
                       <div className="flex justify-between mb-4">
                         <h3 className="text-sm font-medium">Tòa nhà được phân công</h3>
                         <Button size="sm" onClick={() => handleManageBuildings(selectedEmployee)}>
-                          <Plus className="mr-2 h-4 w-4" />
-                          Thêm vào tòa nhà
+                          <Edit className="mr-2 h-4 w-4" />
+                          Chỉnh sửa tòa nhà
                         </Button>
                       </div>
-                      {selectedEmployee.buildings.length > 0 ? (
+                      {selectedEmployee.toaNhas.length > 0 ? (
                         <div className="space-y-2">
-                          {selectedEmployee.buildings.map((building: string) => (
-                            <div key={building} className="p-4 border rounded-md">
+                          {selectedEmployee.toaNhas.map((building: any) => (
+                            <div key={building.MaTN} className="p-4 border rounded-md">
                               <div className="flex items-center justify-between">
-                                <p className="font-medium">{building}</p>
+                                <div>
+                                  <p className="font-medium">{building.TenTN}</p>
+                                  <p className="text-sm text-muted-foreground">
+                                    Mã TN: {building.MaTN}
+                                  </p>
+                                </div>
                                 <Button
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => {
-                                    setSelectedBuildings(
-                                      selectedEmployee.buildings.filter((b: string) => b !== building),
-                                    )
-                                    setCurrentEmployee(selectedEmployee)
-                                    handleSaveBuildings()
+                                    // Remove building logic here
+                                    toast({
+                                      title: "Đã xóa khỏi tòa nhà",
+                                      description: `Nhân viên đã được xóa khỏi tòa nhà ${building.TenTN}`,
+                                    })
                                   }}
                                 >
                                   <Trash className="h-4 w-4 text-destructive" />

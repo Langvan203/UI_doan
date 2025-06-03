@@ -1,12 +1,20 @@
 "use client"
 
-import type React from "react"
+import { useState } from "react"
+import type { FormEvent } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { DialogFooter } from "@/components/ui/dialog"
+import { useDepartment } from "@/components/context/DepartmentContext"
+import { useBuilding } from "@/components/context/BuildingContext"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { cn } from "@/lib/utils"
+import { ChevronsUpDown } from "lucide-react"
 
 interface EmployeeFormProps {
   employee?: any
@@ -14,16 +22,47 @@ interface EmployeeFormProps {
 }
 
 export function EmployeeForm({ employee, onSave }: EmployeeFormProps) {
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const { departments } = useDepartment();
+  const {buildingDetails} = useBuilding();
+  const [selectedBuildings, setSelectedBuildings] = useState<number[]>(
+    employee?.toaNhas?.map((tn: { MaTN: number }) => tn.MaTN) || []
+  );
+  const [selectedDepartments, setSelectedDepartments] = useState<number[]>(
+    employee?.phongBans?.map((pb: { maPB: number }) => pb.maPB) || []
+  );
+
+  const handleBuildingToggle = (buildingId: number) => {
+    setSelectedBuildings(prev => {
+      if (prev.includes(buildingId)) {
+        return prev.filter(id => id !== buildingId);
+      } else {
+        return [...prev, buildingId];
+      }
+    });
+  };
+
+  const handleDepartmentToggle = (departmentId: number) => {
+    setSelectedDepartments(prev => {
+      if (prev.includes(departmentId)) {
+        return prev.filter(id => id !== departmentId);
+      } else {
+        return [...prev, departmentId];
+      }
+    });
+  };
+
+  console.log(selectedDepartments)
+
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const formData = new FormData(e.currentTarget)
-
     const employeeData = {
       name: formData.get("name") as string,
       username: formData.get("username") as string,
       email: formData.get("email") as string,
       phone: formData.get("phone") as string,
-      department: formData.get("department") as string,
+      departments: selectedDepartments,
+      buildings: selectedBuildings,
     }
 
     onSave(employeeData)
@@ -53,18 +92,96 @@ export function EmployeeForm({ employee, onSave }: EmployeeFormProps) {
           </div>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="department">Phòng ban</Label>
-          <Select name="department" defaultValue={employee?.department || ""}>
-            <SelectTrigger>
-              <SelectValue placeholder="Chọn phòng ban" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Kỹ thuật">Kỹ thuật</SelectItem>
-              <SelectItem value="Kinh doanh">Kinh doanh</SelectItem>
-              <SelectItem value="Nhân sự">Nhân sự</SelectItem>
-              <SelectItem value="Kế toán">Kế toán</SelectItem>
-            </SelectContent>
-          </Select>
+          <Label>Phòng ban</Label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                className="w-full justify-between"
+              >
+                {selectedDepartments.length > 0
+                  ? `${selectedDepartments.length} phòng ban đã chọn`
+                  : "Chọn phòng ban..."}
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-full p-0">
+              <Command>
+                <CommandInput placeholder="Tìm kiếm phòng ban..." />
+                <CommandEmpty>Không tìm thấy phòng ban.</CommandEmpty>
+                <CommandGroup className="max-h-[200px] overflow-y-auto">
+                  {departments.map((department) => (
+                    <CommandItem
+                      key={department.maPB}
+                      onSelect={() => handleDepartmentToggle(department.maPB)}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`department-${department.maPB}`}
+                          checked={selectedDepartments.includes(department.maPB)}
+                          onCheckedChange={() => handleDepartmentToggle(department.maPB)}
+                        />
+                        <Label
+                          htmlFor={`department-${department.maPB}`}
+                          className="text-sm font-normal cursor-pointer"
+                        >
+                          {department.tenPB + ", tòa nhà " + department.tenTN}
+                        </Label>
+                      </div>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </Command>
+            </PopoverContent>
+          </Popover>
+        </div>
+        <div className="space-y-2">
+          <Label>Tòa nhà</Label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                className="w-full justify-between"
+              >
+                {employee?.toaNhas?.length > 0
+                  ? `${employee.toaNhas.length} tòa nhà đã chọn`
+                  : "Chọn tòa nhà..."}
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-full p-0">
+              <Command>
+                <CommandInput placeholder="Tìm kiếm tòa nhà..." />
+                <CommandEmpty>Không tìm thấy tòa nhà.</CommandEmpty>
+                <CommandGroup className="max-h-[200px] overflow-y-auto">
+                  {buildingDetails.map((building) => (
+                    <CommandItem
+                      key={building.id}
+                      onSelect={() => {
+                        // Handle selection logic here
+                      }}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`building-${building.id}`}
+                          checked={selectedBuildings.includes(building.id)}
+                          onCheckedChange={() => handleBuildingToggle(building.id)}
+                        />
+                        <Label
+                          htmlFor={`building-${building.id}`}
+                          className="text-sm font-normal cursor-pointer"
+                        >
+                          {building.name}
+                        </Label>
+                      </div>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </Command>
+            </PopoverContent>
+          </Popover>
         </div>
         {!employee && (
           <div className="grid grid-cols-2 gap-4">
