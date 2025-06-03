@@ -1,7 +1,7 @@
 "use client"
 
 import { createContext, useContext, useEffect, useState } from "react";
-import { CreateDepartment, ListDepartment, UpdateDepartment } from "../type/department/department";
+import { CreateDepartment, ListDepartment, UpdateDepartment } from "../type/department";
 import { useRouter } from "next/navigation";
 import { useAuth } from "./AuthContext";
 import { toast } from "react-toastify";

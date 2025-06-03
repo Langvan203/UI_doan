@@ -9,6 +9,7 @@ import { ToastContainer } from "react-toastify"
 import { DepartmentProvider } from "@/components/context/DepartmentContext"
 import { BuildingProvider } from "@/components/context/BuildingContext"
 import { EmployeeProvider } from "@/components/context/EmployeeContext"
+import { RoleProvider } from "@/components/context/RoleContext"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata = {
@@ -31,8 +32,10 @@ export default function RootLayout({
               <BuildingProvider>
                 <DepartmentProvider>
                   <EmployeeProvider>
+                    <RoleProvider>
                     {children}
                     <ToastContainer />
+                    </RoleProvider>
                   </EmployeeProvider>
                 </DepartmentProvider>
               </BuildingProvider>

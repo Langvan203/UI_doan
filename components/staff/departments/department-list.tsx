@@ -34,7 +34,7 @@ import useDepartmentStore from "@/lib/departmentStore";
 import { useDepartment } from "@/components/context/DepartmentContext"
 import { useBuilding } from "@/components/context/BuildingContext"
 import { BuildingDetail } from "@/components/buildings/building-detail"
-import { UpdateDepartment } from "@/components/type/department/department"
+import { UpdateDepartment } from "@/components/type/department"
 import { useEmployee } from "@/components/context/EmployeeContext"
 
 
