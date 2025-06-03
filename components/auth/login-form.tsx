@@ -13,9 +13,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
-import { useAuth } from "@/app/providers/auth-provider"
 import { Bounce, toast} from "react-toastify"
-
+import { useAuth } from "../context/AuthContext"
 const formSchema = z.object({
   password: z.string().min(6, {
     message: "Mật khẩu phải có ít nhất 6 ký tự",
@@ -42,7 +41,7 @@ export function LoginForm() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true)
-
+    console.log(process.env.NEXT_PUBLIC_API_BASE_URL)
     try {
       await login(values.email, values.password)
       toast.success('Đăng nhập thành công', {

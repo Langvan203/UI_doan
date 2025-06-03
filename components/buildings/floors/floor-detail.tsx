@@ -8,66 +8,66 @@ import { Building2, Building, ChevronRight, Home } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { useToast } from "@/components/ui/use-toast"
-import { useAuth } from "@/app/hooks/use-auth"
+import { useAuth } from "@/components/context/AuthContext"
 import type { FloorApartment } from "@/services/building-service"
 
 // Mock data for floors
-const floorsData = [
-  { MaTL: 1, TenTL: "Tầng 1", MaKN: 1, MaTN: 1, DienTichSan: 1200, DienTichKhuVucDungChung: 300, DienTichKyThuaPhuTro: 150 },
-  { MaTL: 2, TenTL: "Tầng 2", MaKN: 1, MaTN: 1, DienTichSan: 1200, DienTichKhuVucDungChung: 300, DienTichKyThuaPhuTro: 150 },
-  { MaTL: 3, TenTL: "Tầng 3", MaKN: 1, MaTN: 1, DienTichSan: 1200, DienTichKhuVucDungChung: 300, DienTichKyThuaPhuTro: 150 },
-  { MaTL: 4, TenTL: "Tầng 4", MaKN: 1, MaTN: 1, DienTichSan: 1200, DienTichKhuVucDungChung: 300, DienTichKyThuaPhuTro: 150 },
-  { MaTL: 5, TenTL: "Tầng 1", MaKN: 2, MaTN: 1, DienTichSan: 1000, DienTichKhuVucDungChung: 250, DienTichKyThuaPhuTro: 130 },
-  { MaTL: 6, TenTL: "Tầng 2", MaKN: 2, MaTN: 1, DienTichSan: 1000, DienTichKhuVucDungChung: 250, DienTichKyThuaPhuTro: 130 },
-]
+// const floorsData = [
+//   { MaTL: 1, TenTL: "Tầng 1", MaKN: 1, MaTN: 1, DienTichSan: 1200, DienTichKhuVucDungChung: 300, DienTichKyThuaPhuTro: 150 },
+//   { MaTL: 2, TenTL: "Tầng 2", MaKN: 1, MaTN: 1, DienTichSan: 1200, DienTichKhuVucDungChung: 300, DienTichKyThuaPhuTro: 150 },
+//   { MaTL: 3, TenTL: "Tầng 3", MaKN: 1, MaTN: 1, DienTichSan: 1200, DienTichKhuVucDungChung: 300, DienTichKyThuaPhuTro: 150 },
+//   { MaTL: 4, TenTL: "Tầng 4", MaKN: 1, MaTN: 1, DienTichSan: 1200, DienTichKhuVucDungChung: 300, DienTichKyThuaPhuTro: 150 },
+//   { MaTL: 5, TenTL: "Tầng 1", MaKN: 2, MaTN: 1, DienTichSan: 1000, DienTichKhuVucDungChung: 250, DienTichKyThuaPhuTro: 130 },
+//   { MaTL: 6, TenTL: "Tầng 2", MaKN: 2, MaTN: 1, DienTichSan: 1000, DienTichKhuVucDungChung: 250, DienTichKyThuaPhuTro: 130 },
+// ]
 
-// Mock data for buildings
-const buildingsData = [
-  { MaTN: 1, TenTN: "Chung cư Hạnh Phúc" },
-  { MaTN: 2, TenTN: "Chung cư Sunshine" },
-]
+// // Mock data for buildings
+// const buildingsData = [
+//   { MaTN: 1, TenTN: "Chung cư Hạnh Phúc" },
+//   { MaTN: 2, TenTN: "Chung cư Sunshine" },
+// ]
 
-// Mock data for blocks
-const blocksData = [
-  { MaKN: 1, TenKN: "Khối A", MaTN: 1 },
-  { MaKN: 2, TenKN: "Khối B", MaTN: 1 },
-  { MaKN: 3, TenKN: "Khối C", MaTN: 1 },
-  { MaKN: 4, TenKN: "Khối D", MaTN: 1 },
-  { MaKN: 5, TenKN: "Khối A", MaTN: 2 },
-  { MaKN: 6, TenKN: "Khối B", MaTN: 2 },
-]
+// // Mock data for blocks
+// const blocksData = [
+//   { MaKN: 1, TenKN: "Khối A", MaTN: 1 },
+//   { MaKN: 2, TenKN: "Khối B", MaTN: 1 },
+//   { MaKN: 3, TenKN: "Khối C", MaTN: 1 },
+//   { MaKN: 4, TenKN: "Khối D", MaTN: 1 },
+//   { MaKN: 5, TenKN: "Khối A", MaTN: 2 },
+//   { MaKN: 6, TenKN: "Khối B", MaTN: 2 },
+// ]
 
-// Mock data for apartments per floor
-const apartmentCountData: Record<number, number> = {
-  1: 4,
-  2: 4,
-  3: 4,
-  4: 4,
-  5: 6,
-  6: 6,
-}
+// // Mock data for apartments per floor
+// const apartmentCountData: Record<number, number> = {
+//   1: 4,
+//   2: 4,
+//   3: 4,
+//   4: 4,
+//   5: 6,
+//   6: 6,
+// }
 
-// Mock occupancy rates per floor
-const occupancyRateData: Record<number, number> = {
-  1: 75,
-  2: 100,
-  3: 50,
-  4: 75,
-  5: 83,
-  6: 66,
-}
+// // Mock occupancy rates per floor
+// const occupancyRateData: Record<number, number> = {
+//   1: 75,
+//   2: 100,
+//   3: 50,
+//   4: 75,
+//   5: 83,
+//   6: 66,
+// }
 
-// Mock data for apartments
-const apartmentsData = [
-  { id: 1, number: "101", floorId: 1, area: 120, status: "occupied", type: "2 phòng ngủ" },
-  { id: 2, number: "102", floorId: 1, area: 150, status: "occupied", type: "3 phòng ngủ" },
-  { id: 3, number: "103", floorId: 1, area: 120, status: "vacant", type: "2 phòng ngủ" },
-  { id: 4, number: "104", floorId: 1, area: 100, status: "occupied", type: "1 phòng ngủ" },
-  { id: 5, number: "201", floorId: 2, area: 120, status: "occupied", type: "2 phòng ngủ" },
-  { id: 6, number: "202", floorId: 2, area: 150, status: "occupied", type: "3 phòng ngủ" },
-  { id: 7, number: "203", floorId: 2, area: 120, status: "occupied", type: "2 phòng ngủ" },
-  { id: 8, number: "204", floorId: 2, area: 100, status: "occupied", type: "1 phòng ngủ" },
-]
+// // Mock data for apartments
+// const apartmentsData = [
+//   { id: 1, number: "101", floorId: 1, area: 120, status: "occupied", type: "2 phòng ngủ" },
+//   { id: 2, number: "102", floorId: 1, area: 150, status: "occupied", type: "3 phòng ngủ" },
+//   { id: 3, number: "103", floorId: 1, area: 120, status: "vacant", type: "2 phòng ngủ" },
+//   { id: 4, number: "104", floorId: 1, area: 100, status: "occupied", type: "1 phòng ngủ" },
+//   { id: 5, number: "201", floorId: 2, area: 120, status: "occupied", type: "2 phòng ngủ" },
+//   { id: 6, number: "202", floorId: 2, area: 150, status: "occupied", type: "3 phòng ngủ" },
+//   { id: 7, number: "203", floorId: 2, area: 120, status: "occupied", type: "2 phòng ngủ" },
+//   { id: 8, number: "204", floorId: 2, area: 100, status: "occupied", type: "1 phòng ngủ" },
+// ]
 
 interface FloorDetailProps {
   id: number
@@ -87,7 +87,7 @@ export function FloorDetail({ id }: FloorDetailProps) {
   const [activeTab, setActiveTab] = useState("overview")
   const [floorData, setFloorData] = useState<FloorData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const token = useAuth().getToken()
+  const {token} = useAuth()
   
   useEffect(() => {
     const fetchFloorDetail = async () => {
@@ -317,7 +317,7 @@ export function FloorDetail({ id }: FloorDetailProps) {
                     </div>
                     <div className="col-span-2">
                       <Button variant="ghost" size="sm" asChild>
-                        <Link href={`/dashboard/buildings/premises/${apartment.id}`}>
+                        <Link href={`/dashboard/buildings/premises/`}>
                           Chi tiết
                         </Link>
                       </Button>

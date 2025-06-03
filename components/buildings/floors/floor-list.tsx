@@ -20,7 +20,7 @@ import { Pencil, Plus, Trash2, Search, Filter, Eye } from "lucide-react"
 import Link from "next/link"
 import type { FloorDetail } from "@/services/building-service"
 import { buildingService } from "@/services/building-service"
-import { useAuth } from "@/app/hooks/use-auth"
+import { useAuth } from "@/components/context/AuthContext"
 import axios from "axios"
 import {toast, Bounce} from "react-toastify"
 
@@ -73,7 +73,7 @@ export function FloorList({ buildingId, blockId, floors: propFloors }: FloorList
   const [buildings, setBuildings] = useState<{maTN: number, tenTN: string}[]>([])
   const [blocks, setBlocks] = useState<{maKN: number, tenKN: string, maTN: number}[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const token = useAuth().getToken()
+  const { token } = useAuth()
   const [newFloor, setNewFloor] = useState({
     TenTL: "",
     MaTN: "",
@@ -258,6 +258,7 @@ export function FloorList({ buildingId, blockId, floors: propFloors }: FloorList
           theme: "light",
           transition: Bounce,
         });
+
         return;
       }
 
@@ -288,7 +289,7 @@ export function FloorList({ buildingId, blockId, floors: propFloors }: FloorList
           setIsLoading(true)
           
           // Fetch buildings and blocks first
-          const buildingsResponse = await fetch('https://localhost:7246/api/KhoiNha/GetDSKhoiNha', {
+          const buildingsResponse = await fetch('https://localhost:7246/api/KhoiNha/GetDSKhoiNhaDetail', {
             headers: {
               'Authorization': `Bearer ${token}`
             }
@@ -318,7 +319,7 @@ export function FloorList({ buildingId, blockId, floors: propFloors }: FloorList
           setBlocks(extractedBlocks)
 
           // Fetch floors
-          const floorsResponse = await fetch('https://localhost:7246/api/TangLau/GetDSTangLauDetail', {
+          const floorsResponse = await fetch('https://localhost:7246/api/TangLau/GetDSTangLau', {
             headers: {
               'Authorization': `Bearer ${token}`
             }

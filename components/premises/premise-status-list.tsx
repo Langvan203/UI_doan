@@ -16,7 +16,7 @@ import { Label } from "@/components/ui/label"
 import { Pencil, Plus, Trash2, Search } from "lucide-react"
 import { toast, Bounce } from "react-toastify"
 import { premiseService, PremiseStatus } from "@/services/premise-service"
-import { useAuth } from "@/app/hooks/use-auth"
+import { useAuth } from "../context/AuthContext"
 
 export function PremiseStatusList() {
   const [premiseStatuses, setPremiseStatuses] = useState<PremiseStatus[]>([])
@@ -28,7 +28,7 @@ export function PremiseStatusList() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [newPremiseStatusName, setNewPremiseStatusName] = useState("")
 
-  const token = useAuth().getToken()
+  const {token} = useAuth()
 
   // Fetch premise statuses
   useEffect(() => {

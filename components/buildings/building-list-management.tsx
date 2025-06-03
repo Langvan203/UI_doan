@@ -21,7 +21,7 @@ import { BuildingOverviewCard } from "@/components/buildings/building-overview-c
 import axios from "axios"
 import { Bounce, toast, ToastContainer } from "react-toastify"
 import 'react-toastify/dist/ReactToastify.css'
-import { useAuth } from "@/app/hooks/use-auth"
+import { useAuth } from "@/components/context/AuthContext"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,28 +33,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { BuildingDetailed, useBuilding } from "../context/BuildingContext"
 
 // Định nghĩa interface cho tòa nhà với các thuộc tính yêu cầu
-interface BuildingDetailed {
-  id: number
-  name: string
-  address: string
-  occupancyRate: number
-  constructionYear: number
-  status: string
-  soTangHam: number
-  soTangNoi: number
-  dienTichXayDung: number
-  tongDienTichSan: number
-  tongDienTichChoThueNET: number
-  tongDienTichChoThueGross: number
-  nganHangThanhToan: string
-  soTaiKhoan: string
-  noiDungChuyenKhoan: string
-}
 
 export function BuildingListManagement() {
-  const [buildings, setBuildings] = useState<BuildingDetailed[]>([])
+  // const [buildings, setBuildings] = useState<BuildingDetailed[]>([])
   const [selectedBuilding, setSelectedBuilding] = useState<BuildingDetailed | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [viewMode, setViewMode] = useState<"list" | "grid">("list")
@@ -67,38 +51,13 @@ export function BuildingListManagement() {
   })
 
   // Get authentication token
-  const { getToken } = useAuth()
+  const { token } = useAuth()
 
   // Fetch buildings on component mount
-  useEffect(() => {
-    const fetchBuildings = async () => {
-      try {
-        const token = getToken()
-        if (!token) {
-          return;
-        }
-
-        const response = await axios.get('https://localhost:7246/api/ToaNha/GetDSToaNha', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        })
-        setBuildings(response.data)
-      } catch (error) {
-        console.error("Error fetching buildings:", error)
-        toast.error("Không thể tải danh sách tòa nhà", {
-          position: "top-right",
-          autoClose: 1000,
-        })
-        setBuildings([])
-      }
-    }
-
-    fetchBuildings()
-  }, [getToken])
+    const { buildingDetails, getBuildingList } = useBuilding()
 
   // Lọc tòa nhà theo từ khóa tìm kiếm
-  const filteredBuildings = buildings.filter(
+  const filteredBuildings = buildingDetails.filter(
     (building) =>
       building.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       building.address.toLowerCase().includes(searchTerm.toLowerCase()),
@@ -124,8 +83,7 @@ export function BuildingListManagement() {
 
     try {
       // Get authentication token
-      const token = getToken()
-      if (!token) {
+        if (!token) {
         toast.error("Vui lòng đăng nhập", {
           position: "top-right",
           autoClose: 1000,
@@ -185,7 +143,7 @@ export function BuildingListManagement() {
                 'Authorization': `Bearer ${token}`
               }
             })
-            setBuildings(buildingsResponse.data)
+            // setBuildingDetails(buildingsResponse.data)
           } catch (error) {
             console.error("Error fetching buildings:", error)
             toast.error("Không thể tải danh sách tòa nhà", {
@@ -234,7 +192,6 @@ export function BuildingListManagement() {
 
     try {
       // Get authentication token
-      const token = getToken()
       if (!token) {
         toast.error("Vui lòng đăng nhập", {
           position: "top-right",
@@ -297,7 +254,7 @@ export function BuildingListManagement() {
                 'Authorization': `Bearer ${token}`
               }
             })
-            setBuildings(buildingsResponse.data)
+            // setBuildingDetails(buildingsResponse.data)
           } catch (error) {
             console.error("Error fetching buildings:", error)
             toast.error("Không thể tải danh sách tòa nhà", {
@@ -345,7 +302,6 @@ export function BuildingListManagement() {
 
     try {
       // Get authentication token
-      const token = getToken()
       if (!token) {
         toast.error("Vui lòng đăng nhập", {
           position: "top-right",
@@ -364,8 +320,8 @@ export function BuildingListManagement() {
       // Check if deletion was successful
       if (response.status === 200) {
         // Remove the deleted building from the list
-        const updatedBuildings = buildings.filter((building) => building.id !== buildingToDelete.id)
-        setBuildings(updatedBuildings)
+        const updatedBuildings = buildingDetails.filter((building) => building.id !== buildingToDelete.id)
+        // setBuildingDetails(updatedBuildings)
 
         // Reset selected building if it was the deleted one
         if (selectedBuilding?.id === buildingToDelete.id) {
