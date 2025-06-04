@@ -1,5 +1,4 @@
-export interface GetDSNhanVienDto
-{
+export interface GetDSNhanVienDto {
     maNV: number;
     tenNV: string;
     ngaySinh: string;
@@ -12,21 +11,26 @@ export interface GetDSNhanVienDto
     roles: NhanVienRoles[];
 }
 
-export interface NhanVienInToaNha
-{
-    MaTN: number;
-    TenTN: string;
+export interface NhanVienInToaNha {
+    maTN: number;
+    tenTN: string;
 }
 
-export interface NhanVienPhongBan
-{
+export interface NhanVienPhongBan {
     maPB: number;
     tenPB: string;
 }
-    
-export interface NhanVienRoles 
-{
+
+export interface NhanVienRoles {
     roleID: number;
     roleName: string;
 }
-    
+export interface UpdateNhanVien {
+    maNV: number;
+    hoTen: string;
+    tenDangNhap:string;
+    email:string;
+    soDienThoai:string;
+    ngaySinh:string;
+    diaChi: string;
+}

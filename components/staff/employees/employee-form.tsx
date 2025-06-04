@@ -6,6 +6,8 @@ import type { FormEvent } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { UpdateNhanVien } from "@/components/type/Staff"
+import { toast } from "react-toastify"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { DialogFooter } from "@/components/ui/dialog"
 import { useDepartment } from "@/components/context/DepartmentContext"
@@ -15,6 +17,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 import { ChevronsUpDown } from "lucide-react"
+import { useEmployee } from "@/components/context/EmployeeContext"
 
 interface EmployeeFormProps {
   employee?: any
@@ -30,7 +33,7 @@ export function EmployeeForm({ employee, onSave }: EmployeeFormProps) {
   const [selectedDepartments, setSelectedDepartments] = useState<number[]>(
     employee?.phongBans?.map((pb: { maPB: number }) => pb.maPB) || []
   );
-
+  const { updateEmployeeInfo, updateEmployeeBuildings, updateEmployeeDepartments } = useEmployee();
   const handleBuildingToggle = (buildingId: number) => {
     setSelectedBuildings(prev => {
       if (prev.includes(buildingId)) {
@@ -53,19 +56,53 @@ export function EmployeeForm({ employee, onSave }: EmployeeFormProps) {
 
   console.log(selectedDepartments)
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const formData = new FormData(e.currentTarget)
-    const employeeData = {
-      name: formData.get("name") as string,
-      username: formData.get("username") as string,
-      email: formData.get("email") as string,
-      phone: formData.get("phone") as string,
-      departments: selectedDepartments,
-      buildings: selectedBuildings,
+    
+    try {
+      if (employee) {
+        // Cập nhật thông tin cơ bản
+        const updateData: UpdateNhanVien = {
+          maNV: employee.maNV,
+          hoTen: formData.get("name") as string,
+          tenDangNhap: formData.get("username") as string,
+          email: formData.get("email") as string,
+          soDienThoai: formData.get("phone") as string,
+          ngaySinh: employee.ngaySinh, // Giữ nguyên ngày sinh
+          diaChi: employee.diaChiThuongTru, // Giữ nguyên địa chỉ
+        }
+  
+        await updateEmployeeInfo(updateData);
+  
+        // Cập nhật tòa nhà
+        if (selectedBuildings.length > 0) {
+          await updateEmployeeBuildings(employee.maNV, selectedBuildings);
+        }
+  
+        // Cập nhật phòng ban
+        if (selectedDepartments.length > 0) {
+          await updateEmployeeDepartments(employee.maNV, selectedDepartments);
+        }
+  
+        toast.success("Thông tin nhân viên đã được cập nhật thành công!");
+      } else {
+        // Logic tạo mới nhân viên (giữ nguyên)
+        const employeeData = {
+          name: formData.get("name") as string,
+          username: formData.get("username") as string,
+          email: formData.get("email") as string,
+          phone: formData.get("phone") as string,
+          departments: selectedDepartments,
+          buildings: selectedBuildings,
+        }
+      }
+  
+      onSave(employee || {});
+    } catch (error) {
+      toast.error("Có lỗi xảy ra khi cập nhật thông tin nhân viên!");
+      console.error('Error updating employee:', error);
     }
-
-    onSave(employeeData)
   }
 
   return (

@@ -1,9 +1,10 @@
 "use client"
 
-import { UserLogin } from "../type/User/user";
+import { UserLogin } from "@/components/type/user"; // Đảm bảo đường dẫn này đúng với cấu trúc dự án của bạn
 import { createContext, useContext, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { setCookie } from "cookies-next/client";
+import { set } from "date-fns";
 
 interface AuthContextType {
     user: UserLogin | null;
@@ -40,13 +41,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const data: UserLogin = await res.json();
         setUser(data);
         localStorage.setItem("user", JSON.stringify(data));
+        setCookie('user-data', JSON.stringify(data), {
+            maxAge: 30 * 24 * 60 * 60, // 30 days
+        });
         setCookie('auth-token', data.accessToken, {
             maxAge: 30 * 24 * 60 * 60, // 30 days
             path: '/',
         });
         
         // Chuyển hướng đến trang dashboard sau khi đăng nhập thành công
-        router.push("/dashboard");
+        console.log("Đang chuyển hướng đến /dashboard...");
+        // Thử thêm timeout để đảm bảo state được cập nhật trước khi chuyển hướng
+        setTimeout(() => {
+            router.push("/dashboard");
+            console.log("Đã gọi router.push()");
+        }, 100);
     };
 
     const logout = () => {
