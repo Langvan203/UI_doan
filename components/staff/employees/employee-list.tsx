@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Edit, MoreHorizontal, Plus, Trash, UserCog, Building, Edit2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -37,6 +37,7 @@ import { useDepartment } from "@/components/context/DepartmentContext"
 import { useBuilding } from "@/components/context/BuildingContext"
 import { Input } from "@/components/ui/input"
 import { get } from "http"
+import { set } from "date-fns"
 
 
 function RoleBadges({ roles }: { roles: NhanVienRoles[] }) {
@@ -136,22 +137,19 @@ function BuildingBadges({ buildings }: { buildings: NhanVienInToaNha[] }) {
 
 function DepartmentBadge({ departments }: { departments: NhanVienPhongBan[] }) {
   const maxVisible = 1
-  const uniqueDepartment = departments.filter((dept, index, self) => {
-    return index === self.findIndex(d => d.tenPB == dept.tenPB)
-  })
-  const visibleDepartment = uniqueDepartment.slice(0, maxVisible)
-  const remainingCount = uniqueDepartment.length - maxVisible
-
-  if (uniqueDepartment.length === 0) {
+  const visibleDepartment = departments.slice(0, maxVisible)
+  const remainingCount = departments.length - maxVisible
+  // console.log(departments)
+  if (departments.length === 0) {
     return <span className="text-muted-foreground text-sm">Chưa phân công</span>
   }
 
-  if (uniqueDepartment.length <= maxVisible) {
+  if (departments.length <= maxVisible) {
     return (
       <div className="flex flex-wrap gap-1">
-        {uniqueDepartment.map((department, index) => (
+        {departments.map((department, index) => (
           <Badge key={index} variant="secondary" className="text-xs">
-            {department.tenPB}
+            {department.tenPB}, tòa nhà {department.tenTN}
           </Badge>
         ))}
       </div>
@@ -162,7 +160,7 @@ function DepartmentBadge({ departments }: { departments: NhanVienPhongBan[] }) {
     <div className="flex flex-wrap gap-1">
       {visibleDepartment.map((department, index) => (
         <Badge key={index} variant="secondary" className="text-xs">
-          {department.tenPB}
+          {department.tenPB}, tòa nhà {department.tenTN}
         </Badge>
       ))}
       <TooltipProvider>
@@ -174,9 +172,9 @@ function DepartmentBadge({ departments }: { departments: NhanVienPhongBan[] }) {
           </TooltipTrigger>
           <TooltipContent>
             <div className="space-y-1">
-              {uniqueDepartment.slice(maxVisible).map((department, index) => (
+              {departments.slice(maxVisible).map((department, index) => (
                 <div key={index} className="text-sm">
-                  {department.tenPB}
+                  {department.tenPB}, tòa nhà {department.tenTN}
                 </div>
               ))}
             </div>
@@ -195,7 +193,7 @@ export function EmployeeList({ filteredEmployees }: EmployeeListProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [currentEmployee, setCurrentEmployee] = useState<any>(null)
   const [isRoleDialogOpen, setIsRoleDialogOpen] = useState(false)
-  const [selectedRoles, setSelectedRoles] = useState<string[]>([])
+  const [selectedRoles, setSelectedRoles] = useState<Number[]>([])
   const [isDepartmentDialogOpen, setIsDepartmentDialogOpen] = useState(false)
   const [selectedDepartments, setSelectedDepartments] = useState<number[]>([])
   const [isBuildingDialogOpen, setIsBuildingDialogOpen] = useState(false)
@@ -203,7 +201,26 @@ export function EmployeeList({ filteredEmployees }: EmployeeListProps) {
   const [selectedEmployee, setSelectedEmployee] = useState<any>(null)
 
   const { employees, updateEmployeeRoles, updateEmployeeDepartments, updateEmployeeBuildings, getListEmployee } = useEmployee()
+  useEffect(() => {
+    console.log('Employees updated in context:', employees.length);
+    // Force re-render khi employees thay đổi
+    setForceUpdate(prev => prev + 1);
+  }, [employees]);
+  useEffect(() => {
+    const loadInitialData = async () => {
+      try {
+        await getListEmployee();
+      } catch (error) {
+        console.error('Error loading initial employee data:', error);
+      }
+    };
 
+    // Chỉ load nếu chưa có data
+    if (employees.length === 0) {
+      loadInitialData();
+    }
+  }, []);
+  const [localFilteredEmployees, setLocalFilteredEmployees] = useState<GetDSNhanVienDto[]>([])
   const { roles } = useRole();
   const { departments } = useDepartment()
   const { buildingDetails } = useBuilding()
@@ -228,7 +245,6 @@ export function EmployeeList({ filteredEmployees }: EmployeeListProps) {
   const [selectedEmployeeBuildings, setSelectedEmployeeBuildings] = useState<number[]>([])
   const [selectedEmployeeRoles, setSelectedEmployeeRoles] = useState<number[]>([])
   // Sử dụng filteredEmployees từ props nếu có, không thì dùng all employees
-  const displayEmployees = filteredEmployees && filteredEmployees.length >= 0 ? filteredEmployees : employees
 
   // Function để toggle trạng thái chỉnh sửa thông tin cá nhân
   const handleEmployeeRoleToggle = (roleId: number) => {
@@ -238,6 +254,7 @@ export function EmployeeList({ filteredEmployees }: EmployeeListProps) {
       setSelectedEmployeeRoles([...selectedEmployeeRoles, roleId])
     }
   }
+  // Thay đổi điều kiện để chỉ dùng filteredEmployees khi có dữ liệu thực sự
 
   // Function save roles
 
@@ -337,6 +354,7 @@ export function EmployeeList({ filteredEmployees }: EmployeeListProps) {
   // Update function view employee:
   const handleViewEmployeeUpdated = (employee: any) => {
     setSelectedEmployee(employee)
+    setIsReturningFromDetailView(false);
 
     // Khởi tạo các states với dữ liệu hiện tại
     setEditedEmployeeInfo({
@@ -384,25 +402,34 @@ export function EmployeeList({ filteredEmployees }: EmployeeListProps) {
   }
 
   const handleSaveRoles = async () => {
-    if (!currentEmployee) return;
+    if (!selectedEmployee) return;
 
     try {
       // Lấy roleIds từ selectedRoles (cần map từ roleName sang roleID)
-      const roleIds = roles
-        .filter(role => selectedRoles.includes(role.roleName))
-        .map(role => role.roleID);
 
-      await updateEmployeeRoles(currentEmployee.maNV, roleIds);
+      await updateEmployeeRoles(selectedEmployee.maNV, selectedEmployeeRoles);
+      const updatedEmployees = await getListEmployee();
 
+      const updatedEmployee = updatedEmployees.find(
+        (emp: any) => emp.maNV === selectedEmployee.maNV
+      );
+      if (updatedEmployee) {
+        setSelectedEmployee(updatedEmployee);
+        setSelectedRoles(updatedEmployee.roles.map((role: any) => Number(role.roleID)));
+      }
       setIsRoleDialogOpen(false);
-      toast.success(`Role của ${currentEmployee.tenNV} đã được cập nhật thành công.`);
+      setIsRoleTabEditing(false);
+      toast.success(`Role của ${selectedEmployee.tenNV} đã được cập nhật thành công.`, {
+        position: "top-right",
+        autoClose: 500
+      });
     } catch (error) {
       toast.error("Có lỗi xảy ra khi cập nhật role!");
       console.error('Error updating roles:', error);
     }
   }
 
-  const handleRoleToggle = (role: string) => {
+  const handleRoleToggle = (role: number) => {
     if (selectedRoles.includes(role)) {
       setSelectedRoles(selectedRoles.filter((r) => r !== role))
     } else {
@@ -429,10 +456,29 @@ export function EmployeeList({ filteredEmployees }: EmployeeListProps) {
       return;
 
     try {
-      await updateEmployeeDepartments(selectedEmployee.maNV, selectedDepartments);
 
-      setIsDepartmentDialogOpen(false);
-      toast.success(`Phòng ban của ${selectedEmployee.tenNV} đã được cập nhật thành công.`);
+      await updateEmployeeDepartments(selectedEmployee.maNV, selectedEmployeeDepartments);
+      const updatedEmployees = await getListEmployee();
+
+      // 3. Tìm nhân viên đã cập nhật trong danh sách mới
+      const updatedEmployee = updatedEmployees.find(
+        (emp: any) => emp.maNV === selectedEmployee.maNV
+      );
+
+      // 4. Cập nhật state cho chi tiết nhân viên
+      if (updatedEmployee) {
+        setSelectedEmployee(updatedEmployee);
+        // Cũng cập nhật danh sách tòa nhà được chọn
+        setSelectedEmployeeDepartments(
+          updatedEmployee.phongBans.map((dept: any) => Number(dept.maPB))
+        );
+        setIsDepartmentDialogOpen(false);
+        setIsDepartmentTabEditing(false);
+        toast.success(`Phòng ban của ${selectedEmployee.tenNV} đã được cập nhật thành công.`, {
+          position: "top-right",
+          autoClose: 500
+        });
+      }
     } catch (error) {
       toast.error("Có lỗi xảy ra khi cập nhật phòng ban!");
       console.error('Error updating departments:', error);
@@ -462,34 +508,25 @@ export function EmployeeList({ filteredEmployees }: EmployeeListProps) {
       // 1. Gọi API cập nhật
       await updateEmployeeBuildings(selectedEmployee.maNV, selectedEmployeeBuildings);
 
-      // 2. Lấy danh sách nhân viên mới và đợi kết quả
       const updatedEmployees = await getListEmployee();
 
-      // 3. Tìm nhân viên đã cập nhật trong danh sách mới
       const updatedEmployee = updatedEmployees.find(
         (emp: any) => emp.maNV === selectedEmployee.maNV
       );
 
-      // 4. Cập nhật state cho chi tiết nhân viên
       if (updatedEmployee) {
         setSelectedEmployee(updatedEmployee);
-        // Cũng cập nhật danh sách tòa nhà được chọn
         setSelectedEmployeeBuildings(
           updatedEmployee.toaNhas.map((building: any) => Number(building.maTN))
         );
-
-        // 5. Đảm bảo danh sách nhân viên được cập nhật trong context
-        // Giả sử có hàm setEmployees hoặc cách khác để cập nhật danh sách nhân viên
-        // setEmployees(updatedEmployees);
       }
 
       // 6. Đóng dialog chỉnh sửa 
       setIsBuildingTabEditing(false);
 
-      // 7. Hiển thị thông báo thành công
       toast.success(`Tòa nhà của ${selectedEmployee.tenNV} đã được cập nhật thành công.`, {
         position: "top-right",
-        autoClose: 1500
+        autoClose: 500
       });
     } catch (error) {
       toast.error("Có lỗi xảy ra khi cập nhật tòa nhà!");
@@ -501,6 +538,45 @@ export function EmployeeList({ filteredEmployees }: EmployeeListProps) {
     setSelectedEmployee(employee)
   }
 
+  const [forceUpdate, setForceUpdate] = useState(0);
+  const [isReturningFromDetailView, setIsReturningFromDetailView] = useState(false); // State mới
+
+  useEffect(() => {
+    if (filteredEmployees && filteredEmployees.length > 0) {
+      setLocalFilteredEmployees(filteredEmployees);
+    }
+  }, [filteredEmployees, employees, forceUpdate]);
+
+  const displayEmployees = useMemo(() => {
+    if (isReturningFromDetailView) {
+      return employees;
+    }
+    if (filteredEmployees && filteredEmployees.length > 0) {
+      return filteredEmployees;
+    }
+    return employees;
+  }, [employees, filteredEmployees, forceUpdate, isReturningFromDetailView]);
+  useEffect(() => {
+    if (isReturningFromDetailView) {
+      setIsReturningFromDetailView(false);
+    }
+  }, [isReturningFromDetailView]);
+
+  const handleBackToList = async () => {
+    try {
+      console.log('Quay lại danh sách - bắt đầu cập nhật');
+      setSelectedEmployee(null);
+      setIsReturningFromDetailView(true);
+      setForceUpdate(prev => prev + 1);
+      console.log('Quay lại danh sách - hoàn thành');
+    } catch (error) {
+      console.error('Lỗi khi cập nhật danh sách:', error);
+      // Vẫn quay lại dù có lỗi
+      setSelectedEmployee(null);
+      setForceUpdate(prev => prev + 1);
+      setIsReturningFromDetailView(true);
+    }
+  };
   return (
     <div className="space-y-4">
       {!selectedEmployee ? (
@@ -566,9 +642,9 @@ export function EmployeeList({ filteredEmployees }: EmployeeListProps) {
                   <DialogTitle>Quản lý Role</DialogTitle>
                   <DialogDescription>Quản lý role cho nhân viên {currentEmployee?.tenNV}</DialogDescription>
                 </DialogHeader>
-                <div className="py-4">
+                {/* <div className="py-4">
                   <div className="space-y-2">
-                    {["Admin", "Manager", "Staff"].map((role) => (
+                    {selectedEmployee.roles.map((role:any) => (
                       <div key={role} className="flex items-center space-x-2">
                         <Checkbox
                           id={`role-${role}`}
@@ -581,7 +657,7 @@ export function EmployeeList({ filteredEmployees }: EmployeeListProps) {
                       </div>
                     ))}
                   </div>
-                </div>
+                </div> */}
                 <DialogFooter>
                   <Button onClick={handleSaveRoles}>Lưu</Button>
                 </DialogFooter>
@@ -640,8 +716,8 @@ export function EmployeeList({ filteredEmployees }: EmployeeListProps) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {displayEmployees.length > 0 ? (
-                  displayEmployees.map((employee) => (
+                {employees.length > 0 ? (
+                  employees.map((employee) => (
                     <TableRow key={employee.maNV} className="cursor-pointer" onClick={() => handleViewEmployeeUpdated(employee)}>
                       <TableCell className="font-medium">{employee.tenNV}</TableCell>
                       <TableCell className="max-w-[200px]">
@@ -738,11 +814,7 @@ export function EmployeeList({ filteredEmployees }: EmployeeListProps) {
           <div className="flex items-center justify-between">
             <Button
               variant="outline"
-              onClick={async () => {
-                // Đảm bảo danh sách nhân viên được cập nhật trước khi quay lại
-                await getListEmployee();
-                setSelectedEmployee(null);
-              }}
+              onClick={handleBackToList}
             >
               Quay lại
             </Button>
@@ -833,7 +905,10 @@ export function EmployeeList({ filteredEmployees }: EmployeeListProps) {
                       <div className="flex justify-between mb-4">
                         <h3 className="text-sm font-medium">Quản lý Roles</h3>
                         {!isRoleTabEditing ? (
-                          <Button size="sm" onClick={() => setIsRoleTabEditing(true)}>
+                          <Button size="sm" onClick={() => {
+                            setIsRoleTabEditing(true)
+                            setSelectedEmployeeRoles(selectedEmployee.roles.map((role: any) => Number(role.roleID)))
+                          }}>
                             <Edit className="mr-2 h-4 w-4" />
                             Chỉnh sửa roles
                           </Button>
@@ -850,7 +925,7 @@ export function EmployeeList({ filteredEmployees }: EmployeeListProps) {
                             >
                               Hủy
                             </Button>
-                            <Button size="sm" onClick={handleSaveEmployeeRoles}>
+                            <Button size="sm" onClick={handleSaveRoles}>
                               Lưu
                             </Button>
                           </div>
@@ -889,7 +964,7 @@ export function EmployeeList({ filteredEmployees }: EmployeeListProps) {
                               <div key={role.roleID} className="flex items-center space-x-3 p-3 border rounded-md hover:bg-muted/50">
                                 <Checkbox
                                   id={`employee-role-${role.roleID}`}
-                                  checked={selectedEmployeeRoles.includes(role.roleID)}
+                                  checked={selectedEmployeeRoles.includes(Number(role.roleID))}
                                   onCheckedChange={() => handleEmployeeRoleToggle(role.roleID)}
                                 />
                                 <div className="flex-1">
@@ -1039,7 +1114,12 @@ export function EmployeeList({ filteredEmployees }: EmployeeListProps) {
                       <div className="flex justify-between mb-4">
                         <h3 className="text-sm font-medium">Phòng ban</h3>
                         {!isDepartmentTabEditing ? (
-                          <Button size="sm" onClick={() => setIsDepartmentTabEditing(true)}>
+                          <Button size="sm" onClick={() => {
+                            setIsDepartmentTabEditing(true)
+                            setSelectedEmployeeDepartments(
+                              selectedEmployee.phongBans.map((dept: any) => Number(dept.maPB))
+                            );
+                          }}>
                             <Edit className="mr-2 h-4 w-4" />
                             Chỉnh sửa phòng ban
                           </Button>
@@ -1065,19 +1145,17 @@ export function EmployeeList({ filteredEmployees }: EmployeeListProps) {
                       {!isDepartmentTabEditing ? (
                         selectedEmployee.phongBans.length > 0 ? (
                           <div className="space-y-2">
-                            {[...new Map(selectedEmployee.phongBans.map((d: any) => [d.tenPB, d])).values()].map(
-                              (department: any) => (
-                                <div key={department.maPB} className="p-4 border rounded-md">
-                                  <div className="flex items-center justify-between">
-                                    <div>
-                                      <p className="font-medium">{department.tenPB}</p>
-                                      <p className="text-sm text-muted-foreground">Mã PB: {department.maPB}</p>
-                                    </div>
-                                    <Badge variant="outline">Đang thuộc</Badge>
+                            {selectedEmployee.phongBans.map((dept: any) => (
+                              <div key={dept.maPB} className="p-4 border rounded-md">
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <p className="font-medium">{dept.tenPB}</p>
+                                    <p className="text-sm text-muted-foreground">Mã PB: {dept.maPB}, Tòa nhà {dept.tenTN}</p>
                                   </div>
+                                  <Badge variant="outline">Đang thuộc</Badge>
                                 </div>
-                              )
-                            )}
+                              </div>
+                            ))}
                           </div>
                         ) : (
                           <div className="text-center py-8 text-muted-foreground">Nhân viên chưa thuộc phòng ban nào</div>
@@ -1092,7 +1170,7 @@ export function EmployeeList({ filteredEmployees }: EmployeeListProps) {
                               <div key={dept.maPB} className="flex items-center space-x-3 p-3 border rounded-md hover:bg-muted/50">
                                 <Checkbox
                                   id={`employee-dept-${dept.maPB}`}
-                                  checked={selectedEmployeeDepartments.includes(dept.maPB)}
+                                  checked={selectedEmployeeDepartments.includes(Number(dept.maPB))}
                                   onCheckedChange={() => handleEmployeeDepartmentToggle(dept.maPB)}
                                 />
                                 <div className="flex-1">
@@ -1102,7 +1180,7 @@ export function EmployeeList({ filteredEmployees }: EmployeeListProps) {
                                   >
                                     {dept.tenPB}
                                   </Label>
-                                  <p className="text-xs text-muted-foreground">Tòa nhà: {dept.tenTN}</p>
+                                  <p className="text-xs text-muted-foreground">MaPB: {dept.maPB} , Tòa nhà: {dept.tenTN}</p>
                                 </div>
                                 {selectedEmployeeDepartments.includes(dept.maPB) && (
                                   <Badge variant="secondary" className="text-xs">

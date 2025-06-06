@@ -19,6 +19,7 @@ export interface NhanVienInToaNha {
 export interface NhanVienPhongBan {
     maPB: number;
     tenPB: string;
+    tenTN: string;
 }
 
 export interface NhanVienRoles {

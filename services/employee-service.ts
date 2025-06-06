@@ -51,42 +51,43 @@ export const employeeService = {
 
   // Cập nhật phòng ban của nhân viên
   async updateEmployeeDepartments(maNV: number, departmentIds: number[],token: string): Promise<any> {
-    
-
-    const queryParams = new URLSearchParams();
-    queryParams.append('maNV', maNV.toString());
-    departmentIds.forEach(id => queryParams.append('danhSachMaPB', id.toString()));
-
-    const response = await fetch(`${API_BASE_URL}/NhanVien/UpdateNhanVienInPhongBan?${queryParams}`, {
+    const response = await fetch(`${API_BASE_URL}/NhanVien/UpdateNhanVienInPhongBan`, {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
       },
+      body: JSON.stringify({
+        maNV: maNV,
+        dsPhongBan: departmentIds,
+      }),
     });
 
     if (!response.ok) {
       throw new Error('Failed to update employee departments');
     }
 
-    return response.json();
+    return response.text();
   },
 
   // Cập nhật role của nhân viên
   async updateEmployeeRoles(maNV: number, roleIds: number[],token: string): Promise<any> {
-
-
-
     const response = await fetch(`${API_BASE_URL}/NhanVien/UpdateNhanVienRole`, {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
       },
+      body: JSON.stringify({
+        maNV: maNV,
+        dsRole: roleIds,
+      }),
     });
 
     if (!response.ok) {
       throw new Error('Failed to update employee roles');
     }
 
-    return response.json();
+    return response.text();
   },
 };
