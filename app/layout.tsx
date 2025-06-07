@@ -10,6 +10,8 @@ import { DepartmentProvider } from "@/components/context/DepartmentContext"
 import { BuildingProvider } from "@/components/context/BuildingContext"
 import { EmployeeProvider } from "@/components/context/EmployeeContext"
 import { RoleProvider } from "@/components/context/RoleContext"
+import { ServiceTypeProvider } from "@/components/context/ServiceTypeContext"
+import { ServicesProvider } from "@/components/context/ServicesContext"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata = {
@@ -25,11 +27,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
-        <ThemeProvider attribute="class" defaultTheme="light">
+      <body className={inter.className} suppressHydrationWarning>
+        <ThemeProvider attribute="class"  defaultTheme="light">
           <LanguageProvider>
             <AuthProvider>
               <BuildingProvider>
+                <ServiceTypeProvider>
+                  <ServicesProvider>
                 <DepartmentProvider>
                   <EmployeeProvider>
                     <RoleProvider>
@@ -38,6 +42,8 @@ export default function RootLayout({
                     </RoleProvider>
                   </EmployeeProvider>
                 </DepartmentProvider>
+                </ServicesProvider>
+                </ServiceTypeProvider>
               </BuildingProvider>
             </AuthProvider>
           </LanguageProvider>
