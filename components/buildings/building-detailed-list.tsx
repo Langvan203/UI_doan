@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
+import { useAuth } from "../context/AuthContext"
 
 interface BuildingDetailed {
   id: number
@@ -52,6 +53,7 @@ export function BuildingDetailedList({ buildings, onEdit, onDelete, onSelect }: 
         return <Badge variant="outline">{status}</Badge>
     }
   }
+  const { hasPermissions } = useAuth();
 
   // Cập nhật bảng để responsive tốt hơn trên điện thoại
   return (
@@ -109,25 +111,32 @@ export function BuildingDetailedList({ buildings, onEdit, onDelete, onSelect }: 
                         <Eye className="mr-2 h-4 w-4" />
                         Xem chi tiết
                       </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          onEdit(building)
-                        }}
-                      >
-                        <Pencil className="mr-2 h-4 w-4" />
-                        Chỉnh sửa
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        className="text-red-600"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          onDelete(building)
-                        }}
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Xóa
-                      </DropdownMenuItem>
+                      {hasPermissions("building.update") && (
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            onEdit(building)
+                          }}
+                        >
+                          <Pencil className="mr-2 h-4 w-4" />
+                          Chỉnh sửa
+                        </DropdownMenuItem>  
+                      )
+                      }
+                      {hasPermissions("building.remove") && (
+                        <DropdownMenuItem
+                          className="text-red-600"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            onDelete(building)
+                          }}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Xóa
+                        </DropdownMenuItem>
+                      )}
+                      <DropdownMenuSeparator />
+
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>

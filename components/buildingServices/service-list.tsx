@@ -50,7 +50,7 @@ const paymentCycles = [
   { value: 6, label: "Nửa năm" },
   { value: 12, label: "1 năm" },
 ]
-const units = ["kWh", "m³", "month", "day", "hour", "piece", "service"]
+const units = ["kWh", "m³", "month", "day", "hour", "piece", "service","m2"]
 export function ServiceList() {
   const { serviceTypes } = useServiceType();
   const { services, createService, removeService } = useServices();

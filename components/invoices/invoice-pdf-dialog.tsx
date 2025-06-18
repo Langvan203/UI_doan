@@ -84,44 +84,44 @@ export function InvoicePdfDialog({ invoice, open, onOpenChange, onSendEmail }: I
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] max-w-[800px] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Invoice PDF Preview</DialogTitle>
-          <DialogDescription>Preview the invoice PDF with QR code for payment</DialogDescription>
+          <DialogTitle>Hóa đơn PDF</DialogTitle>
+          <DialogDescription>Xem mã QR thanh toán</DialogDescription>
         </DialogHeader>
 
         {isLoading ? (
           <div className="flex h-[500px] items-center justify-center">
             <div className="text-center">
               <div className="mb-4 h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-              <p>Generating PDF preview...</p>
+              <p>Đang tạo file PDF...</p>
             </div>
           </div>
         ) : (
           <div ref={pdfContainerRef} className="invoice-container space-y-6 rounded-md border p-6">
             <div className="header flex justify-between">
               <div>
-                <div className="invoice-id text-2xl font-bold">Invoice: {invoice.id}</div>
-                <div className="text-sm text-muted-foreground">Date: {new Date().toLocaleDateString()}</div>
+                <div className="invoice-id text-2xl font-bold">Hóa đơn: {invoice.id}</div>
+                <div className="text-sm text-muted-foreground">Ngày: {new Date().toLocaleDateString()}</div>
                 <div className="text-sm text-muted-foreground">
-                  Due Date: {new Date(invoice.dueDate).toLocaleDateString()}
+                  Tới hạn: {new Date(invoice.dueDate).toLocaleDateString()}
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-xl font-bold">Building Management System</div>
-                <div className="text-sm">123 Building Street</div>
-                <div className="text-sm">City, State 12345</div>
-                <div className="text-sm">Phone: (123) 456-7890</div>
+                <div className="text-xl font-bold">Quản lý hệ thống tòa nhà</div>
+                <div className="text-sm">Địa chỉ: </div>
+                <div className="text-sm">Đường: </div>
+                <div className="text-sm">Số điện thoại</div>
               </div>
             </div>
 
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
               <div className="rounded-md border p-4">
-                <div className="mb-2 text-sm font-medium text-muted-foreground">Bill To:</div>
+                <div className="mb-2 text-sm font-medium text-muted-foreground">Hóa đơn đến:</div>
                 <div className="font-medium">{invoice.resident}</div>
                 <div>{invoice.premise}</div>
               </div>
 
               <div className="rounded-md border p-4">
-                <div className="mb-2 text-sm font-medium text-muted-foreground">Payment Details:</div>
+                <div className="mb-2 text-sm font-medium text-muted-foreground">Chi tiết thanh toán:</div>
                 <div>
                   Status:{" "}
                   <span
@@ -136,18 +136,18 @@ export function InvoicePdfDialog({ invoice, open, onOpenChange, onSendEmail }: I
                     {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
                   </span>
                 </div>
-                <div>Payment Method: Bank Transfer</div>
-                <div>Account: XXXX-XXXX-XXXX-1234</div>
+                <div>Phương thức thanh toán: Chuyển khoản</div>
+                <div>Số tài khoản: 3901553564</div>
               </div>
             </div>
 
             <div>
-              <h3 className="mb-2 text-lg font-medium">Invoice Items</h3>
+              <h3 className="mb-2 text-lg font-medium">Danh mục</h3>
               <table className="w-full">
                 <thead>
                   <tr className="border-b">
-                    <th className="py-2 text-left">Description</th>
-                    <th className="py-2 text-right">Amount</th>
+                    <th className="py-2 text-left">Mô tả</th>
+                    <th className="py-2 text-right">Số tiền</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -166,16 +166,16 @@ export function InvoicePdfDialog({ invoice, open, onOpenChange, onSendEmail }: I
             </div>
 
             <div className="qr-code flex flex-col items-center justify-center">
-              <h3 className="mb-2 text-lg font-medium">Scan to Pay</h3>
+              <h3 className="mb-2 text-lg font-medium">Quét để thanh toán</h3>
               <div className="rounded-md border p-4">
                 <QRCodeSVG value={paymentData} size={150} />
               </div>
-              <p className="mt-2 text-sm text-muted-foreground">Scan this QR code to make a payment</p>
+              <p className="mt-2 text-sm text-muted-foreground">Quét mã QR để thanh toán</p>
             </div>
 
             <div className="footer mt-8 border-t pt-4 text-center text-sm text-muted-foreground">
-              <p>Thank you for your business!</p>
-              <p>If you have any questions about this invoice, please contact our customer service.</p>
+              <p>Cảm ơn quý khách đã sử dụng dịch vụ </p>
+              <p>Nếu có bất cứ vấn đề gì, vui lòng liên hệ bộ phận hỗ trợ</p>
             </div>
           </div>
         )}
@@ -184,15 +184,15 @@ export function InvoicePdfDialog({ invoice, open, onOpenChange, onSendEmail }: I
           <div className="flex flex-wrap justify-end gap-2">
             <Button variant="outline" onClick={handlePrint} disabled={isLoading}>
               <Printer className="mr-2 h-4 w-4" />
-              Print
+              In hóa đơn
             </Button>
             <Button variant="outline" onClick={handleDownload} disabled={isLoading}>
               <FileDown className="mr-2 h-4 w-4" />
-              Download
+              Tải xuống PDF
             </Button>
             <Button onClick={onSendEmail} disabled={isLoading}>
               <Mail className="mr-2 h-4 w-4" />
-              Send Email
+              Gửi qua email
             </Button>
           </div>
         </DialogFooter>

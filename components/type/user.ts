@@ -5,4 +5,5 @@ export interface UserLogin {
     sdt: string;
     accessToken: string;
     roleName: string[];
+    permissions: string[];
 }

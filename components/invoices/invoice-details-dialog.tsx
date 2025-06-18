@@ -18,19 +18,19 @@ export function InvoiceDetailsDialog({ invoice, open, onOpenChange }: InvoiceDet
       case "pending":
         return (
           <Badge variant="outline" className="bg-yellow-50 text-yellow-700">
-            Pending
+            Đang chờ thanh toán
           </Badge>
         )
       case "paid":
         return (
           <Badge variant="outline" className="bg-green-50 text-green-700">
-            Paid
+            Đã thanh toán
           </Badge>
         )
       case "overdue":
         return (
           <Badge variant="outline" className="bg-red-50 text-red-700">
-            Overdue
+            Hết hạn
           </Badge>
         )
       default:

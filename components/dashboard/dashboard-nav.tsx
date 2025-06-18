@@ -181,14 +181,6 @@ const navItems: NavItem[] = [
         bgColor: "bg-blue-500/10",
         children: [
           {
-            title: "Yêu cầu sử dụng",
-            href: "/dashboard/buildingServices/operations/assignment",
-            icon: <UserCheck className="h-5 w-5" />,
-            roles: ["Quản lý tòa nhà", "Nhân viên tòa nhà"],
-            color: "text-blue-500",
-            bgColor: "bg-blue-500/10"
-          },
-          {
             title: "Duyệt yêu cầu",
             href: "/dashboard/buildingServices/operations/approval",
             icon: <CheckCircle className="h-5 w-5" />,
@@ -198,6 +190,14 @@ const navItems: NavItem[] = [
           },
           {
             title: "Đang sử dụng",
+            href: "/dashboard/buildingServices/operations/assignment",
+            icon: <UserCheck className="h-5 w-5" />,
+            roles: ["Quản lý tòa nhà", "Nhân viên tòa nhà"],
+            color: "text-blue-500",
+            bgColor: "bg-blue-500/10"
+          },
+          {
+            title: "Thống kê sử dụng",
             href: "/dashboard/buildingServices/operations/usage",
             icon: <BarChart className="h-5 w-5" />,
             roles: ["Quản lý tòa nhà", "Nhân viên tòa nhà"],

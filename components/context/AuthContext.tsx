@@ -5,6 +5,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { setCookie } from "cookies-next/client";
 import { set } from "date-fns";
+import {jwtDecode} from "jwt-decode";
 
 interface AuthContextType {
     user: UserLogin | null;
@@ -13,6 +14,7 @@ interface AuthContextType {
     isAuthenticated: boolean;
     token: string | null;
     hasRole: (role: string) => boolean;     
+    hasPermissions: (permission: string) => boolean;
 }
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -24,6 +26,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     useEffect(() => {
         const storedUser = localStorage.getItem("user");
+        const storedToken = localStorage.getItem("token");
+        if(storedToken)
+        {
+            const decodedToken = jwtDecode(storedToken);
+
+        }
         if (storedUser) {
             setUser(JSON.parse(storedUser));
         }
@@ -40,6 +48,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         const data: UserLogin = await res.json();
         setUser(data);
+        localStorage.setItem("token", data.accessToken);
         localStorage.setItem("user", JSON.stringify(data));
         setCookie('user-data', JSON.stringify(data), {
             maxAge: 30 * 24 * 60 * 60, // 30 days
@@ -68,9 +77,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (!user || !user.roleName) return false;
         return user.roleName.includes(role);
       }
+    const hasPermissions = (permission: string) => {
+        if (!user || !user.permissions) return false;
+        return user.permissions.includes(permission);
+    };
 
     return (
-        <AuthContext.Provider value={{ user, login, logout, isAuthenticated: !!user, token: user?.accessToken || null, hasRole }}>
+        <AuthContext.Provider value={{ user, login, logout, isAuthenticated: !!user, token: user?.accessToken || null, hasRole, hasPermissions }}>
             {children}
         </AuthContext.Provider>
     );

@@ -291,8 +291,8 @@ export function ServiceTypeList() {
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-3">
-            {essentialServices.map((type) => (
-              <Card key={type.id} className="overflow-hidden">
+            {essentialServices.map((type,index) => (
+              <Card key={index} className="overflow-hidden">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <div className="flex items-center space-x-2">
                     <DynamicIcon iconString={processIconString(type.icon)} />
