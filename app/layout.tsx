@@ -10,12 +10,15 @@ import { DepartmentProvider } from "@/components/context/DepartmentContext"
 import { BuildingProvider } from "@/components/context/BuildingContext"
 import { EmployeeProvider } from "@/components/context/EmployeeContext"
 import { RoleProvider } from "@/components/context/RoleContext"
+import { ServiceTypeProvider } from "@/components/context/ServiceTypeContext"
+import { ServicesProvider } from "@/components/context/ServicesContext"
+import { ServicesUsageProvider } from "@/components/context/ServiceUsage"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata = {
   title: "Building Management System",
   description: "A comprehensive building management system",
-    generator: 'v0.dev'
+  generator: 'v0.dev'
 }
 
 export default function RootLayout({
@@ -25,19 +28,25 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
+      <body className={inter.className} suppressHydrationWarning>
         <ThemeProvider attribute="class" defaultTheme="light">
           <LanguageProvider>
             <AuthProvider>
               <BuildingProvider>
-                <DepartmentProvider>
-                  <EmployeeProvider>
-                    <RoleProvider>
-                    {children}
-                    <ToastContainer />
-                    </RoleProvider>
-                  </EmployeeProvider>
-                </DepartmentProvider>
+                <ServiceTypeProvider>
+                  <ServicesProvider>
+                    <DepartmentProvider>
+                      <EmployeeProvider>
+                        <RoleProvider>
+                          <ServicesUsageProvider>
+                          {children}
+                          </ServicesUsageProvider>
+                          <ToastContainer />
+                        </RoleProvider>
+                      </EmployeeProvider>
+                    </DepartmentProvider>
+                  </ServicesProvider>
+                </ServiceTypeProvider>
               </BuildingProvider>
             </AuthProvider>
           </LanguageProvider>

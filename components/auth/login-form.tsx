@@ -54,9 +54,9 @@ export function LoginForm() {
         progress: undefined,
         theme: "light",
         transition: Bounce,
-        onClose: () => {
-          router.push("/dashboard")
-        }
+        // onClose: () => {
+        //   router.push("/dashboard")
+        // }
         });
     } catch (error) {
       console.error("Đăng nhập thất bại:", error)

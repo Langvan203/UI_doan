@@ -27,19 +27,19 @@ export function InvoiceManagement() {
     <div className="space-y-6">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Invoices</h2>
+          <h2 className="text-2xl font-bold tracking-tight">Hóa đơn</h2>
           <p className="text-muted-foreground">
-            Manage resident invoices, generate payment QR codes, and send notifications.
+            Quản lý hóa đơn cho cư dân, bao gồm tạo, xem và theo dõi tình trạng thanh toán.
           </p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" onClick={() => setIsTemplateDialogOpen(true)}>
             <FileText className="mr-2 h-4 w-4" />
-            Create Template
+            Tạo Template
           </Button>
           <Button onClick={() => setIsCreateDialogOpen(true)}>
             <PlusCircle className="mr-2 h-4 w-4" />
-            Create Invoice
+            Tạo Hóa Đơn
           </Button>
         </div>
       </div>
@@ -47,11 +47,11 @@ export function InvoiceManagement() {
       <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
           <TabsList>
-            <TabsTrigger value="all">All Invoices</TabsTrigger>
-            <TabsTrigger value="pending">Pending</TabsTrigger>
-            <TabsTrigger value="paid">Paid</TabsTrigger>
-            <TabsTrigger value="overdue">Overdue</TabsTrigger>
-            <TabsTrigger value="templates">Templates</TabsTrigger>
+            <TabsTrigger value="all">Tất cả hóa đơn</TabsTrigger>
+            <TabsTrigger value="pending">Đang chờ thanh toán</TabsTrigger>
+            <TabsTrigger value="paid">Đã thanh toán</TabsTrigger>
+            <TabsTrigger value="overdue">Hết hạn</TabsTrigger>
+            <TabsTrigger value="templates">Mẫu hóa đơn</TabsTrigger>
           </TabsList>
           {activeTab !== "templates" && <InvoiceFilters filters={filters} setFilters={setFilters} />}
         </div>
@@ -65,8 +65,8 @@ export function InvoiceManagement() {
           </div>
           <Card>
             <CardHeader>
-              <CardTitle>All Invoices</CardTitle>
-              <CardDescription>Manage all resident invoices in the system.</CardDescription>
+              <CardTitle>Tất cả hóa đơn</CardTitle>
+              <CardDescription>Quản lý tất cả hóa đơn của hệ thống tòa nhà</CardDescription>
             </CardHeader>
             <CardContent>
               <InvoiceList status="all" filters={filters} />
@@ -77,8 +77,8 @@ export function InvoiceManagement() {
         <TabsContent value="pending" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Pending Invoices</CardTitle>
-              <CardDescription>Invoices that are waiting for payment.</CardDescription>
+              <CardTitle>Đang chờ thanh toán</CardTitle>
+              <CardDescription>Hóa đơn chờ thanh toán</CardDescription>
             </CardHeader>
             <CardContent>
               <InvoiceList status="pending" filters={filters} />
@@ -89,8 +89,8 @@ export function InvoiceManagement() {
         <TabsContent value="paid" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Paid Invoices</CardTitle>
-              <CardDescription>Invoices that have been paid by residents.</CardDescription>
+              <CardTitle>Đã thanh toán</CardTitle>
+              <CardDescription>Hóa đơn đã thanh toán bởi cư dân</CardDescription>
             </CardHeader>
             <CardContent>
               <InvoiceList status="paid" filters={filters} />
@@ -101,8 +101,8 @@ export function InvoiceManagement() {
         <TabsContent value="overdue" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Overdue Invoices</CardTitle>
-              <CardDescription>Invoices that are past their due date.</CardDescription>
+              <CardTitle>Hóa đơn hết hạn</CardTitle>
+              <CardDescription>Hóa đơn quá hạn thanh toán</CardDescription>
             </CardHeader>
             <CardContent>
               <InvoiceList status="overdue" filters={filters} />

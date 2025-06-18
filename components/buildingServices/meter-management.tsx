@@ -999,8 +999,8 @@ export function MeterManagement() {
                         <div className="rounded-md bg-muted p-3">
                           <p className="text-sm font-medium">Highest Consumption</p>
                           <p className="text-xs text-muted-foreground">
-                            {highestConsumptionMeter.serialNumber} -{" "}
-                            {getUnitById(highestConsumptionMeter.unitId)?.name || "Unknown"}
+                            {/* {highestConsumptionMeter.serialNumber} -{" "}
+                            {getUnitById(highestConsumptionMeter.unitId)?.name || "Unknown"} */}
                           </p>
                           <div className="mt-2 flex items-center justify-between">
                             <span className="text-sm">

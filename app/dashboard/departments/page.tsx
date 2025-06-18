@@ -1,5 +1,5 @@
+import DepartmentsPages from "@/components/staff/departments/page"
 import type { Metadata } from "next"
-import { DepartmentManagement } from "@/components/staff/department-management"
 
 export const metadata: Metadata = {
   title: "Department Management | Building Management System",
@@ -7,5 +7,5 @@ export const metadata: Metadata = {
 }
 
 export default function DepartmentsPage() {
-  return <DepartmentManagement />
+  return <DepartmentsPages />
 }

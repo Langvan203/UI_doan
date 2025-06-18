@@ -359,10 +359,10 @@ export function ServiceAssignment() {
     <div className="space-y-6">
       <Alert>
         <AlertCircle className="h-4 w-4" />
-        <AlertTitle>Meter Assignment Required</AlertTitle>
+        <AlertTitle>Yêu cầu phân công mét</AlertTitle>
         <AlertDescription>
-          Electricity and water services require a meter to be assigned. Make sure to select a meter when assigning
-          these services.
+          Các dịch vụ điện và nước cần phải được chỉ định một đồng hồ đo. Hãy đảm bảo chọn một đồng hồ đo khi chỉ định
+          các dịch vụ này.
         </AlertDescription>
       </Alert>
 
@@ -370,7 +370,7 @@ export function ServiceAssignment() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center w-full">
           <div className="relative w-full sm:w-96">
             <Input
-              placeholder="Search residents..."
+              placeholder="Tìm kiếm cư dân"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full"
@@ -385,10 +385,10 @@ export function ServiceAssignment() {
             }}
           >
             <SelectTrigger className="w-full sm:w-[180px]">
-              <SelectValue placeholder="All Buildings" />
+              <SelectValue placeholder="Tất cả tòa nhà" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="0">All Buildings</SelectItem>
+              <SelectItem value="0">Tất cả tòa nhà</SelectItem>
               {buildings.map((building) => (
                 <SelectItem key={building.id} value={building.id.toString()}>
                   {building.name}
@@ -405,10 +405,10 @@ export function ServiceAssignment() {
             disabled={selectedBuilding === null}
           >
             <SelectTrigger className="w-full sm:w-[180px]">
-              <SelectValue placeholder="All Blocks" />
+              <SelectValue placeholder="Tất cả khối nhà" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="0">All Blocks</SelectItem>
+              <SelectItem value="0">Tất cả khối nhà</SelectItem>
               {filteredBlocks.map((block) => (
                 <SelectItem key={block.id} value={block.id.toString()}>
                   {block.name}
@@ -422,10 +422,10 @@ export function ServiceAssignment() {
             disabled={selectedBlock === null}
           >
             <SelectTrigger className="w-full sm:w-[180px]">
-              <SelectValue placeholder="All Floors" />
+              <SelectValue placeholder="Tất cả tầng lầu" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="0">All Floors</SelectItem>
+              <SelectItem value="0">Tất cả tầng lầu</SelectItem>
               {filteredFloors.map((floor) => (
                 <SelectItem key={floor.id} value={floor.id.toString()}>
                   {floor.name}
@@ -438,17 +438,17 @@ export function ServiceAssignment() {
           <DialogTrigger asChild>
             <Button className="w-full sm:w-auto">
               <Plus className="mr-2 h-4 w-4" />
-              Assign Service
+              Thêm dịch vụ sử dụng mới
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Assign Service to Resident</DialogTitle>
-              <DialogDescription>Assign a service to a resident in the building.</DialogDescription>
+              <DialogTitle>Thêm dịch vụ sử dụng cho cư dân</DialogTitle>
+              <DialogDescription>Thêm một dịch vụ cho cư dân trong tòa nhà</DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
-                <Label htmlFor="resident">Resident</Label>
+                <Label htmlFor="resident">Căn hộ</Label>
                 <Select
                   value={newAssignment.residentId ? newAssignment.residentId.toString() : ""}
                   onValueChange={(value) => {
@@ -473,7 +473,7 @@ export function ServiceAssignment() {
                 </Select>
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="service">Service</Label>
+                <Label htmlFor="service">Dịch vụ</Label>
                 <Select
                   value={newAssignment.serviceId ? newAssignment.serviceId.toString() : ""}
                   onValueChange={(value) => {
@@ -533,25 +533,25 @@ export function ServiceAssignment() {
                           newAssignment.residentId,
                           services.find((s) => s.id === newAssignment.serviceId)?.typeId || 0,
                         ).length === 0 && (
-                          <SelectItem value="no-meter" disabled>
-                            No available meters
-                          </SelectItem>
-                        )}
+                            <SelectItem value="no-meter" disabled>
+                              No available meters
+                            </SelectItem>
+                          )}
                       </SelectContent>
                     </Select>
                     {getAvailableMeters(
                       newAssignment.residentId,
                       services.find((s) => s.id === newAssignment.serviceId)?.typeId || 0,
                     ).length === 0 && (
-                      <p className="text-sm text-red-500">
-                        No available meters. Please add a meter for this unit first.
-                      </p>
-                    )}
+                        <p className="text-sm text-red-500">
+                          Không có đồng hồ nào khả dụng cho dịch vụ này. Vui lòng thêm đồng hồ mới hoặc chọn một đồng hồ khác.
+                        </p>
+                      )}
                   </div>
                 )}
 
               <div className="grid gap-2">
-                <Label htmlFor="startDate">Start Date</Label>
+                <Label htmlFor="startDate">Ngày bắt đầu</Label>
                 <Input
                   id="startDate"
                   type="date"
@@ -564,7 +564,7 @@ export function ServiceAssignment() {
               <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleAddAssignment}>Assign Service</Button>
+              <Button onClick={handleAddAssignment}>Thêm dịch vụ sử dụng</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -573,7 +573,7 @@ export function ServiceAssignment() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="all" className="flex items-center gap-2">
-            All Services
+            Tất cả dịch vụ
           </TabsTrigger>
           <TabsTrigger value="electricity" className="flex items-center gap-2">
             <Zap className="h-4 w-4 text-yellow-500" />
@@ -588,28 +588,28 @@ export function ServiceAssignment() {
             <span>Internet</span>
           </TabsTrigger>
           <TabsTrigger value="other" className="flex items-center gap-2">
-            Other Services
+            Dịch vụ khác
           </TabsTrigger>
         </TabsList>
       </Tabs>
 
       <Card>
         <CardHeader>
-          <CardTitle>Service Assignments</CardTitle>
-          <CardDescription>Services assigned to residents</CardDescription>
+          <CardTitle>Thêm dịch vụ sử dụng</CardTitle>
+          <CardDescription>Thêm dịch vụ sử dụng cho cư dân </CardDescription>
         </CardHeader>
         <CardContent>
           {filteredAssignments.length > 0 ? (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Resident</TableHead>
-                  <TableHead>Unit</TableHead>
-                  <TableHead>Service</TableHead>
-                  <TableHead>Meter</TableHead>
-                  <TableHead>Start Date</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead>Cư dân</TableHead>
+                  <TableHead>Vị trí</TableHead>
+                  <TableHead>Dịch vụ</TableHead>
+                  <TableHead>Đồng hồ</TableHead>
+                  <TableHead>Ngày bắt đầu</TableHead>
+                  <TableHead>Trạng thái</TableHead>
+                  <TableHead className="text-right">Hành động</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -639,12 +639,12 @@ export function ServiceAssignment() {
                             </div>
                           ) : (
                             <Badge variant="outline" className="bg-red-50 text-red-700 hover:bg-red-50">
-                              No Meter
+                              Không có đồng hồ
                             </Badge>
                           )
                         ) : (
                           <Badge variant="outline" className="bg-gray-50 text-gray-700 hover:bg-gray-50">
-                            Not Required
+                            Không yêu cầu đồng hồ
                           </Badge>
                         )}
                       </TableCell>
@@ -672,11 +672,11 @@ export function ServiceAssignment() {
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem>
                               <Edit className="mr-2 h-4 w-4" />
-                              Edit
+                              Sửa
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleDeleteAssignment(assignment.id)}>
                               <Trash2 className="mr-2 h-4 w-4" />
-                              Delete
+                              Xóa
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -688,7 +688,7 @@ export function ServiceAssignment() {
             </Table>
           ) : (
             <div className="flex h-24 items-center justify-center rounded-md border border-dashed">
-              <p className="text-sm text-muted-foreground">No service assignments found</p>
+              <p className="text-sm text-muted-foreground">Không có dịch vụ nào được tìm thấy</p>
             </div>
           )}
         </CardContent>
@@ -696,8 +696,8 @@ export function ServiceAssignment() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Residents Without Services</CardTitle>
-          <CardDescription>Residents who don't have any services assigned</CardDescription>
+          <CardTitle>Cư dân không có dịch vụ</CardTitle>
+          <CardDescription>Cư dân không được cung cấp bất kỳ dịch vụ nào</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -741,10 +741,10 @@ export function ServiceAssignment() {
           </div>
           {filteredResidents.filter((resident) => !assignments.some((a) => a.residentId === resident.id)).length ===
             0 && (
-            <div className="flex h-24 items-center justify-center rounded-md border border-dashed">
-              <p className="text-sm text-muted-foreground">All residents have services assigned</p>
-            </div>
-          )}
+              <div className="flex h-24 items-center justify-center rounded-md border border-dashed">
+                <p className="text-sm text-muted-foreground">Tất cả cư dân đều được cung cấp dịch vụ</p>
+              </div>
+            )}
         </CardContent>
       </Card>
     </div>

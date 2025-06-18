@@ -121,14 +121,14 @@ export const BuildingProvider = ({ children }: { children: React.ReactNode }) =>
 
     const refreshData = async () => {
         if (!token) return;
-        
+
         setIsLoading(true);
         setError(null);
-        
+
         try {
             await Promise.all([
                 getBuildingList(),
-                getFloorList(), 
+                getFloorList(),
                 getBlockDetail(),
                 getBuildingDetail()
             ]);
@@ -140,7 +140,7 @@ export const BuildingProvider = ({ children }: { children: React.ReactNode }) =>
             setIsLoading(false);
         }
     };
-    
+
     const getBlockList = async () => {
         try {
             const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/KhoiNha/GetDSKhoiNhaDetail`, {
@@ -148,11 +148,11 @@ export const BuildingProvider = ({ children }: { children: React.ReactNode }) =>
                     Authorization: `Bearer ${token}`,
                 },
             });
-            
+
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-            
+
             const data = await response.json();
             console.log("Blocks data:", data);
             setBlocks(data);
@@ -170,22 +170,33 @@ export const BuildingProvider = ({ children }: { children: React.ReactNode }) =>
                     Authorization: `Bearer ${token}`,
                 },
             });
-            
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            
-            const data = await response.json();
-            console.log("Buildings API response:", data);
-            console.log("Buildings count:", data?.length || 0);
-            
-            // Validate data structure
-            if (Array.isArray(data)) {
-                setBuildings(data);
-                console.log("Buildings state updated, count:", data.length);
-            } else {
-                console.warn("Buildings data is not an array:", data);
+
+            // if (!response.ok) {
+            //     throw new Error(`HTTP error! status: ${response.status}`);
+            // }
+            if (response.status === 403) {
+                toast.warning("Bạn không có quyền truy cập vào danh sách tòa nhà", {
+                    position: "top-right",
+                    autoClose: 1000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                });
                 setBuildings([]);
+            }
+            else {
+                const data = await response.json();
+                console.log("Buildings API response:", data);
+                console.log("Buildings count:", data?.length || 0);
+
+                // Validate data structure
+                if (Array.isArray(data)) {
+                    setBuildings(data);
+                    console.log("Buildings state updated, count:", data.length);
+                } else {
+                    console.warn("Buildings data is not an array:", data);
+                    setBuildings([]);
+                }
             }
         } catch (error) {
             console.error("Error fetching buildings:", error);
@@ -200,19 +211,30 @@ export const BuildingProvider = ({ children }: { children: React.ReactNode }) =>
                     Authorization: `Bearer ${token}`,
                 },
             });
-            
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+
+            // if (!response.ok) {
+            //     throw new Error(`HTTP error! status: ${response.status}`);
+            // }
+            if (response.status === 403) {
+                toast.warning("Bạn không có quyền truy cập vào danh sách tòa nhà", {
+                    position: "top-right",
+                    autoClose: 1000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                });
+                setBuildings([]);
             }
-            
-            const data = await response.json();
-            console.log("Building details data:", data);
-            
-            if (Array.isArray(data)) {
-                setBuildingDetails(data);
-            } else {
-                console.warn("Building details data is not an array:", data);
-                setBuildingDetails([]);
+            else {
+                const data = await response.json();
+                console.log("Building details data:", data);
+
+                if (Array.isArray(data)) {
+                    setBuildingDetails(data);
+                } else {
+                    console.warn("Building details data is not an array:", data);
+                    setBuildingDetails([]);
+                }
             }
         } catch (error) {
             console.error("Error fetching building details:", error);
@@ -227,11 +249,11 @@ export const BuildingProvider = ({ children }: { children: React.ReactNode }) =>
                     Authorization: `Bearer ${token}`,
                 },
             });
-            
+
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-            
+
             const data = await response.json();
             console.log("Floors data:", data);
             setFloors(data);
@@ -248,11 +270,11 @@ export const BuildingProvider = ({ children }: { children: React.ReactNode }) =>
                     Authorization: `Bearer ${token}`,
                 },
             });
-            
+
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-            
+
             const data = await response.json();
             console.log("Block details data:", data);
             setBlocks(data);
@@ -272,11 +294,11 @@ export const BuildingProvider = ({ children }: { children: React.ReactNode }) =>
                 method: 'POST',
                 body: JSON.stringify(block),
             });
-            
+
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-            
+
             // Refresh data after creation
             await getBlockList();
         } catch (error) {
@@ -295,11 +317,11 @@ export const BuildingProvider = ({ children }: { children: React.ReactNode }) =>
                 method: 'PUT',
                 body: JSON.stringify(block),
             });
-            
+
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-            
+
             // Refresh data after update
             await getBlockList();
         } catch (error) {
@@ -318,11 +340,11 @@ export const BuildingProvider = ({ children }: { children: React.ReactNode }) =>
                 method: 'DELETE',
                 body: JSON.stringify({ maKN: blockId }),
             });
-            
+
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-            
+
             // Refresh data after deletion
             await getBlockList();
         } catch (error) {
@@ -330,21 +352,21 @@ export const BuildingProvider = ({ children }: { children: React.ReactNode }) =>
             throw error;
         }
     }
-    
+
     return (
-        <BuildingContext.Provider value={{ 
-            buildings, 
-            floors, 
-            blocks, 
+        <BuildingContext.Provider value={{
+            buildings,
+            floors,
+            blocks,
             buildingDetails,
             isLoading,
             error,
-            createBlock, 
-            updateBlock, 
-            deleteBlock, 
-            getBuildingList, 
-            getFloorList, 
-            getBlockDetail, 
+            createBlock,
+            updateBlock,
+            deleteBlock,
+            getBuildingList,
+            getFloorList,
+            getBlockDetail,
             getBlockList,
             refreshData
         }}>

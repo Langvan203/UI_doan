@@ -10,40 +10,43 @@ import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Zap, Droplets, Wifi, Car, Dumbbell, CheckCircle2, XCircle, MoreVertical, Eye } from "lucide-react"
+import { useBuilding } from "../context/BuildingContext"
+import { useServicesUsage } from "../context/ServiceUsage"
+import { BlockDetail } from "@/services/building-service"
 
 // Sample data for buildings
-const buildings = [
-  { id: 1, name: "Building A" },
-  { id: 2, name: "Building B" },
-  { id: 3, name: "Building C" },
-]
+// const buildings = [
+//   { id: 1, name: "Building A" },
+//   { id: 2, name: "Building B" },
+//   { id: 3, name: "Building C" },
+// ]
 
 // Sample data for blocks
-const blocks = [
-  { id: 1, buildingId: 1, name: "Block A1" },
-  { id: 2, buildingId: 1, name: "Block A2" },
-  { id: 3, buildingId: 2, name: "Block B1" },
-  { id: 4, buildingId: 3, name: "Block C1" },
-]
+// const blocks = [
+//   { id: 1, buildingId: 1, name: "Block A1" },
+//   { id: 2, buildingId: 1, name: "Block A2" },
+//   { id: 3, buildingId: 2, name: "Block B1" },
+//   { id: 4, buildingId: 3, name: "Block C1" },
+// ]
 
 // Sample data for floors
-const floors = [
-  { id: 1, blockId: 1, name: "Floor 1" },
-  { id: 2, blockId: 1, name: "Floor 2" },
-  { id: 3, blockId: 2, name: "Floor 1" },
-  { id: 4, blockId: 3, name: "Floor 1" },
-  { id: 5, blockId: 4, name: "Floor 1" },
-]
+// const floors = [
+//   { id: 1, blockId: 1, name: "Floor 1" },
+//   { id: 2, blockId: 1, name: "Floor 2" },
+//   { id: 3, blockId: 2, name: "Floor 1" },
+//   { id: 4, blockId: 3, name: "Floor 1" },
+//   { id: 5, blockId: 4, name: "Floor 1" },
+// ]
 
 // Sample data for residents
-const residents = [
-  { id: 1, name: "Nguyen Van A", unit: "A1-101", buildingId: 1, blockId: 1, floorId: 1 },
-  { id: 2, name: "Tran Thi B", unit: "A1-102", buildingId: 1, blockId: 1, floorId: 1 },
-  { id: 3, name: "Le Van C", unit: "A1-201", buildingId: 1, blockId: 1, floorId: 2 },
-  { id: 4, name: "Pham Thi D", unit: "A2-101", buildingId: 1, blockId: 2, floorId: 3 },
-  { id: 5, name: "Hoang Van E", unit: "B1-101", buildingId: 2, blockId: 3, floorId: 4 },
-  { id: 6, name: "Nguyen Thi F", unit: "C1-101", buildingId: 3, blockId: 4, floorId: 5 },
-]
+// const residents = [
+//   { id: 1, name: "Nguyen Van A", unit: "A1-101", buildingId: 1, blockId: 1, floorId: 1 },
+//   { id: 2, name: "Tran Thi B", unit: "A1-102", buildingId: 1, blockId: 1, floorId: 1 },
+//   { id: 3, name: "Le Van C", unit: "A1-201", buildingId: 1, blockId: 1, floorId: 2 },
+//   { id: 4, name: "Pham Thi D", unit: "A2-101", buildingId: 1, blockId: 2, floorId: 3 },
+//   { id: 5, name: "Hoang Van E", unit: "B1-101", buildingId: 2, blockId: 3, floorId: 4 },
+//   { id: 6, name: "Nguyen Thi F", unit: "C1-101", buildingId: 3, blockId: 4, floorId: 5 },
+// ]
 
 // Sample data for services
 const services = [
@@ -148,6 +151,10 @@ export function ServiceApproval() {
   const [selectedFloor, setSelectedFloor] = useState<number | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [activeTab, setActiveTab] = useState("pending")
+  const {buildingDetails,blocks,floors, getBlockDetail} = useBuilding();
+  const block: BlockDetail = getBlockDetail();
+  const { serviceUsages } = useServicesUsage();
+  console.log(blocks);
 
   const handleApproveRequest = (id: number) => {
     setRequests(requests.map((request) => (request.id === id ? { ...request, status: "approved" } : request)))
@@ -158,14 +165,14 @@ export function ServiceApproval() {
   }
 
   // Filter blocks based on selected building
-  const filteredBlocks = blocks.filter((block) => selectedBuilding === null || block.buildingId === selectedBuilding)
+  const filteredBlocks = blocks.filter((block) => selectedBuilding === null || block.maTN === selectedBuilding)
 
   // Filter floors based on selected block
-  const filteredFloors = floors.filter((floor) => selectedBlock === null || floor.blockId === selectedBlock)
+  const filteredFloors = floors.filter((floor) => selectedBlock === null || floor.maKN === selectedBlock)
 
   // Get resident by ID
   const getResidentById = (id: number) => {
-    return residents.find((resident) => resident.id === id)
+    return serviceUsages.find((resident) => resident.maKH === id)
   }
 
   // Get service by ID
@@ -188,13 +195,13 @@ export function ServiceApproval() {
     if (!resident) return false
 
     const matchesSearch =
-      resident.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      resident.unit.toLowerCase().includes(searchQuery.toLowerCase())
+      resident.tenKH.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      resident.maVT.toLowerCase().includes(searchQuery.toLowerCase())
 
     const matchesFilters =
-      (selectedBuilding === null || resident.buildingId === selectedBuilding) &&
-      (selectedBlock === null || resident.blockId === selectedBlock) &&
-      (selectedFloor === null || resident.floorId === selectedFloor)
+      (selectedBuilding === null || resident.maTN === selectedBuilding) &&
+      (selectedBlock === null || resident.maKN === selectedBlock) &&
+      (selectedFloor === null || resident.maTL === selectedFloor)
 
     const matchesTab =
       (activeTab === "pending" && request.status === "pending") ||
@@ -230,9 +237,9 @@ export function ServiceApproval() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Buildings</SelectItem>
-              {buildings.map((building) => (
-                <SelectItem key={building.id} value={building.id.toString()}>
-                  {building.name}
+              {buildingDetails.map((building,index) => (
+                <SelectItem key={index} value={building.id.toString()}>
+                  {building.name  }
                 </SelectItem>
               ))}
             </SelectContent>
@@ -250,9 +257,9 @@ export function ServiceApproval() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Blocks</SelectItem>
-              {filteredBlocks.map((block) => (
-                <SelectItem key={block.id} value={block.id.toString()}>
-                  {block.name}
+              {filteredBlocks.map((block,index) => (
+                <SelectItem key={index} value={block.maKN.toString()}>
+                  {block.tenKN}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -263,13 +270,13 @@ export function ServiceApproval() {
             disabled={selectedBlock === null}
           >
             <SelectTrigger className="w-full sm:w-[180px]">
-              <SelectValue placeholder="All Floors" />
+              <SelectValue placeholder="Tất cả tầng lầu" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Floors</SelectItem>
-              {filteredFloors.map((floor) => (
-                <SelectItem key={floor.id} value={floor.id.toString()}>
-                  {floor.name}
+              <SelectItem value="all">Tất cả tầng lầu</SelectItem>
+              {filteredFloors.map((floor,index) => (
+                <SelectItem key={index} value={floor.maTL.toString()}>
+                  {floor.tenTL}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -326,8 +333,8 @@ export function ServiceApproval() {
 
                   return (
                     <TableRow key={request.id}>
-                      <TableCell className="font-medium">{resident.name}</TableCell>
-                      <TableCell>{resident.unit}</TableCell>
+                      <TableCell className="font-medium">{resident.tenKH}</TableCell>
+                      <TableCell>{resident.maVT}</TableCell>
                       <TableCell>
                         <div className="flex items-center space-x-2">
                           {service.icon}

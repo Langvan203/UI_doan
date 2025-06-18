@@ -70,20 +70,20 @@ export function SendEmailDialog({ invoice, open, onOpenChange }: SendEmailDialog
     >
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>Send Invoice Email</DialogTitle>
-          <DialogDescription>Send the invoice to the resident via email</DialogDescription>
+          <DialogTitle>Gửi hóa đơn qua email</DialogTitle>
+          <DialogDescription>Gửi hóa đơn qua email cho cư dân</DialogDescription>
         </DialogHeader>
 
         {isSent ? (
           <Alert className="bg-green-50">
             <AlertDescription className="text-green-800">
-              Email has been sent successfully to {email || invoice.resident}!
+              Đã gửi thành công email tới địa chỉ: {email || invoice.resident}!
             </AlertDescription>
           </Alert>
         ) : (
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Recipient Email</Label>
+              <Label htmlFor="email">Địa chỉ email</Label>
               <Input
                 id="email"
                 placeholder={`${invoice.resident.toLowerCase().replace(/\s/g, ".")}@example.com`}
@@ -93,12 +93,12 @@ export function SendEmailDialog({ invoice, open, onOpenChange }: SendEmailDialog
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="subject">Subject</Label>
+              <Label htmlFor="subject">Tiêu đề</Label>
               <Input id="subject" value={subject} onChange={(e) => setSubject(e.target.value)} />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="message">Message</Label>
+              <Label htmlFor="message">Tin nhắn</Label>
               <Textarea id="message" rows={6} value={message} onChange={(e) => setMessage(e.target.value)} />
             </div>
 
@@ -110,7 +110,7 @@ export function SendEmailDialog({ invoice, open, onOpenChange }: SendEmailDialog
               />
               <Label htmlFor="attachPdf" className="flex cursor-pointer items-center text-sm">
                 <Paperclip className="mr-2 h-4 w-4" />
-                Attach invoice PDF
+                Gắn file PDF
               </Label>
             </div>
           </div>
@@ -120,18 +120,18 @@ export function SendEmailDialog({ invoice, open, onOpenChange }: SendEmailDialog
           {!isSent && (
             <>
               <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
-                Cancel
+                Hủy
               </Button>
               <Button onClick={handleSendEmail} disabled={isLoading}>
                 {isLoading ? (
                   <>
                     <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
-                    Sending...
+                    Đang gửi...
                   </>
                 ) : (
                   <>
                     <Mail className="mr-2 h-4 w-4" />
-                    Send Email
+                    Gửi email
                   </>
                 )}
               </Button>

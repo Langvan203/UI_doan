@@ -7,8 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, Send, Paperclip, MoreVertical } from "lucide-react"
+import { Send, Paperclip, MoreVertical } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
 // Mock data for a specific ticket
@@ -75,11 +74,10 @@ const mockTicketDetails = {
 }
 
 interface SupportChatProps {
-  ticketId: string
-  onBack: () => void
+  customerId: string | null
 }
 
-export function SupportChat({ ticketId, onBack }: SupportChatProps) {
+export function SupportChat({ customerId }: SupportChatProps) {
   const [newMessage, setNewMessage] = useState("")
   const [messages, setMessages] = useState(mockTicketDetails.messages)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -117,27 +115,28 @@ export function SupportChat({ ticketId, onBack }: SupportChatProps) {
       <Card className="flex h-full flex-col">
         <CardHeader className="border-b px-4 py-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" onClick={onBack}>
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
+            <div className="flex items-center gap-3">
+              <Avatar className="h-10 w-10">
+                <AvatarImage
+                  src={mockTicketDetails.resident.avatar || "/placeholder.svg"}
+                  alt={mockTicketDetails.resident.name}
+                />
+                <AvatarFallback>
+                  {mockTicketDetails.resident.name
+                    .split(" ")
+                    .map((n) => n[0])
+                    .join("")}
+                </AvatarFallback>
+              </Avatar>
               <div>
-                <CardTitle className="text-lg">{mockTicketDetails.subject}</CardTitle>
+                <CardTitle className="text-lg">{mockTicketDetails.resident.name}</CardTitle>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <span>Ticket {mockTicketDetails.id}</span>
+                  <span>{mockTicketDetails.premise}</span>
                   <span>•</span>
-                  <Badge
-                    variant="outline"
-                    className={cn(
-                      "capitalize",
-                      mockTicketDetails.status === "open" && "border-blue-500 text-blue-500",
-                      mockTicketDetails.status === "in-progress" && "border-yellow-500 text-yellow-500",
-                      mockTicketDetails.status === "resolved" && "border-green-500 text-green-500",
-                      mockTicketDetails.status === "closed" && "border-gray-500 text-gray-500",
-                    )}
-                  >
-                    {mockTicketDetails.status.replace("-", " ")}
-                  </Badge>
+                  <span className="flex items-center gap-1">
+                    <div className="h-2 w-2 rounded-full bg-green-500" />
+                    Đang hoạt động
+                  </span>
                 </div>
               </div>
             </div>
@@ -148,41 +147,15 @@ export function SupportChat({ ticketId, onBack }: SupportChatProps) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem>Change Status</DropdownMenuItem>
-                <DropdownMenuItem>Assign to Staff</DropdownMenuItem>
-                <DropdownMenuItem>Close Ticket</DropdownMenuItem>
+                <DropdownMenuItem>Xem thông tin khách hàng</DropdownMenuItem>
+                <DropdownMenuItem>Tạo ticket hỗ trợ</DropdownMenuItem>
+                <DropdownMenuItem>Chặn khách hàng</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
         </CardHeader>
         <CardContent className="flex-1 overflow-y-auto p-4">
           <div className="space-y-4">
-            <div className="rounded-lg bg-muted p-4">
-              <h3 className="mb-2 font-semibold">Ticket Information</h3>
-              <div className="grid gap-1 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Resident:</span>
-                  <span>{mockTicketDetails.resident.name}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Premise:</span>
-                  <span>{mockTicketDetails.premise}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Category:</span>
-                  <span>{mockTicketDetails.category}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Created:</span>
-                  <span>{new Date(mockTicketDetails.createdAt).toLocaleString()}</span>
-                </div>
-              </div>
-              <div className="mt-2 border-t pt-2">
-                <span className="text-sm text-muted-foreground">Description:</span>
-                <p className="text-sm">{mockTicketDetails.description}</p>
-              </div>
-            </div>
-
             {messages.map((message) => (
               <div key={message.id} className={`flex ${message.sender === "staff" ? "justify-end" : "justify-start"}`}>
                 <div

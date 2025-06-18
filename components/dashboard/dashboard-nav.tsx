@@ -1,6 +1,6 @@
 "use client"
 
-import React from "react"
+import React, { useEffect } from "react"
 
 import { usePathname } from "next/navigation"
 import Link from "next/link"
@@ -27,6 +27,12 @@ import {
   ChevronRight,
   List,
   LogOut,
+  Tags,
+  DollarSign,
+  Gauge,
+  UserCheck,
+  CheckCircle,
+  BarChart,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -118,11 +124,89 @@ const navItems: NavItem[] = [
   },
   {
     title: "Dịch vụ tòa nhà",
-    href: "/dashboard/services",
+    href: "/dashboard/buildingServices",
     icon: <Bell className="h-5 w-5" />,
     roles: ["Quản lý tòa nhà", "Kế toán", "Nhân viên tòa nhà"],
     color: "text-blue-500",
     bgColor: "bg-blue-500/10",
+    children: [
+      {
+        title: "Quản lý dịch vụ",
+        href: "/dashboard/buildingServices/management",
+        icon: <Settings className="h-5 w-5" />,
+        roles: ["Quản lý tòa nhà", "Nhân viên tòa nhà"],
+        color: "text-blue-500",
+        bgColor: "bg-blue-500/10",
+        children: [
+          {
+            title: "Loại dịch vụ",
+            href: "/dashboard/buildingServices/management/types",
+            icon: <Tags className="h-5 w-5" />,
+            roles: ["Quản lý tòa nhà", "Nhân viên tòa nhà"],
+            color: "text-blue-500",
+            bgColor: "bg-blue-500/10"
+          },
+          {
+            title: "Dịch vụ",
+            href: "/dashboard/buildingServices/management/services",
+            icon: <Bell className="h-5 w-5" />,
+            roles: ["Quản lý tòa nhà", "Nhân viên tòa nhà"],
+            color: "text-blue-500",
+            bgColor: "bg-blue-500/10"
+          },
+          {
+            title: "Định mức",
+            href: "/dashboard/buildingServices/management/rates",
+            icon: <DollarSign className="h-5 w-5" />,
+            roles: ["Quản lý tòa nhà", "Nhân viên tòa nhà"],
+            color: "text-blue-500",
+            bgColor: "bg-blue-500/10"
+          },
+          {
+            title: "Đồng hồ đo",
+            href: "/dashboard/buildingServices/management/meters",
+            icon: <Gauge className="h-5 w-5" />,
+            roles: ["Quản lý tòa nhà", "Nhân viên tòa nhà"],
+            color: "text-blue-500",
+            bgColor: "bg-blue-500/10"
+          },
+        ],
+      },
+      {
+        title: "Dịch vụ sử dụng",
+        href: "/dashboard/buildingServices/operations",
+        icon: <ClipboardList className="h-5 w-5" />,
+        roles: ["SUPER_ADMIN", "SERVICE_MANAGER"],
+        color: "text-blue-500",
+        bgColor: "bg-blue-500/10",
+        children: [
+          {
+            title: "Duyệt yêu cầu",
+            href: "/dashboard/buildingServices/operations/approval",
+            icon: <CheckCircle className="h-5 w-5" />,
+            roles: ["Quản lý tòa nhà", "Nhân viên tòa nhà"],
+            color: "text-blue-500",
+            bgColor: "bg-blue-500/10"
+          },
+          {
+            title: "Đang sử dụng",
+            href: "/dashboard/buildingServices/operations/assignment",
+            icon: <UserCheck className="h-5 w-5" />,
+            roles: ["Quản lý tòa nhà", "Nhân viên tòa nhà"],
+            color: "text-blue-500",
+            bgColor: "bg-blue-500/10"
+          },
+          {
+            title: "Thống kê sử dụng",
+            href: "/dashboard/buildingServices/operations/usage",
+            icon: <BarChart className="h-5 w-5" />,
+            roles: ["Quản lý tòa nhà", "Nhân viên tòa nhà"],
+            color: "text-blue-500",
+            bgColor: "bg-blue-500/10"
+          },
+        ],
+      },
+    ],
   },
   {
     title: "Hệ thống",
@@ -167,22 +251,6 @@ const navItems: NavItem[] = [
     bgColor: "bg-pink-500/10",
   },
   {
-    title: "Tài chính",
-    href: "/dashboard/finances",
-    icon: <Wallet className="h-5 w-5" />,
-    roles: ["Quản lý tòa nhà", "Kế toán"],
-    color: "text-green-500",
-    bgColor: "bg-green-500/10",
-  },
-  {
-    title: "Báo cáo",
-    href: "/dashboard/reports",
-    icon: <BarChart3 className="h-5 w-5" />,
-    roles: ["Quản lý tòa nhà", "Kế toán", "Nhân viên kỹ thuật"],
-    color: "text-orange-500",
-    bgColor: "bg-orange-500/10",
-  },
-  {
     title: "Hỗ trợ khách hàng",
     href: "/dashboard/support",
     icon: <MessageSquare className="h-5 w-5" />,
@@ -209,23 +277,49 @@ export function DashboardNav({ role, className }: DashboardNavProps) {
   const pathname = usePathname()
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({})
 
+  // Tự động mở các menu cha khi có menu con đang active
+  useEffect(() => {
+    const newExpandedItems = { ...expandedItems };
+    
+    // Kiểm tra và mở các menu cha
+    navItems.forEach(item => {
+      // Kiểm tra nếu menu có con và đường dẫn hiện tại thuộc về menu con
+      if (item.children && pathname.startsWith(item.href)) {
+        newExpandedItems[item.href] = true;
+        
+        // Kiểm tra và mở menu cháu nếu cần
+        item.children.forEach(child => {
+          if (child.children && pathname.startsWith(child.href)) {
+            newExpandedItems[child.href] = true;
+          }
+        });
+      }
+    });
+    
+    setExpandedItems(newExpandedItems);
+  }, [pathname]);
+
+  // Hàm kiểm tra đường dẫn có active không
+  const isPathActive = (path: string) => {
+    return pathname === path || pathname.startsWith(`${path}/`);
+  }
+
+  // Hàm toggle mở/đóng menu
+  const toggleExpand = (href: string, event: React.MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    setExpandedItems((prev) => ({
+      ...prev,
+      [href]: !prev[href],
+    }));
+  }
+
   // Filter nav items based on user role
   const filteredNavItems = navItems.filter((item) => {
     // Check if user's role matches any of the allowed roles for this item
     return item.roles.includes(role) || role === "Quản lý tòa nhà";
   });
-
-  const toggleExpand = (href: string) => {
-    setExpandedItems((prev) => ({
-      ...prev,
-      [href]: !prev[href],
-    }))
-  }
-
-  // Check if a path is active or has active children
-  const isPathActive = (path: string) => {
-    return pathname === path || pathname.startsWith(`${path}/`)
-  }
 
   return (
     <div className={cn("flex flex-col h-full bg-white border-r", className)}>
@@ -238,46 +332,37 @@ export function DashboardNav({ role, className }: DashboardNavProps) {
       <ScrollArea className="flex-1 px-3">
         <div className="space-y-1 py-2">
           {filteredNavItems.map((item) => {
-            const isActive = isPathActive(item.href)
-            const hasChildren = item.children && item.children.length > 0
-            const isExpanded =
-              expandedItems[item.href] || (hasChildren && item.children!.some((child) => isPathActive(child.href)))
+            const isActive = isPathActive(item.href);
+            const hasChildren = item.children && item.children.length > 0;
+            const isExpanded = expandedItems[item.href];
 
             return (
               <div key={item.href} className="flex flex-col">
                 <div className="flex items-center">
                   {hasChildren ? (
                     <button
-                      onClick={() => toggleExpand(item.href)}
+                      onClick={(e) => toggleExpand(item.href, e)}
                       className={cn(
-                        "group flex w-full items-center gap-x-3 rounded-lg px-3 py-2 text-sm font-medium",
+                        "group flex w-full items-center justify-between gap-x-3 rounded-lg px-3 py-2 text-sm font-medium",
                         "transition-all duration-300 ease-in-out",
                         isActive && !isExpanded
                           ? cn(
-                              item.bgColor,
-                              item.color,
-                              "before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-current relative"
-                            )
+                            item.bgColor,
+                            item.color,
+                            "before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-current relative"
+                          )
                           : "text-muted-foreground hover:text-primary hover:bg-accent",
                       )}
                     >
-                      <div className={cn(
-                        "flex items-center gap-3",
-                        isActive && !isExpanded ? item.color : "group-hover:text-primary"
-                      )}>
-                        <div className={cn("h-5 w-5 shrink-0", 
-                          isActive && !isExpanded
-                            ? item.color
-                            : "text-muted-foreground group-hover:text-primary"
+                      <div className="flex items-center gap-3">
+                        <div className={cn("h-5 w-5 shrink-0",
+                          isActive && !isExpanded ? item.color : "text-muted-foreground group-hover:text-primary"
                         )}>
                           {item.icon}
                         </div>
                         <span className="truncate">{item.title}</span>
                       </div>
                       {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                      {isActive && !isExpanded ? (
-                        <span className="absolute inset-y-0 right-0 w-1 bg-current rounded-l-full opacity-70" />
-                      ) : null}
                     </button>
                   ) : (
                     <Link
@@ -287,66 +372,119 @@ export function DashboardNav({ role, className }: DashboardNavProps) {
                         "transition-all duration-300 ease-in-out",
                         "hover:bg-accent",
                         isActive
-                          ? cn(
-                              item.bgColor,
-                              item.color,
-                              "before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-current relative"
-                            )
+                          ? cn(item.bgColor, item.color, "relative before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-current")
                           : "text-muted-foreground hover:text-primary",
                       )}
                     >
-                      <div className={cn("h-5 w-5 shrink-0", 
-                        isActive 
-                          ? item.color
-                          : "text-muted-foreground group-hover:text-primary"
+                      <div className={cn("h-5 w-5 shrink-0",
+                        isActive ? item.color : "text-muted-foreground group-hover:text-primary"
                       )}>
                         {item.icon}
                       </div>
                       <span className="truncate">{item.title}</span>
-                      {isActive ? (
-                        <span className="absolute inset-y-0 right-0 w-1 bg-current rounded-l-full opacity-70" />
-                      ) : null}
                     </Link>
                   )}
                 </div>
 
-                {/* Render children if expanded */}
+                {/* Render menu con cấp 1 */}
                 {hasChildren && isExpanded && (
                   <div className="ml-6 mt-1 flex flex-col gap-1">
-                    {item
-                      .children!.filter((child) => child.roles.includes(role) || role === "Quản lý tòa nhà")
+                    {item.children!
+                      .filter((child) => child.roles.includes(role) || role === "Quản lý tòa nhà")
                       .map((child) => {
-                        const isChildActive = isPathActive(child.href)
+                        const isChildActive = isPathActive(child.href);
+                        const hasGrandChildren = child.children && child.children.length > 0;
+                        const isChildExpanded = expandedItems[child.href];
 
                         return (
-                          <Link
-                            key={child.href}
-                            href={child.href}
-                            className={cn(
-                              "group flex items-center gap-x-3 rounded-lg px-3 py-2 text-sm font-medium",
-                              "transition-all duration-300 ease-in-out",
-                              isChildActive
-                                ? cn(
-                                    child.bgColor,
-                                    child.color,
-                                    "before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-current relative"
-                                  )
-                                : "text-muted-foreground hover:text-primary hover:bg-accent",
+                          <div key={child.href} className="flex flex-col">
+                            {/* Render item con */}
+                            {hasGrandChildren ? (
+                              <button
+                                onClick={(e) => toggleExpand(child.href, e)}
+                                className={cn(
+                                  "group flex w-full items-center justify-between gap-x-3 rounded-lg px-3 py-2 text-sm font-medium",
+                                  "transition-all duration-300 ease-in-out",
+                                  isChildActive && !isChildExpanded
+                                    ? cn(
+                                      child.bgColor,
+                                      child.color,
+                                      "before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-current relative"
+                                    )
+                                    : "text-muted-foreground hover:text-primary hover:bg-accent",
+                                )}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div className={cn("h-5 w-5 shrink-0",
+                                    isChildActive && !isChildExpanded ? child.color : "text-muted-foreground group-hover:text-primary"
+                                  )}>
+                                    {child.icon}
+                                  </div>
+                                  <span className="truncate">{child.title}</span>
+                                </div>
+                                {isChildExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                              </button>
+                            ) : (
+                              <Link
+                                href={child.href}
+                                className={cn(
+                                  "group flex items-center gap-x-3 rounded-lg px-3 py-2 text-sm font-medium",
+                                  "transition-all duration-300 ease-in-out",
+                                  isChildActive
+                                    ? cn(
+                                      child.bgColor,
+                                      child.color,
+                                      "before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-current relative"
+                                    )
+                                    : "text-muted-foreground hover:text-primary hover:bg-accent",
+                                )}
+                              >
+                                <div className={cn("h-5 w-5 shrink-0",
+                                  isChildActive ? child.color : "text-muted-foreground group-hover:text-primary"
+                                )}>
+                                  {child.icon}
+                                </div>
+                                <span className="truncate">{child.title}</span>
+                              </Link>
                             )}
-                          >
-                            <div className={cn("h-5 w-5 shrink-0", 
-                              isChildActive
-                                ? child.color
-                                : "text-muted-foreground group-hover:text-primary"
-                            )}>
-                              {child.icon}
-                            </div>
-                            <span className="truncate">{child.title}</span>
-                            {isChildActive ? (
-                              <span className="absolute inset-y-0 right-0 w-1 bg-current rounded-l-full opacity-70" />
-                            ) : null}
-                          </Link>
-                        )
+
+                            {/* Render menu con cấp 2 (menu cháu) */}
+                            {hasGrandChildren && isChildExpanded && (
+                              <div className="ml-6 mt-1 flex flex-col gap-1">
+                                {child.children!
+                                  .filter((grandChild) => grandChild.roles.includes(role) || role === "Quản lý tòa nhà")
+                                  .map((grandChild) => {
+                                    const isGrandChildActive = isPathActive(grandChild.href);
+                                    
+                                    return (
+                                      <Link
+                                        key={grandChild.href}
+                                        href={grandChild.href}
+                                        className={cn(
+                                          "group flex items-center gap-x-3 rounded-lg px-3 py-2 text-sm font-medium",
+                                          "transition-all duration-300 ease-in-out",
+                                          isGrandChildActive
+                                            ? cn(
+                                              grandChild.bgColor,
+                                              grandChild.color,
+                                              "before:absolute before:left-0 before:top-1/2 before:h-8 before:w-1 before:-translate-y-1/2 before:rounded-r-full before:bg-current relative"
+                                            )
+                                            : "text-muted-foreground hover:text-primary hover:bg-accent",
+                                        )}
+                                      >
+                                        <div className={cn("h-5 w-5 shrink-0",
+                                          isGrandChildActive ? grandChild.color : "text-muted-foreground group-hover:text-primary"
+                                        )}>
+                                          {grandChild.icon}
+                                        </div>
+                                        <span className="truncate">{grandChild.title}</span>
+                                      </Link>
+                                    );
+                                  })}
+                              </div>
+                            )}
+                          </div>
+                        );
                       })}
                   </div>
                 )}

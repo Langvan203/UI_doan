@@ -22,17 +22,6 @@ import axios from "axios"
 import { Bounce, toast, ToastContainer } from "react-toastify"
 import 'react-toastify/dist/ReactToastify.css'
 import { useAuth } from "@/components/context/AuthContext"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
 import { BuildingDetailed, useBuilding } from "../context/BuildingContext"
 
 // Định nghĩa interface cho tòa nhà với các thuộc tính yêu cầu
@@ -51,10 +40,9 @@ export function BuildingListManagement() {
   })
 
   // Get authentication token
-  const { token } = useAuth()
-
+  const { token, hasPermissions } = useAuth()
   // Fetch buildings on component mount
-    const { buildingDetails, getBuildingList } = useBuilding()
+  const { buildingDetails, getBuildingList } = useBuilding()
 
   // Lọc tòa nhà theo từ khóa tìm kiếm
   const filteredBuildings = buildingDetails.filter(
@@ -77,13 +65,13 @@ export function BuildingListManagement() {
         progress: undefined,
         theme: "light",
         transition: Bounce,
-        });
+      });
       return
     }
 
     try {
       // Get authentication token
-        if (!token) {
+      if (!token) {
         toast.error("Vui lòng đăng nhập", {
           position: "top-right",
           autoClose: 1000,
@@ -95,9 +83,9 @@ export function BuildingListManagement() {
       const payload = {
         tenTN: newBuilding.name,
         diaChi: newBuilding.address,
-        trangThaiToaNha: newBuilding.status === "active" || newBuilding.status === "Hoạt động" ? 1 : 
-                         newBuilding.status === "inactive" || newBuilding.status === "Không hoạt động" ? 0 : 
-                         2, // Default to a neutral state if status is unclear
+        trangThaiToaNha: newBuilding.status === "active" || newBuilding.status === "Hoạt động" ? 1 :
+          newBuilding.status === "inactive" || newBuilding.status === "Không hoạt động" ? 0 :
+            2, // Default to a neutral state if status is unclear
         soTangNoi: newBuilding.soTangNoi || 0,
         soTangHam: newBuilding.soTangHam || 0,
         soTaiKhoan: newBuilding.soTaiKhoan || "",
@@ -111,7 +99,7 @@ export function BuildingListManagement() {
 
       // Call the API to add the building
       const response = await axios.post(
-        'https://localhost:7246/api/ToaNha/them-toa-nha', 
+        'https://localhost:7246/api/ToaNha/them-toa-nha',
         payload,
         {
           headers: {
@@ -133,7 +121,7 @@ export function BuildingListManagement() {
           progress: undefined,
           theme: "light",
           transition: Bounce,
-          });
+        });
 
         // Fetch updated building list
         const fetchBuildings = async () => {
@@ -205,9 +193,9 @@ export function BuildingListManagement() {
         id: selectedBuilding.id,
         tenTN: selectedBuilding.name,
         diaChi: selectedBuilding.address,
-        trangThaiToaNha: selectedBuilding.status === "active" || selectedBuilding.status === "Hoạt động" ? 1 : 
-                         selectedBuilding.status === "inactive" || selectedBuilding.status === "Không hoạt động" ? 0 : 
-                         2, // Default to a neutral state if status is unclear
+        trangThaiToaNha: selectedBuilding.status === "active" || selectedBuilding.status === "Hoạt động" ? 1 :
+          selectedBuilding.status === "inactive" || selectedBuilding.status === "Không hoạt động" ? 0 :
+            2, // Default to a neutral state if status is unclear
         soTangNoi: selectedBuilding.soTangNoi || 0,
         soTangHam: selectedBuilding.soTangHam || 0,
         soTaiKhoan: selectedBuilding.soTaiKhoan || "",
@@ -222,7 +210,7 @@ export function BuildingListManagement() {
 
       // Call the API to update the building
       const response = await axios.put(
-        'https://localhost:7246/api/ToaNha/UpdateToaNha', 
+        'https://localhost:7246/api/ToaNha/UpdateToaNha',
         payload,
         {
           headers: {
@@ -273,7 +261,7 @@ export function BuildingListManagement() {
     } catch (error) {
       // Handle API errors
       console.error("Error updating building:", error)
-      
+
       // Handle different types of errors
       if (axios.isAxiosError(error)) {
         const errorMessage = error.response?.data || "Không thể cập nhật tòa nhà"
@@ -347,7 +335,7 @@ export function BuildingListManagement() {
       }
     } catch (error) {
       console.error("Error deleting building:", error)
-      
+
       // Handle different types of errors
       if (axios.isAxiosError(error)) {
         const errorMessage = error.response?.data || "Không thể xóa tòa nhà"
@@ -368,10 +356,12 @@ export function BuildingListManagement() {
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <h1 className="text-xl sm:text-2xl font-bold">Danh sách tòa nhà</h1>
-        <Button onClick={() => setShowAddDialog(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Thêm tòa nhà
-        </Button>
+        {hasPermissions("building.create") && (
+          <Button onClick={() => setShowAddDialog(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Thêm tòa nhà
+          </Button>
+        )}
       </div>
 
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
@@ -457,7 +447,7 @@ export function BuildingListManagement() {
         <TabsContent value="active" className="space-y-4">
           {viewMode === "list" ? (
             <BuildingDetailedList
-              buildings={filteredBuildings.filter((b) => 
+              buildings={filteredBuildings.filter((b) =>
                 b.status === "active" || b.status === "Hoạt động"
               )}
               onEdit={(building) => {
@@ -490,7 +480,7 @@ export function BuildingListManagement() {
         <TabsContent value="inactive" className="space-y-4">
           {viewMode === "list" ? (
             <BuildingDetailedList
-              buildings={filteredBuildings.filter((b) => 
+              buildings={filteredBuildings.filter((b) =>
                 b.status === "inactive" || b.status === "Không hoạt động"
               )}
               onEdit={(building) => {
@@ -792,7 +782,7 @@ export function BuildingListManagement() {
                     <SelectContent>
                       <SelectItem value="active">Hoạt động</SelectItem>
                       <SelectItem value="inactive">Không hoạt động</SelectItem>
-                      
+
                     </SelectContent>
                   </Select>
                 </div>
@@ -881,9 +871,9 @@ export function BuildingListManagement() {
                 <CardTitle>Chi tiết tòa nhà: {selectedBuilding.name}</CardTitle>
                 <CardDescription>{selectedBuilding.address}</CardDescription>
               </div>
-              <Button 
-                variant="ghost" 
-                size="sm" 
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => setSelectedBuilding(null)}
                 className="absolute top-2 right-2"
               >

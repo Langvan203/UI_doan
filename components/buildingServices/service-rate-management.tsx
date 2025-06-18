@@ -298,7 +298,7 @@ export function ServiceRateManagement() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center w-full">
           <div className="relative w-full sm:w-96">
             <Input
-              placeholder="Search rates..."
+              placeholder="Tìm kiếm định mức"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full"
