@@ -180,7 +180,7 @@ export function ServiceList() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{services.filter((s) => s.isThanhToanTheoKy).length}</div>
-            <p className="text-xs text-muted-foreground">Recurring billing</p>
+            <p className="text-xs text-muted-foreground">Thanh toán theo kỳ</p>
           </CardContent>
         </Card>
       </div>
@@ -190,7 +190,7 @@ export function ServiceList() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center w-full">
           <div className="relative w-full sm:w-96">
             <Input
-              placeholder="Search services..."
+              placeholder="Tìm kiếm dịch vụ..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10"

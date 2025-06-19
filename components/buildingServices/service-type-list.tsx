@@ -173,7 +173,7 @@ export function ServiceTypeList() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative w-full sm:w-96">
           <Input
-            placeholder="Search service types..."
+            placeholder="Tìm kiếm loại dịch vụ..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10"

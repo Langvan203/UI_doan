@@ -13,6 +13,9 @@ import { RoleProvider } from "@/components/context/RoleContext"
 import { ServiceTypeProvider } from "@/components/context/ServiceTypeContext"
 import { ServicesProvider } from "@/components/context/ServicesContext"
 import { ServicesUsageProvider } from "@/components/context/ServiceUsage"
+import { ElectricityRateProvider } from "@/components/context/ElectricityRate"
+import { WaterRateProvider } from "@/components/context/WaterRate"
+import { MetterProvider } from "@/components/context/MetterContext"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata = {
@@ -39,7 +42,13 @@ export default function RootLayout({
                       <EmployeeProvider>
                         <RoleProvider>
                           <ServicesUsageProvider>
-                          {children}
+                            <ElectricityRateProvider>
+                              <WaterRateProvider>
+                                <MetterProvider>
+                                  {children}
+                                </MetterProvider>
+                              </WaterRateProvider>
+                            </ElectricityRateProvider>
                           </ServicesUsageProvider>
                           <ToastContainer />
                         </RoleProvider>

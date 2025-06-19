@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -13,6 +13,8 @@ import { Zap, Droplets, Wifi, Car, Dumbbell, CheckCircle2, XCircle, MoreVertical
 import { useBuilding } from "../context/BuildingContext"
 import { useServicesUsage } from "../context/ServiceUsage"
 import { BlockDetail } from "@/services/building-service"
+import { useAuth } from "../context/AuthContext"
+import { ppid } from "process"
 
 // Sample data for buildings
 // const buildings = [
@@ -151,10 +153,16 @@ export function ServiceApproval() {
   const [selectedFloor, setSelectedFloor] = useState<number | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [activeTab, setActiveTab] = useState("pending")
-  const {buildingDetails,blocks,floors, getBlockDetail} = useBuilding();
-  const block: BlockDetail = getBlockDetail();
+  const {buildingListForDropdown, blockListForDropdown, floorListForDropdown,
+    getBuildingListForDropdown,
+    getBlockListForDropdown,
+    getFloorListForDropdown} = useBuilding();
   const { serviceUsages } = useServicesUsage();
-  console.log(blocks);
+
+  const {token} = useAuth();
+  useEffect(() => {
+    getBlockListForDropdown();
+  },[token])
 
   const handleApproveRequest = (id: number) => {
     setRequests(requests.map((request) => (request.id === id ? { ...request, status: "approved" } : request)))
@@ -165,10 +173,10 @@ export function ServiceApproval() {
   }
 
   // Filter blocks based on selected building
-  const filteredBlocks = blocks.filter((block) => selectedBuilding === null || block.maTN === selectedBuilding)
+  const filteredBlocks = blockListForDropdown.filter((block) => selectedBuilding === null || block.maTN === selectedBuilding)
 
   // Filter floors based on selected block
-  const filteredFloors = floors.filter((floor) => selectedBlock === null || floor.maKN === selectedBlock)
+  const filteredFloors = floorListForDropdown.filter((floor) => selectedBlock === null || floor.maKN === selectedBlock)
 
   // Get resident by ID
   const getResidentById = (id: number) => {
@@ -237,7 +245,7 @@ export function ServiceApproval() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Buildings</SelectItem>
-              {buildingDetails.map((building,index) => (
+              {buildingListForDropdown.map((building,index) => (
                 <SelectItem key={index} value={building.id.toString()}>
                   {building.name  }
                 </SelectItem>

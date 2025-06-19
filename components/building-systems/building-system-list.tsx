@@ -26,13 +26,13 @@ import { Checkbox } from "@/components/ui/checkbox"
 const systemsData = [
   {
     id: 1,
-    name: "Central HVAC System",
+    name: "Hệ thống HVAC trung tâm",
     category: "HVAC",
-    location: "Block A, Basement",
+    location: "Khối A, Tầng 1",
     installationDate: "2020-05-15",
     lastMaintenance: "2025-04-01",
     nextMaintenance: "2025-07-01",
-    status: "operational",
+    status: "Hoạt động",
     manufacturer: "Daikin",
     model: "HVAC-2020-PRO",
     serialNumber: "DK2020-56789",
@@ -40,13 +40,13 @@ const systemsData = [
   },
   {
     id: 2,
-    name: "Emergency Generator",
-    category: "Electrical",
-    location: "Block B, Basement",
+    name: "Máy phát điện dự phòng",
+    category: "Điện",
+    location: "Khối B, Tầng hầm",
     installationDate: "2020-03-10",
     lastMaintenance: "2025-03-15",
     nextMaintenance: "2025-06-15",
-    status: "operational",
+    status: "Hoạt động",
     manufacturer: "Caterpillar",
     model: "CAT-G3520E",
     serialNumber: "CAT2020-12345",
@@ -54,13 +54,13 @@ const systemsData = [
   },
   {
     id: 3,
-    name: "Fire Alarm System",
-    category: "Safety",
-    location: "All Blocks",
+    name: "Hệ thống báo cháy",
+    category: "Anh ninh",
+    location: "Khối A, Tầng 2",
     installationDate: "2020-02-01",
     lastMaintenance: "2025-04-20",
     nextMaintenance: "2025-07-20",
-    status: "needs_attention",
+    status: "Hoạt động",
     manufacturer: "Honeywell",
     model: "FA-5000",
     serialNumber: "HW2020-45678",
@@ -68,13 +68,13 @@ const systemsData = [
   },
   {
     id: 4,
-    name: "Water Supply System",
-    category: "Plumbing",
-    location: "Block A, Basement",
+    name: "Hệ thống cấp nước",
+    category: "Diễn nước",
+    location: "Khối A, Tầng hầm",
     installationDate: "2020-01-15",
     lastMaintenance: "2025-02-28",
     nextMaintenance: "2025-05-28",
-    status: "operational",
+    status: "Bảo trì",
     manufacturer: "Grundfos",
     model: "WP-2000",
     serialNumber: "GF2020-87654",
@@ -82,13 +82,13 @@ const systemsData = [
   },
   {
     id: 5,
-    name: "Elevator #1",
-    category: "Transportation",
-    location: "Block A",
+    name: "Thang máy #1",
+    category: "Di chuyển",
+    location: "Khối A",
     installationDate: "2020-01-20",
     lastMaintenance: "2025-04-10",
     nextMaintenance: "2025-07-10",
-    status: "operational",
+    status: "Hoạt động",
     manufacturer: "OTIS",
     model: "Elevator-X5",
     serialNumber: "OT2020-34567",
@@ -240,29 +240,29 @@ export function BuildingSystemList() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Building Systems Registry</h1>
+        <h1 className="text-2xl font-bold">Hệ thống thiết bị tòa nhà</h1>
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="mr-2 h-4 w-4" />
-              Add System
+              Thêm hệ thống mới
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
-              <DialogTitle>Add New Building System</DialogTitle>
+              <DialogTitle>Thêm hệ thống thiết bị mới</DialogTitle>
               <DialogDescription>
-                Enter the details of the new building system. Click save when you're done.
+                Nhập thông tin chi tiết cho hệ thống thiết bị mới của bạn
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
-                  <Label htmlFor="name">System Name</Label>
+                  <Label htmlFor="name">Tên hệ thống</Label>
                   <Input id="name" placeholder="Enter system name" />
                 </div>
                 <div>
-                  <Label htmlFor="category">Category</Label>
+                  <Label htmlFor="category">Danh mục</Label>
                   <Select>
                     <SelectTrigger>
                       <SelectValue placeholder="Select category" />
@@ -328,8 +328,8 @@ export function BuildingSystemList() {
 
       <Card>
         <CardHeader>
-          <CardTitle>All Building Systems</CardTitle>
-          <CardDescription>View and manage all building systems across your properties</CardDescription>
+          <CardTitle>Tất cả hệ thống tòa nhà</CardTitle>
+          <CardDescription>Xem và quản lý tất cả các hệ thống tòa nhà</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -338,7 +338,7 @@ export function BuildingSystemList() {
               <div className="flex items-center gap-2 md:w-1/3">
                 <Search className="h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search systems..."
+                  placeholder="Tìm kiếm hệ thống..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="flex-1"
@@ -380,7 +380,7 @@ export function BuildingSystemList() {
                   <SelectContent>
                     {statusOptions.map((status) => (
                       <SelectItem key={status} value={status}>
-                        {status === "All Statuses" ? status : formatStatus(status)}
+                        {status === "Tất cả trạng thái" ? status : formatStatus(status)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -393,20 +393,20 @@ export function BuildingSystemList() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>System Name</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Location</TableHead>
-                    <TableHead>Last Maintenance</TableHead>
-                    <TableHead>Next Maintenance</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead>Tên hệ thống</TableHead>
+                    <TableHead>Danh mục</TableHead>
+                    <TableHead>Vị trí</TableHead>
+                    <TableHead>Lần bảo trì cuối</TableHead>
+                    <TableHead>Lần bào trì tiếp theo</TableHead>
+                    <TableHead>Trạng thái</TableHead>
+                    <TableHead className="text-right">Hành động</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredSystems.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={7} className="text-center py-4">
-                        No systems found matching your criteria
+                        Khoảng có hệ thống nào phù hợp với bộ lọc của bạn.
                       </TableCell>
                     </TableRow>
                   ) : (

@@ -2,7 +2,7 @@
 import { useAuth } from "./AuthContext";
 import { toast } from "react-toastify";
 import { createContext, useContext, useEffect, useState } from "react";
-
+import { BuildingListForDropdown, BlockListForDropdown, FloorListForDropdown,PremisseListForDropdown } from "../type/building";
 export interface Building {
     maTN: number;
     tenTN: string;
@@ -87,6 +87,14 @@ interface BuildingContextType {
     floors: FloorDetail[];
     blocks: BlockDetail[];
     buildingDetails: BuildingDetailed[];
+    blockListForDropdown: BlockListForDropdown[];
+    premisseListForDropdown: PremisseListForDropdown[];
+    getBlockListForDropdown: () => Promise<void>;
+    getFloorListForDropdown: () => Promise<void>;
+    getBuildingListForDropdown: () => Promise<void>;
+    getPremisseListForDropdown: () => Promise<void>;
+    floorListForDropdown: FloorListForDropdown[];
+    buildingListForDropdown: BuildingListForDropdown[];
     isLoading: boolean;
     error: string | null;
     createBlock: (block: CreateBlockParams) => Promise<void>;
@@ -109,6 +117,11 @@ export const BuildingProvider = ({ children }: { children: React.ReactNode }) =>
     const [buildingDetails, setBuildingDetails] = useState<BuildingDetailed[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [blockListForDropdown, setBlockListForDropdown] = useState<BlockListForDropdown[]>([]);
+    const [floorListForDropdown, setFloorListForDropdown] = useState<FloorListForDropdown[]>([]);
+    const [buildingListForDropdown, setBuildingListForDropdown] = useState<BuildingListForDropdown[]>([]);
+    const [premisseListForDropdown, setPremisseListForDropdown] = useState<PremisseListForDropdown[]>([]);
+
 
     useEffect(() => {
         if (!token) {
@@ -118,6 +131,95 @@ export const BuildingProvider = ({ children }: { children: React.ReactNode }) =>
         console.log("Token available, starting data fetch...");
         refreshData();
     }, [token]);
+
+
+    const getBuildingListForDropdown = async () => {
+        try {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/ToaNha/GetDSToaNha`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log("Building list for dropdown:", data);
+            setBuildingListForDropdown(data);
+        } catch (error) {
+            console.error("Error fetching building list for dropdown:", error);
+            setBuildingListForDropdown([]);
+            throw error;
+        }
+    }
+
+    const getBlockListForDropdown = async () => {
+        try {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/KhoiNha/GetDSKhoiNhaFilter`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log("Block list for dropdown:", data);
+            setBlockListForDropdown(data);
+        } catch (error) {
+            console.error("Error fetching block list for dropdown:", error);
+            setBlockListForDropdown([]);
+            throw error;
+        }
+    }
+
+    const getFloorListForDropdown = async () => {
+        try {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/TangLau/GetDSTangLauFilter`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log("Floor list for dropdown:", data);
+            setFloorListForDropdown(data);
+        } catch (error) {
+            console.error("Error fetching floor list for dropdown:", error);
+            setFloorListForDropdown([]);
+            throw error;
+        }
+    }
+
+    const getPremisseListForDropdown = async () => {
+        try {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/MatBang/GetDSMatBang`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log("Premisse list for dropdown:", data);
+            setPremisseListForDropdown(data);
+        } catch (error) {
+            console.error("Error fetching premisse list for dropdown:", error);
+            setPremisseListForDropdown([]);
+            throw error;
+        }
+    }
 
     const refreshData = async () => {
         if (!token) return;
@@ -368,7 +470,15 @@ export const BuildingProvider = ({ children }: { children: React.ReactNode }) =>
             getFloorList,
             getBlockDetail,
             getBlockList,
-            refreshData
+            refreshData,
+            getBuildingListForDropdown,
+            getBlockListForDropdown,
+            getFloorListForDropdown,
+            getPremisseListForDropdown,
+            blockListForDropdown,
+            floorListForDropdown,
+            buildingListForDropdown,
+            premisseListForDropdown
         }}>
             {children}
         </BuildingContext.Provider>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState, useCallback, useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -20,204 +20,281 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Zap, Droplets, Edit, MoreVertical, Plus, Trash2, AlertCircle } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { useElectricityRate } from "../context/ElectricityRate"
+import { useAuth } from "../context/AuthContext"
+import { useWaterRate } from "../context/WaterRate"
+import { CreateDinhMuc, DinhMuc, UpdateDinhMuc } from "../type/electricityRate"
+import { toast } from "react-toastify"
+import { se } from "date-fns/locale"
 
 // Sample data for service types that can have rates
 const serviceTypesWithRates = [
   {
     id: 1,
-    name: "Electricity",
+    name: "Điện",
     icon: <Zap className="h-5 w-5 text-yellow-500" />,
     unit: "kWh",
   },
   {
     id: 2,
-    name: "Water",
+    name: "Nước",
     icon: <Droplets className="h-5 w-5 text-blue-500" />,
     unit: "m³",
   },
 ]
 
-// Sample data for electricity rates
-const initialElectricityRates = [
-  {
-    id: 1,
-    name: "Residential Tier 1",
-    serviceTypeId: 1,
-    fromValue: 0,
-    toValue: 50,
-    price: 1678,
-    description: "First 50 kWh for residential use",
-  },
-  {
-    id: 2,
-    name: "Residential Tier 2",
-    serviceTypeId: 1,
-    fromValue: 51,
-    toValue: 100,
-    price: 1734,
-    description: "From 51 to 100 kWh for residential use",
-  },
-  {
-    id: 3,
-    name: "Residential Tier 3",
-    serviceTypeId: 1,
-    fromValue: 101,
-    toValue: 200,
-    price: 2014,
-    description: "From 101 to 200 kWh for residential use",
-  },
-  {
-    id: 4,
-    name: "Residential Tier 4",
-    serviceTypeId: 1,
-    fromValue: 201,
-    toValue: 300,
-    price: 2536,
-    description: "From 201 to 300 kWh for residential use",
-  },
-  {
-    id: 5,
-    name: "Residential Tier 5",
-    serviceTypeId: 1,
-    fromValue: 301,
-    toValue: 400,
-    price: 2834,
-    description: "From 301 to 400 kWh for residential use",
-  },
-  {
-    id: 6,
-    name: "Residential Tier 6",
-    serviceTypeId: 1,
-    fromValue: 401,
-    toValue: null,
-    price: 2927,
-    description: "Above 400 kWh for residential use",
-  },
-  {
-    id: 7,
-    name: "Commercial Flat Rate",
-    serviceTypeId: 1,
-    fromValue: 0,
-    toValue: null,
-    price: 3500,
-    description: "Flat rate for commercial use",
-  },
-]
+const useDebounce = (value: any, delay: any) => {
+  const [debouncedValue, setDebouncedValue] = useState(value)
 
-// Sample data for water rates
-const initialWaterRates = [
-  {
-    id: 8,
-    name: "Residential Tier 1",
-    serviceTypeId: 2,
-    fromValue: 0,
-    toValue: 10,
-    price: 5973,
-    description: "First 10 m³ for residential use",
-  },
-  {
-    id: 9,
-    name: "Residential Tier 2",
-    serviceTypeId: 2,
-    fromValue: 11,
-    toValue: 20,
-    price: 7052,
-    description: "From 11 to 20 m³ for residential use",
-  },
-  {
-    id: 10,
-    name: "Residential Tier 3",
-    serviceTypeId: 2,
-    fromValue: 21,
-    toValue: 30,
-    price: 8669,
-    description: "From 21 to 30 m³ for residential use",
-  },
-  {
-    id: 11,
-    name: "Residential Tier 4",
-    serviceTypeId: 2,
-    fromValue: 31,
-    toValue: null,
-    price: 15929,
-    description: "Above 30 m³ for residential use",
-  },
-  {
-    id: 12,
-    name: "Commercial Flat Rate",
-    serviceTypeId: 2,
-    fromValue: 0,
-    toValue: null,
-    price: 22000,
-    description: "Flat rate for commercial use",
-  },
-]
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value)
+    }, delay)
+
+    return () => {
+      clearTimeout(handler)
+    }
+  }, [value, delay])
+
+  return debouncedValue
+}
 
 export function ServiceRateManagement() {
   const [activeTab, setActiveTab] = useState("electricity")
-  const [electricityRates, setElectricityRates] = useState(initialElectricityRates)
-  const [waterRates, setWaterRates] = useState(initialWaterRates)
+  const { token } = useAuth()
+  // lấy danh sách định mức điện
+  const { electricityRates, getElectricityRates, addElectricityRate, deleteElectricityRate, updateElectricityRate } = useElectricityRate()
+  useEffect(() => {
+    getElectricityRates()
+  }, [token])
+
+  // lấy danh sách định mức nước
+  const { WaterRates, getWaterRates, addWaterRate, deleteWaterRate, updateWaterRate } = useWaterRate()
+  useEffect(() => {
+    getWaterRates()
+  }, [token])
+  // tối ưu khi nhập form
+
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [newRate, setNewRate] = useState({
     name: "",
-    serviceTypeId: 1,
-    fromValue: 0,
-    toValue: null as number | null,
-    price: 0,
+    fromValue: 0 as number | null,
+    toValue: 0 as number | null,
+    price: 0 as number | null,
+    serviceTypeId: 1, // Default to electricity
     description: "",
   })
-  const [editingRate, setEditingRate] = useState<any>(null)
+  const [editingRate, setEditingRate] = useState<DinhMuc>({
+    maDM: 0,
+    tenDM: "",
+    chiSoDau: 0,
+    chiSoCuoi: 0,
+    donGia: 0,
+    description: "",
+  })
   const [searchQuery, setSearchQuery] = useState("")
+  const [localSearchQuery, setLocalSearchQuery] = useState("") // THÊM dòng này
+  const debouncedSearchQuery = useDebounce(localSearchQuery, 300)
+  const serviceTypeId = useMemo(() => {
+    return activeTab === "electricity" ? 1 : 2
+  }, [activeTab])
+  useEffect(() => {
+    setSearchQuery(debouncedSearchQuery)
+  }, [debouncedSearchQuery])
+  const placeholders = useMemo(() => ({
+    fromValue: `Bắt đầu từ... ${newRate.serviceTypeId === 1 ? "kWh" : newRate.serviceTypeId === 2 ? "m³" : "unit"}`,
+    toValue: `Kết thúc... ${newRate.serviceTypeId === 1 ? "kWh" : newRate.serviceTypeId === 2 ? "m³" : "unit"}`
+  }), [newRate.serviceTypeId])
+  const handleNameChange = useCallback((e: any) => {
+    setNewRate(prev => ({ ...prev, name: e.target.value }))
+  }, [])
 
-  const handleAddRate = () => {
-    const rates = newRate.serviceTypeId === 1 ? electricityRates : waterRates
-    const newId = Math.max(...rates.map((rate) => rate.id), 0) + 1
-    const newRateItem = {
-      id: newId,
-      name: newRate.name,
-      serviceTypeId: newRate.serviceTypeId,
-      fromValue: newRate.fromValue,
-      toValue: newRate.toValue,
-      price: newRate.price,
+  const handleDescriptionChange = useCallback((e: any) => {
+    setNewRate(prev => ({ ...prev, description: e.target.value }))
+  }, [])
+
+  const handleFromValueChange = useCallback((e: any) => {
+    const value = e.target.value
+    setNewRate(prev => ({
+      ...prev,
+      fromValue: value === "" ? null : parseInt(value, 10)
+    }))
+  }, [])
+
+  const handleToValueChange = useCallback((e: any) => {
+    const value = e.target.value
+    setNewRate(prev => ({
+      ...prev,
+      toValue: value === "" ? null : parseInt(value, 10)
+    }))
+  }, [])
+
+  const handlePriceChange = useCallback((e: any) => {
+    const value = e.target.value
+    setNewRate(prev => ({
+      ...prev,
+      price: value === "" ? null : parseInt(value, 10)
+    }))
+  }, [])
+
+  const handleServiceTypeChange = useCallback((value: any) => {
+    setNewRate(prev => ({ ...prev, serviceTypeId: parseInt(value, 10) }))
+  }, [])
+  const handleAddRate = async () => {
+    const newRateItem: CreateDinhMuc = {
+      // id: newId,
+      tenDM: newRate.name,
+      chiSoDau: newRate.fromValue ?? 0,
+      chiSoCuoi: newRate.toValue ?? 0,
+      donGiaDinhMuc: newRate.price ?? 0,
       description: newRate.description,
     }
-
     if (newRate.serviceTypeId === 1) {
-      setElectricityRates([...electricityRates, newRateItem])
+      await addElectricityRate(newRateItem)
+      toast.success("Đã thêm định mức điện mới thành công!", {
+        position: "top-right",
+        autoClose: 1000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        onClose: () => getElectricityRates(),
+      })
     } else {
-      setWaterRates([...waterRates, newRateItem])
+      addWaterRate(newRateItem)
     }
-
     setNewRate({
       name: "",
-      serviceTypeId: 1,
       fromValue: 0,
-      toValue: null,
+      toValue: 0,
       price: 0,
       description: "",
+      serviceTypeId: 1, // Reset to default
     })
     setIsAddDialogOpen(false)
   }
 
-  const handleEditRate = () => {
+  const handleEditRate = async () => {
     if (!editingRate) return
 
-    if (editingRate.serviceTypeId === 1) {
-      setElectricityRates(electricityRates.map((rate) => (rate.id === editingRate.id ? { ...editingRate } : rate)))
+    if (serviceTypeId === 1) {
+      electricityRates.map((rate) => (rate.maDM === editingRate.maDM ? { ...editingRate } : rate))
+      const result = await updateElectricityRate(editingRate)
+      if (result) {
+        toast.success(`${result}`, {
+          position: "top-right",
+          autoClose: 1000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          onClose: () => getElectricityRates(),
+        })
+      } else {
+        toast.error("Cập nhật định mức điện thất bại!", {
+          position: "top-right",
+          autoClose: 1000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+        })
+      }
     } else {
-      setWaterRates(waterRates.map((rate) => (rate.id === editingRate.id ? { ...editingRate } : rate)))
+      (WaterRates.map((rate) => (rate.maDM === editingRate.maDM ? { ...editingRate } : rate)))
+      if (await updateWaterRate(editingRate)) {
+        toast.success("Đã cập nhật định mức nước thành công!", {
+          position: "top-right",
+          autoClose: 1000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          onClose: () => getWaterRates(),
+        })
+      }
+      else
+      {
+        toast.error("Cập nhật định mức nước thất bại!", {
+          position: "top-right",
+          autoClose: 1000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+        })
+      }
     }
-
-    setEditingRate(null)
+    setEditingRate({
+      maDM: 0,
+      tenDM: "",
+      chiSoDau: 0,
+      chiSoCuoi: 0,
+      donGia: 0,
+      description: "",
+    } as DinhMuc
+    )
     setIsEditDialogOpen(false)
   }
 
-  const handleDeleteRate = (id: number, serviceTypeId: number) => {
-    if (serviceTypeId === 1) {
-      setElectricityRates(electricityRates.filter((rate) => rate.id !== id))
-    } else {
-      setWaterRates(waterRates.filter((rate) => rate.id !== id))
+  const handleDeleteRate = (id: number) => {
+    if(serviceTypeId === 1) {
+      deleteElectricityRate(id).then((result) => {
+        if (result) {
+          toast.success("Đã xóa định mức điện thành công!", {
+            position: "top-right",
+            autoClose: 1000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            onClose: () => getElectricityRates(),
+          })
+        } else {
+          toast.error("Xóa định mức điện thất bại!", {
+            position: "top-right",
+            autoClose: 1000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+          })
+        }
+      })
+    }
+    else {
+      deleteWaterRate(id).then((result) => {
+        if (result) {
+          toast.success("Đã xóa định mức nước thành công!", {
+            position: "top-right",
+            autoClose: 1000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            onClose: () => getWaterRates(),
+          })
+        } else {
+          toast.error("Xóa định mức nước thất bại!", {
+            position: "top-right",
+            autoClose: 1000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+          })
+        }
+      })
     }
   }
 
@@ -229,13 +306,13 @@ export function ServiceRateManagement() {
   // Filter rates based on search query
   const filteredElectricityRates = electricityRates.filter(
     (rate) =>
-      rate.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      rate.tenDM.toLowerCase().includes(searchQuery.toLowerCase()) ||
       rate.description.toLowerCase().includes(searchQuery.toLowerCase()),
   )
 
-  const filteredWaterRates = waterRates.filter(
+  const filteredWaterRates = WaterRates.filter(
     (rate) =>
-      rate.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      rate.tenDM.toLowerCase().includes(searchQuery.toLowerCase()) ||
       rate.description.toLowerCase().includes(searchQuery.toLowerCase()),
   )
 
@@ -252,8 +329,8 @@ export function ServiceRateManagement() {
   const calculateElectricityBill = (usage: number) => {
     let total = 0
     const sortedRates = [...electricityRates]
-      .filter((rate) => rate.name.includes("Residential"))
-      .sort((a, b) => a.fromValue - b.fromValue)
+      .filter((rate) => rate.tenDM.includes("cư dân"))
+      .sort((a, b) => a.chiSoDau - b.chiSoCuoi)
 
     let remainingUsage = usage
 
@@ -261,9 +338,9 @@ export function ServiceRateManagement() {
       if (remainingUsage <= 0) break
 
       const usageInThisTier =
-        rate.toValue === null ? remainingUsage : Math.min(remainingUsage, rate.toValue - rate.fromValue + 1)
+        rate.chiSoCuoi === null ? remainingUsage : Math.min(remainingUsage, rate.chiSoCuoi - rate.chiSoDau + 1)
 
-      total += usageInThisTier * rate.price
+      total += usageInThisTier * rate.donGia
       remainingUsage -= usageInThisTier
     }
 
@@ -273,9 +350,9 @@ export function ServiceRateManagement() {
   // Calculate example bill for water
   const calculateWaterBill = (usage: number) => {
     let total = 0
-    const sortedRates = [...waterRates]
-      .filter((rate) => rate.name.includes("Residential"))
-      .sort((a, b) => a.fromValue - b.fromValue)
+    const sortedRates = [...WaterRates]
+      .filter((rate) => rate.tenDM.includes("bậc"))
+      .sort((a, b) => a.chiSoDau - b.chiSoDau)
 
     let remainingUsage = usage
 
@@ -283,9 +360,9 @@ export function ServiceRateManagement() {
       if (remainingUsage <= 0) break
 
       const usageInThisTier =
-        rate.toValue === null ? remainingUsage : Math.min(remainingUsage, rate.toValue - rate.fromValue + 1)
+        rate.chiSoCuoi === null ? remainingUsage : Math.min(remainingUsage, rate.chiSoCuoi - rate.chiSoDau + 1)
 
-      total += usageInThisTier * rate.price
+      total += usageInThisTier * rate.donGia
       remainingUsage -= usageInThisTier
     }
 
@@ -299,8 +376,8 @@ export function ServiceRateManagement() {
           <div className="relative w-full sm:w-96">
             <Input
               placeholder="Tìm kiếm định mức"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              value={localSearchQuery}
+              onChange={(e) => setLocalSearchQuery(e.target.value)}
               className="w-full"
             />
           </div>
@@ -309,20 +386,20 @@ export function ServiceRateManagement() {
           <DialogTrigger asChild>
             <Button className="w-full sm:w-auto">
               <Plus className="mr-2 h-4 w-4" />
-              Add Rate
+              Thêm định mức mới
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Add New Rate</DialogTitle>
-              <DialogDescription>Create a new rate tier for electricity or water service.</DialogDescription>
+              <DialogTitle>Thêm định mức mới</DialogTitle>
+              <DialogDescription>Thêm định mức mới cho dịch vụ điện và dịch vụ nước</DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
-                <Label htmlFor="serviceType">Service Type</Label>
+                <Label htmlFor="serviceType">Loại dịch vụ</Label>
                 <Select
                   value={newRate.serviceTypeId.toString()}
-                  onValueChange={(value) => setNewRate({ ...newRate, serviceTypeId: Number.parseInt(value) })}
+                  onValueChange={handleServiceTypeChange}
                 >
                   <SelectTrigger id="serviceType">
                     <SelectValue placeholder="Select service type" />
@@ -339,71 +416,70 @@ export function ServiceRateManagement() {
                   </SelectContent>
                 </Select>
               </div>
+
               <div className="grid gap-2">
-                <Label htmlFor="name">Rate Name</Label>
+                <Label htmlFor="name">Tên định mức</Label>
                 <Input
                   id="name"
                   value={newRate.name}
-                  onChange={(e) => setNewRate({ ...newRate, name: e.target.value })}
-                  placeholder="e.g., Residential Tier 1, Commercial Rate"
+                  onChange={handleNameChange}
+                  placeholder="Điện cư dân....."
                 />
               </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="fromValue">From Value</Label>
+                  <Label htmlFor="fromValue">Chỉ số đầu</Label>
                   <Input
                     id="fromValue"
                     type="number"
-                    value={newRate.fromValue || ""}
-                    onChange={(e) => setNewRate({ ...newRate, fromValue: Number.parseInt(e.target.value) || 0 })}
-                    placeholder={`Starting ${
-                      newRate.serviceTypeId === 1 ? "kWh" : newRate.serviceTypeId === 2 ? "m³" : "unit"
-                    }`}
+                    value={newRate.fromValue ?? ""}
+                    onChange={handleFromValueChange}
+                    placeholder={placeholders.fromValue}
+                    min="0"
                   />
                 </div>
+
                 <div className="grid gap-2">
-                  <Label htmlFor="toValue">To Value (leave empty for unlimited)</Label>
+                  <Label htmlFor="toValue">Chỉ số cuối</Label>
                   <Input
                     id="toValue"
                     type="number"
-                    value={newRate.toValue === null ? "" : newRate.toValue}
-                    onChange={(e) =>
-                      setNewRate({
-                        ...newRate,
-                        toValue: e.target.value === "" ? null : Number.parseInt(e.target.value) || 0,
-                      })
-                    }
-                    placeholder={`Ending ${
-                      newRate.serviceTypeId === 1 ? "kWh" : newRate.serviceTypeId === 2 ? "m³" : "unit"
-                    }`}
+                    value={newRate.toValue ?? ""}
+                    onChange={handleToValueChange}
+                    placeholder={placeholders.toValue}
+                    min="0"
                   />
                 </div>
               </div>
+
               <div className="grid gap-2">
-                <Label htmlFor="price">Price per Unit (VND)</Label>
+                <Label htmlFor="price">Đơn giá trong phạm vi định mức</Label>
                 <Input
                   id="price"
                   type="number"
-                  value={newRate.price || ""}
-                  onChange={(e) => setNewRate({ ...newRate, price: Number.parseInt(e.target.value) || 0 })}
-                  placeholder="Price per unit in VND"
+                  value={newRate.price ?? ""}
+                  onChange={handlePriceChange}
+                  placeholder="Giá trên mỗi đơn vị (VND) như 1000, 2000, 3000..."
+                  min="0"
                 />
               </div>
+
               <div className="grid gap-2">
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="description">Mô tả</Label>
                 <Input
                   id="description"
                   value={newRate.description}
-                  onChange={(e) => setNewRate({ ...newRate, description: e.target.value })}
-                  placeholder="Brief description of the rate"
+                  onChange={handleDescriptionChange}
+                  placeholder="Mô tả định mức, ví dụ: 'Định mức điện cho cư dân', 'Định mức nước thương mại'..."
                 />
               </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-                Cancel
+                Hủy
               </Button>
-              <Button onClick={handleAddRate}>Add Rate</Button>
+              <Button onClick={handleAddRate}>Thêm định mức mới</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -411,57 +487,58 @@ export function ServiceRateManagement() {
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Edit Rate</DialogTitle>
-              <DialogDescription>Modify the rate tier details.</DialogDescription>
+              <DialogTitle>Chỉnh sửa định mức</DialogTitle>
+              <DialogDescription>Chỉnh sửa chi tiết định mức</DialogDescription>
             </DialogHeader>
             {editingRate && (
               <div className="grid gap-4 py-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="editName">Rate Name</Label>
+                  <Label htmlFor="editName">Tên định mức</Label>
                   <Input
                     id="editName"
-                    value={editingRate.name}
-                    onChange={(e) => setEditingRate({ ...editingRate, name: e.target.value })}
+                    value={editingRate.tenDM}
+                    onChange={(e) => setEditingRate({ ...editingRate, tenDM: e.target.value })}
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="editFromValue">From Value</Label>
+                    <Label htmlFor="editFromValue">Chỉ số đầu</Label>
                     <Input
                       id="editFromValue"
                       type="number"
-                      value={editingRate.fromValue || ""}
+                      value={editingRate.chiSoDau || 0}
+                      min={0}
                       onChange={(e) =>
-                        setEditingRate({ ...editingRate, fromValue: Number.parseInt(e.target.value) || 0 })
+                        setEditingRate({ ...editingRate, chiSoDau: Number.parseInt(e.target.value) || 0 })
                       }
                     />
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="editToValue">To Value (leave empty for unlimited)</Label>
+                    <Label htmlFor="editToValue">Chỉ số cuối</Label>
                     <Input
                       id="editToValue"
                       type="number"
-                      value={editingRate.toValue === null ? "" : editingRate.toValue}
+                      value={editingRate.chiSoCuoi === null ? "" : editingRate.chiSoCuoi}
                       onChange={(e) =>
                         setEditingRate({
                           ...editingRate,
-                          toValue: e.target.value === "" ? null : Number.parseInt(e.target.value) || 0,
+                          chiSoCuoi: Number.parseInt(e.target.value) || 0,
                         })
                       }
                     />
                   </div>
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="editPrice">Price per Unit (VND)</Label>
+                  <Label htmlFor="editPrice">Đơn giá (VND)</Label>
                   <Input
                     id="editPrice"
                     type="number"
-                    value={editingRate.price || ""}
-                    onChange={(e) => setEditingRate({ ...editingRate, price: Number.parseInt(e.target.value) || 0 })}
+                    value={editingRate.donGia || ""}
+                    onChange={(e) => setEditingRate({ ...editingRate, donGia: Number.parseInt(e.target.value) || 0 })}
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="editDescription">Description</Label>
+                  <Label htmlFor="editDescription">Mô tả</Label>
                   <Input
                     id="editDescription"
                     value={editingRate.description}
@@ -472,9 +549,9 @@ export function ServiceRateManagement() {
             )}
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-                Cancel
+                Hủy
               </Button>
-              <Button onClick={handleEditRate}>Save Changes</Button>
+              <Button onClick={handleEditRate}>Lưu thay đổi</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -484,47 +561,47 @@ export function ServiceRateManagement() {
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="electricity" className="flex items-center gap-2">
             <Zap className="h-4 w-4 text-yellow-500" />
-            <span>Electricity Rates</span>
+            <span>Định mức điện</span>
           </TabsTrigger>
           <TabsTrigger value="water" className="flex items-center gap-2">
             <Droplets className="h-4 w-4 text-blue-500" />
-            <span>Water Rates</span>
+            <span>Định mức nước</span>
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="electricity" className="mt-4 space-y-6">
           <Alert>
             <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Progressive Billing</AlertTitle>
+            <AlertTitle>Đơn giá được tính theo định mức</AlertTitle>
             <AlertDescription>
-              Electricity is billed progressively through tiers. Each usage range is charged at its corresponding rate.
+              Điện được tính theo từng bậc. Mỗi mức sử dụng được tính theo mức giá tương ứng.
             </AlertDescription>
           </Alert>
 
           <Card>
             <CardHeader>
-              <CardTitle>Electricity Rate Tiers</CardTitle>
-              <CardDescription>Define different rate tiers for electricity consumption</CardDescription>
+              <CardTitle>Đơn giá điện được tính theo định mức</CardTitle>
+              <CardDescription>Xác định các mức giá khác nhau cho mức tiêu thụ điện</CardDescription>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Rate Name</TableHead>
-                    <TableHead>Range</TableHead>
-                    <TableHead>Price per kWh</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead>Tên định mức</TableHead>
+                    <TableHead>Phạm vi</TableHead>
+                    <TableHead>Giá trên mỗi Kwh</TableHead>
+                    <TableHead>Mô tả</TableHead>
+                    <TableHead className="text-right">Hành động</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredElectricityRates.map((rate) => (
-                    <TableRow key={rate.id}>
-                      <TableCell className="font-medium">{rate.name}</TableCell>
+                  {filteredElectricityRates.map((rate, index) => (
+                    <TableRow key={index}>
+                      <TableCell className="font-medium">{rate.tenDM}</TableCell>
                       <TableCell>
-                        {rate.fromValue} - {rate.toValue === null ? "∞" : rate.toValue} kWh
+                        {rate.chiSoDau} - {rate.chiSoCuoi > 999 ? "∞" : rate.chiSoCuoi} kWh
                       </TableCell>
-                      <TableCell>{formatPrice(rate.price)}</TableCell>
+                      <TableCell>{formatPrice(rate.donGia)}</TableCell>
                       <TableCell>{rate.description}</TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>
@@ -537,11 +614,11 @@ export function ServiceRateManagement() {
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => startEditRate(rate)}>
                               <Edit className="mr-2 h-4 w-4" />
-                              Edit
+                              Sửa
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleDeleteRate(rate.id, rate.serviceTypeId)}>
+                            <DropdownMenuItem onClick={() => handleDeleteRate(rate.maDM)}>
                               <Trash2 className="mr-2 h-4 w-4" />
-                              Delete
+                              Xóa
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -555,8 +632,8 @@ export function ServiceRateManagement() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Electricity Bill Calculator</CardTitle>
-              <CardDescription>See how the tiered rates affect the total bill</CardDescription>
+              <CardTitle>Mô phỏng tính tiền điện</CardTitle>
+              <CardDescription>Xem cách các mức giá theo bậc ảnh hưởng đến tổng hóa đơn</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid gap-6 md:grid-cols-3">
@@ -565,11 +642,11 @@ export function ServiceRateManagement() {
                   return (
                     <Card key={usage}>
                       <CardHeader className="pb-2">
-                        <CardTitle className="text-lg">Usage: {usage} kWh</CardTitle>
+                        <CardTitle className="text-lg">Sử dụng: {usage} kWh</CardTitle>
                       </CardHeader>
                       <CardContent>
                         <div className="text-2xl font-bold">{formatPrice(bill)}</div>
-                        <p className="text-sm text-muted-foreground">Average price: {formatPrice(bill / usage)}/kWh</p>
+                        <p className="text-sm text-muted-foreground">Giá trung bình: {formatPrice(bill / usage)}/kWh</p>
                       </CardContent>
                     </Card>
                   )
@@ -582,36 +659,36 @@ export function ServiceRateManagement() {
         <TabsContent value="water" className="mt-4 space-y-6">
           <Alert>
             <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Progressive Billing</AlertTitle>
+            <AlertTitle>Đơn giá được tính theo định mức</AlertTitle>
             <AlertDescription>
-              Water is billed progressively through tiers. Each usage range is charged at its corresponding rate.
+              Nước được tính theo từng bậc. Mỗi mức sử dụng được tính theo mức giá tương ứng.
             </AlertDescription>
           </Alert>
 
           <Card>
             <CardHeader>
-              <CardTitle>Water Rate Tiers</CardTitle>
-              <CardDescription>Define different rate tiers for water consumption</CardDescription>
+              <CardTitle>Đơn giá nước được tính theo định mức</CardTitle>
+              <CardDescription>Xác định các mức giá khác nhau cho mức tiêu thụ nước</CardDescription>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Rate Name</TableHead>
-                    <TableHead>Range</TableHead>
-                    <TableHead>Price per m³</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead>Tên định mức</TableHead>
+                    <TableHead>Phạm vi</TableHead>
+                    <TableHead>Giá trên mỗi m³</TableHead>
+                    <TableHead>Mô tả</TableHead>
+                    <TableHead className="text-right">Hành động</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredWaterRates.map((rate) => (
-                    <TableRow key={rate.id}>
-                      <TableCell className="font-medium">{rate.name}</TableCell>
+                  {filteredWaterRates.map((rate, index) => (
+                    <TableRow key={index}>
+                      <TableCell className="font-medium">{rate.tenDM}</TableCell>
                       <TableCell>
-                        {rate.fromValue} - {rate.toValue === null ? "∞" : rate.toValue} m³
+                        {rate.chiSoDau} - {rate.chiSoCuoi >= 999 ? "∞" : rate.chiSoCuoi} m³
                       </TableCell>
-                      <TableCell>{formatPrice(rate.price)}</TableCell>
+                      <TableCell>{formatPrice(rate.donGia)}</TableCell>
                       <TableCell>{rate.description}</TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>
@@ -624,11 +701,11 @@ export function ServiceRateManagement() {
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => startEditRate(rate)}>
                               <Edit className="mr-2 h-4 w-4" />
-                              Edit
+                              Sửa
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleDeleteRate(rate.id, rate.serviceTypeId)}>
+                            <DropdownMenuItem onClick={() => handleDeleteRate(rate.maDM)}>
                               <Trash2 className="mr-2 h-4 w-4" />
-                              Delete
+                              Xóa
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -642,8 +719,8 @@ export function ServiceRateManagement() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Water Bill Calculator</CardTitle>
-              <CardDescription>See how the tiered rates affect the total bill</CardDescription>
+              <CardTitle>Mô phỏng tính đơn giá nước</CardTitle>
+              <CardDescription>Xem cách các mức giá theo bậc ảnh hưởng đến tổng hóa đơn</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid gap-6 md:grid-cols-3">
@@ -652,11 +729,11 @@ export function ServiceRateManagement() {
                   return (
                     <Card key={usage}>
                       <CardHeader className="pb-2">
-                        <CardTitle className="text-lg">Usage: {usage} m³</CardTitle>
+                        <CardTitle className="text-lg">Sử dụng: {usage} m³</CardTitle>
                       </CardHeader>
                       <CardContent>
                         <div className="text-2xl font-bold">{formatPrice(bill)}</div>
-                        <p className="text-sm text-muted-foreground">Average price: {formatPrice(bill / usage)}/m³</p>
+                        <p className="text-sm text-muted-foreground">Giá trung bình: {formatPrice(bill / usage)}/m³</p>
                       </CardContent>
                     </Card>
                   )

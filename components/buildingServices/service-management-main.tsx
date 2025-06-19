@@ -18,12 +18,12 @@ export function ServiceManagementMain() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card className="border-2 border-blue-200 bg-blue-50">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Service Types</CardTitle>
+            <CardTitle className="text-sm font-medium">Loại dịch vụ</CardTitle>
             <Tags className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-700">8</div>
-            <p className="text-xs text-blue-600">Active categories</p>
+            <p className="text-xs text-blue-600">Danh mục hoạt động</p>
           </CardContent>
         </Card>
 
