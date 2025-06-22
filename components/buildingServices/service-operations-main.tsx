@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { ServiceAssignment } from "./service-assignment"
 import { ServiceApproval } from "./service-aproval"
-import { ServiceUsage } from "./service-usage"
+import { ServiceUsageStatistics } from "./service-usage"
 import { UserCheck, CheckCircle, BarChart3 } from "lucide-react"
 
 export function ServiceOperationsMain() {
@@ -103,7 +103,7 @@ export function ServiceOperationsMain() {
               <CardDescription>Monitor service usage and generate usage reports</CardDescription>
             </CardHeader>
             <CardContent>
-              <ServiceUsage />
+              <ServiceUsageStatistics />
             </CardContent>
           </Card>
         </TabsContent>

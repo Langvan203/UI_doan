@@ -29,6 +29,7 @@ import {
   BarChart3,
   CheckCircle2,
   AlertTriangle,
+  Search,
 } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
 import { useBuilding } from "../context/BuildingContext"
@@ -36,6 +37,12 @@ import { useAuth } from "../context/AuthContext"
 import { useMetterContext } from "../context/MetterContext"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { CreateDongHo, DongHo, DongHoPaged } from "../type/Metter"
+import { DropdownMenuSeparator } from "@radix-ui/react-dropdown-menu"
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { create } from "domain"
+import { add, set } from "date-fns"
+import { toast } from "react-toastify"
+import { se } from "date-fns/locale"
 
 
 
@@ -57,7 +64,18 @@ export function MeterManagement() {
     getBuildingListForDropdown,
     getBlockListForDropdown,
     getFloorListForDropdown } = useBuilding();
-  const { electricMetters, waterMetters, getElectricMetters, getWaterMetters } = useMetterContext();
+  const { electricMetters,
+    waterMetters,
+    getElectricMetters,
+    getWaterMetters,
+    addElectricMetter,
+    addWaterMetter,
+    updateChiSoDongHoDien,
+    updateChiSoDongHoNuoc,
+    updateTrangThaiDien,
+    updateTrangThaiNuoc,
+    deleteElectricMetter,
+    deleteWaterMetter } = useMetterContext();
   const { token } = useAuth();
   useEffect(() => {
     if (token) {
@@ -74,7 +92,7 @@ export function MeterManagement() {
   const [activeTab, setActiveTab] = useState("electricity")
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isReadingDialogOpen, setIsReadingDialogOpen] = useState(false)
-  const [selectedMeter, setSelectedMeter] = useState<any>(null)
+  const [selectedMeter, setSelectedMeter] = useState<DongHo>()
   const [newMeter, setNewMeter] = useState<CreateDongHo>({
     soDongHo: "",
     chiSoSuDung: 0,
@@ -85,10 +103,7 @@ export function MeterManagement() {
     maKN: 0,
     maTL: 0,
   })
-  const [newReading, setNewReading] = useState({
-    date: new Date().toISOString().split("T")[0],
-    value: 0,
-  })
+  const [newReading, setNewReading] = useState(0)
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedBuilding, setSelectedBuilding] = useState<number | null>(null)
   const [selectedBlock, setSelectedBlock] = useState<number | null>(null)
@@ -96,49 +111,278 @@ export function MeterManagement() {
 
 
 
-  const handleAddMeter = () => {
-    if (!newMeter.soDongHo || !newMeter.maMB || !newMeter.maKH || !newMeter.maTN || !newMeter.maKN || !newMeter.maTL) {
+
+  const handlePageChange = (page: number) => {
+    if (activeTab === "electricity") {
+      // Gọi API để load electricity meters của trang mới
+      getElectricMetters(page);
+    } else {
+      // Gọi API để load water meters của trang mới  
+      getWaterMetters(page);
+    }
+  };
+
+  const findMaKH = (maMB: number) => {
+    // Tìm kiếm trong danh sách premisseListForDropdown để lấy mã cư dân
+    const unit = premisseListForDropdown.find((premise) => premise.maMB === maMB);
+    return unit ? unit.maKH : 0; // Trả về 0 nếu không tìm thấy
+  }
+
+  const handleAddMeter = async () => {
+    if (!newMeter.soDongHo || !newMeter.maMB || !newMeter.maTN || !newMeter.maKN || !newMeter.maTL) {
       alert("Vui lòng điền đầy đủ thông tin đồng hồ đo")
       return
     }
+    // console.log(activeTab)
     const newMeterItem: CreateDongHo = {
       // id: newId,
       soDongHo: newMeter.soDongHo,
       chiSoSuDung: 0, // Mặc định là 0 khi thêm mới
       trangThai: true, // Mặc định là hoạt động
       maMB: newMeter.maMB, // Mã vị trí (căn hộ)
-      maKH: newMeter.maKH, // Mã cư dân (nếu có)
+      maKH: findMaKH(newMeter.maMB), // Mã cư dân (nếu có)
       maTN: selectedBuilding || 0, // Mã tòa nhà
       maKN: selectedBlock || 0, // Mã khối nhà
       maTL: selectedFloor || 0, // Mã tầng lầu
     }
+    if (activeTab === "electricity") {
+      const result = await addElectricMetter(newMeterItem); // Gọi API để thêm đồng hồ điện mới
+      if (result === true) {
+        toast.success("Thêm đồng hồ điện thành công", {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+        });
+      }
+      else {
+        toast.error("Khách hàng này đã có đồng hồ, vui lòng thử lại!!!", {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+        });
+        return;
+      }
+    }
+    else {
+      const result = await addWaterMetter(newMeterItem); // Gọi API để thêm đồng hồ nước mới
+      if (result === true) {
+        toast.success("Thêm đồng hồ nước thành công", {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+        });
+      }
+      else {
+        toast.error("Khách hàng này đã có đồng hồ, vui lòng thử lại!!!", {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+        });
+        return;
+      }
 
-    // setMeters([...meters, newMeterItem])
-    setNewMeter({
-      soDongHo: "",
-      chiSoSuDung: 0,
-      trangThai: true,
-      maMB: 0,
-      maKH: 0,
-      maTN: 0,
-      maKN: 0,
-      maTL: 0,
-    })
+      // setMeters([...meters, newMeterItem])
+      setNewMeter({
+        soDongHo: "",
+        chiSoSuDung: 0,
+        trangThai: true,
+        maMB: 0,
+        maKH: 0,
+        maTN: 0,
+        maKN: 0,
+        maTL: 0,
+      })
 
-    setIsAddDialogOpen(false)
+      setIsAddDialogOpen(false)
+      //getElectricMetters(1); // Reload electricity meters
+    }
   }
 
-  const handleAddReading = () => {
+  const handleAddReading = async () => {
+    if (activeTab === "electricity") {
+      const result = await updateChiSoDongHoDien(selectedMeter?.maDH || 0, newReading);
+      if (result) {
+        toast.success("Ghi chỉ số đồng hồ điện thành công", {
+          position: "top-right",
+          autoClose: 1000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+        });
+        setIsReadingDialogOpen(false);
+        setNewReading(0);
+        //  getElectricMetters(1); // Reload electricity meters
+      }
+      else {
+        toast.error("Ghi chỉ số đồng hồ điện thất bại, vui lòng thử lại!!!", {
+          position: "top-right",
+          autoClose: 1000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+        });
+      }
+    }
+    else {
+      const result = await updateChiSoDongHoNuoc(selectedMeter?.maDH || 0, newReading);
+      if (result) {
+        toast.success("Ghi chỉ số đồng hồ điện thành công", {
+          position: "top-right",
+          autoClose: 1000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+        });
+        setIsReadingDialogOpen(false);
+        setNewReading(0);
+        // getElectricMetters(1); // Reload electricity meters
+      }
+      else {
+        toast.error("Ghi chỉ số đồng hồ điện thất bại, vui lòng thử lại!!!", {
+          position: "top-right",
+          autoClose: 1000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+        });
+      }
+    }
 
   }
-
 
   const handleDeleteMeter = (id: number) => {
-    // setMeters(meters.filter((meter) => meter.id !== id))
+    if (activeTab === "electricity") {
+      deleteElectricMetter(id).then((result) => {
+        if (result) {
+          toast.success("Đồng hồ điện đã được xóa thành công", {
+            position: "top-right",
+            autoClose: 1000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+          });
+          // getElectricMetters(1); // Reload electricity meters
+        } else {
+          toast.error("Xóa đồng hồ điện thất bại, vui lòng thử lại!!!", {
+            position: "top-right",
+            autoClose: 1000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+          });
+        }
+      })
+
+    }
+    else {
+      deleteWaterMetter(id).then((result) => {
+        if (result) {
+          toast.success("Đồng hồ nước đã được xóa thành công", {
+            position: "top-right",
+            autoClose: 1000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+          });
+          // getWaterMetters(1); // Reload water meters
+        } else {
+          toast.error("Xóa đồng hồ nước thất bại, vui lòng thử lại!!!", {
+            position: "top-right",
+            autoClose: 1000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+          });
+        }
+      })
+    }
   }
 
   const handleChangeMeterStatus = (id: number, status: boolean) => {
-    // setMeters(meters.map((meter) => (meter.id === id ? { ...meter, status } : meter)))
+    if (activeTab === "electricity") {
+      updateTrangThaiDien(id, status).then((result) => {
+        if (result) {
+          toast.success(`Đồng hồ điện ${status ? "đã được kích hoạt" : "đã được bảo trì"}`, {
+            position: "top-right",
+            autoClose: 1000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+          });
+          // getElectricMetters(1); // Reload electricity meters
+        } else {
+          toast.error("Cập nhật trạng thái đồng hồ điện thất bại, vui lòng thử lại!!!", {
+            position: "top-right",
+            autoClose: 1000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+          });
+        }
+      })
+    }
+    else {
+      updateTrangThaiNuoc(id, status).then((result) => {
+        if (result) {
+          toast.success(`Đồng hồ nước ${status ? "đã được kích hoạt" : "đã được bảo trì"}`, {
+            position: "top-right",
+            autoClose: 1000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+          });
+          // getWaterMetters(1); // Reload water meters
+        } else {
+          toast.error("Cập nhật trạng thái đồng hồ nước thất bại, vui lòng thử lại!!!", {
+            position: "top-right",
+            autoClose: 1000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+          });
+        }
+      })
+    }
   }
 
   // Filter blocks based on selected building
@@ -158,6 +402,8 @@ export function MeterManagement() {
       : waterMetters?.data || [];
   }, [activeTab, electricMetters, waterMetters]);
 
+
+
   // Filter mảng DongHo[]
   const filteredMeters = useMemo(() => {
     return currentMeters.filter((dongHo) => {
@@ -171,7 +417,7 @@ export function MeterManagement() {
       const mathchesFloor = !selectedFloor || dongHo.maTL === selectedFloor;
       return matchesSearch && mathchesFloor && matchesBuilding && matchesBlock;
     });
-  }, [currentMeters, searchQuery,selectedFloor, selectedBuilding, selectedBlock]);
+  }, [currentMeters, searchQuery, selectedFloor, selectedBuilding, selectedBlock]);
 
   // Filter dữ liệu
 
@@ -433,19 +679,20 @@ export function MeterManagement() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Ghi chỉ số hoạt động mới</DialogTitle>
-              <DialogDescription>Ghi chỉ số hoạt động mới cho đồng hồ{selectedMeter?.serialNumber || ""}</DialogDescription>
+              <DialogDescription>Ghi chỉ số hoạt động mới cho đồng hồ {selectedMeter?.soDongHo || ""}</DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
                 <Label htmlFor="readingValue">
-                  Chỉ số mới ({selectedMeter?.typeId === 1 ? "kWh" : selectedMeter?.typeId === 2 ? "m³" : "units"})
+                  Chỉ số mới ({activeTab === "electricity" ? "kWh" : "m3"})
                 </Label>
                 <Input
                   id="readingValue"
                   type="number"
-                  value={newReading.value || ""}
-                  onChange={(e) => setNewReading({ ...newReading, value: Number.parseInt(e.target.value) || 0 })}
+                  value={newReading}
+                  onChange={(e) => setNewReading(Number.parseInt(e.target.value))}
                   placeholder="giá trị chỉ số mới"
+                  min={selectedMeter?.chiSoSuDung || 0}
                 />
               </div>
             </div>
@@ -478,94 +725,200 @@ export function MeterManagement() {
               <CardDescription>Quản lý danh sách đồng hồ điện của cư dân</CardDescription>
             </CardHeader>
             <CardContent>
-              {filteredMeters.length > 0 ? (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Số đồng hồ</TableHead>
-                      <TableHead>Vị trí</TableHead>
-                      <TableHead>Cư dân</TableHead>
-                      <TableHead>Chỉ số sử dụng</TableHead>
-                      <TableHead>Ngày cập nhật cuối cùng</TableHead>
-                      <TableHead>Trạng thái</TableHead>
-                      <TableHead className="text-right">Hành động</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredMeters.map((meter) => {
-                      return (
-                        <TableRow key={meter.maDH}>
-                          <TableCell className="font-medium">{meter.soDongHo}</TableCell>
-                          <TableCell>{meter.maVT || "Unknown"}</TableCell>
-                          <TableCell>{meter.tenKH || "Unoccupied"}</TableCell>
-                          <TableCell>
-                            {meter.updatedDate}
-                          </TableCell>
-                          <TableCell>{meter.updatedDate}</TableCell>
-                          <TableCell>
-                            <Badge
-                              variant="outline"
-                              className={
-                                meter.trangThai === true
-                                  ? "bg-green-50 text-green-700 hover:bg-green-50"
-                                  : meter.trangThai === false
-                                    ? "bg-yellow-50 text-yellow-700 hover:bg-yellow-50"
-                                    : "bg-red-50 text-red-700 hover:bg-red-50"
-                              }
-                            >
-                              {meter.trangThai === true ? "Hoạt động" : meter.trangThai === false ? "Đang sửa chữa" : "Không xác định"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon">
-                                  <MoreVertical className="h-4 w-4" />
-                                  <span className="sr-only">Menu</span>
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem
-                                  onClick={() => {
-                                    setSelectedMeter(meter)
-                                    // setNewReading({
-                                    //   date: new Date().toISOString().split("T")[0],
-                                    //   value: meter.updatedDate ? meter.updatedDate : 0,
-                                    // })
-                                    setIsReadingDialogOpen(true)
-                                  }}
-                                >
-                                  <Plus className="mr-2 h-4 w-4" />
-                                  Ghi chỉ số
-                                </DropdownMenuItem>
-                                {meter.trangThai === true ? (
-                                  <DropdownMenuItem onClick={() => handleChangeMeterStatus(meter.maDH, false)}>
-                                    <AlertTriangle className="mr-2 h-4 w-4 text-yellow-600" />
-                                    Bảo trì đồng hồ
+              <div className="border rounded-lg">
+                {/* Fixed Header */}
+                <div className="border-b bg-background">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-[120px]">Số đồng hồ</TableHead>
+                        <TableHead className="w-[100px]">Vị trí</TableHead>
+                        <TableHead className="w-[150px] text-center">Khách hàng</TableHead>
+                        <TableHead className="w-[120px]">Chỉ số hiện tại</TableHead>
+                        <TableHead className="w-[120px]">Cập nhật lần cuối</TableHead>
+                        <TableHead className="w-[120px]">Trạng thái</TableHead>
+                        <TableHead className="w-[80px] text-right">Hành động</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                  </Table>
+                </div>
+
+                {/* Scrollable Body */}
+                <ScrollArea className="h-[500px] w-full">
+                  <Table>
+                    <TableBody>
+                      {filteredMeters.length > 0 ? (
+                        filteredMeters.map((meter) => (
+                          <TableRow key={meter.maDH} className="hover:bg-muted/50">
+                            <TableCell className="w-[120px] font-medium font-mono">
+                              {meter.soDongHo}
+                            </TableCell>
+                            <TableCell className="w-[100px]">
+                              {meter.maVT || "Unknown"}
+                            </TableCell>
+                            <TableCell className="w-[150px]">
+                              <div className="max-w-[140px] truncate">
+                                {meter.tenKH || "Unoccupied"}
+                              </div>
+                            </TableCell>
+                            <TableCell className="w-[150px] text-center font-mono">
+                              {meter.chiSoSuDung.toLocaleString()}
+                              <span className="text-xs text-muted-foreground ml-1">
+                                {activeTab === "electricity" ? "kWh" : "m³"}
+                              </span>
+                            </TableCell>
+                            <TableCell className="w-[120px] text-sm">
+                              {new Date(meter.updatedDate).toLocaleDateString('vi-VN')}
+                            </TableCell>
+                            <TableCell className="w-[120px]">
+                              <Badge
+                                variant="outline"
+                                className={
+                                  meter.trangThai === true
+                                    ? "bg-green-50 text-green-700 border-green-200"
+                                    : "bg-yellow-50 text-yellow-700 border-yellow-200"
+                                }
+                              >
+                                {meter.trangThai === true ? "Hoạt động" : "Bảo trì"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="w-[80px] text-right">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                                    <MoreVertical className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem
+                                    onClick={() => {
+                                      setSelectedMeter(meter)
+                                      setIsReadingDialogOpen(true)
+                                      setNewReading(selectedMeter?.chiSoSuDung || 0)
+                                    }}
+                                  >
+                                    <Plus className="mr-2 h-4 w-4" />
+                                    Ghi chỉ số
                                   </DropdownMenuItem>
-                                ) : (
-                                  <DropdownMenuItem onClick={() => handleChangeMeterStatus(meter.maDH, true)}>
-                                    <CheckCircle2 className="mr-2 h-4 w-4 text-green-600" />
-                                    Đang hoạt động
+                                  {meter.trangThai === true ? (
+                                    <DropdownMenuItem onClick={() => handleChangeMeterStatus(meter.maDH, false)}>
+                                      <AlertTriangle className="mr-2 h-4 w-4 text-yellow-600" />
+                                      Bảo trì đồng hồ
+                                    </DropdownMenuItem>
+                                  ) : (
+                                    <DropdownMenuItem onClick={() => handleChangeMeterStatus(meter.maDH, true)}>
+                                      <CheckCircle2 className="mr-2 h-4 w-4 text-green-600" />
+                                      Đang hoạt động
+                                    </DropdownMenuItem>
+                                  )}
+                                  <DropdownMenuItem onClick={() => handleDeleteMeter(meter.maDH)}>
+                                    <Trash2 className="mr-2 h-4 w-4 text-red-600" />
+                                    Xóa
                                   </DropdownMenuItem>
-                                )}
-                                <DropdownMenuItem onClick={() => handleDeleteMeter(meter.maDH)}>
-                                  <Trash2 className="mr-2 h-4 w-4 text-red-600" />
-                                  Xóa
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={7} className="h-32 text-center">
+                            <div className="flex flex-col items-center justify-center space-y-3">
+                              <p className="text-sm font-medium">Không tìm thấy đồng hồ</p>
+                            </div>
                           </TableCell>
                         </TableRow>
-                      )
-                    })}
-                  </TableBody>
-                </Table>
-              ) : (
-                <div className="flex h-24 items-center justify-center rounded-md border border-dashed">
-                  <p className="text-sm text-muted-foreground">Không có đồng hồ điện nào được tìm thấy</p>
+                      )}
+                    </TableBody>
+                  </Table>
+                </ScrollArea>
+                <div className="border-t bg-background">
+                  <div className="flex items-center justify-between px-4 py-3">
+                    {/* Pagination Info */}
+                    <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                      <span>
+                        Hiển thị{" "}
+                        <span className="font-medium">
+                          {((activeTab === "electricity" ? electricMetters?.pageNumber : waterMetters?.pageNumber) || 1 - 1) *
+                            ((activeTab === "electricity" ? electricMetters?.pageSize : waterMetters?.pageSize) || 10) + 1 - ((activeTab === "electricity" ? electricMetters?.pageSize : waterMetters?.pageSize) || 10)}
+                        </span>{" "}
+                        /{" "}
+                        <span className="font-medium">
+                          {Math.min(
+                            ((activeTab === "electricity" ? electricMetters?.pageNumber : waterMetters?.pageNumber) || 1) *
+                            ((activeTab === "electricity" ? electricMetters?.pageSize : waterMetters?.pageSize) || 10),
+                            (activeTab === "electricity" ? electricMetters?.totalCount : waterMetters?.totalCount) || 0
+                          )}
+                        </span>{" "}
+                        trong tổng số{" "}
+                        <span className="font-medium">
+                          {(activeTab === "electricity" ? electricMetters?.totalCount : waterMetters?.totalCount) || 0}
+                        </span>{" "}
+                        đồng hồ
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(((activeTab === "electricity" ? electricMetters?.pageNumber : waterMetters?.pageNumber) ?? 1) - 1)}
+                        disabled={!(activeTab === "electricity" ? electricMetters?.hasPreviousPage : waterMetters?.hasPreviousPage)}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                        Trước
+                      </Button>
+
+                      {/* Page Numbers */}
+                      <div className="flex items-center space-x-1">
+                        {Array.from(
+                          {
+                            length: Math.min(
+                              5,
+                              (activeTab === "electricity" ? electricMetters?.totalPages : waterMetters?.totalPages) || 1
+                            )
+                          },
+                          (_, i) => {
+                            const currentPage = (activeTab === "electricity" ? electricMetters?.pageNumber : waterMetters?.pageNumber) || 1;
+                            const totalPages = (activeTab === "electricity" ? electricMetters?.totalPages : waterMetters?.totalPages) || 1;
+
+                            let pageNumber;
+                            if (totalPages <= 5) {
+                              pageNumber = i + 1;
+                            } else if (currentPage <= 3) {
+                              pageNumber = i + 1;
+                            } else if (currentPage >= totalPages - 2) {
+                              pageNumber = totalPages - 4 + i;
+                            } else {
+                              pageNumber = currentPage - 2 + i;
+                            }
+
+                            return (
+                              <Button
+                                key={pageNumber}
+                                variant={pageNumber === currentPage ? "default" : "outline"}
+                                size="sm"
+                                className="w-8 h-8 p-0"
+                                onClick={() => handlePageChange(pageNumber)}
+                              >
+                                {pageNumber}
+                              </Button>
+                            );
+                          }
+                        )}
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(((activeTab === "electricity" ? electricMetters?.pageNumber : waterMetters?.pageNumber) ?? 1) + 1)}
+                        disabled={!(activeTab === "electricity" ? electricMetters?.hasNextPage : waterMetters?.hasNextPage)}
+                      >
+                        Sau
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
                 </div>
-              )}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -573,94 +926,204 @@ export function MeterManagement() {
         <TabsContent value="water" className="mt-4">
           <Card>
             <CardHeader>
-              <CardTitle>Đồng hồ nước</CardTitle>
-              <CardDescription>Quản lý danh sách đồng hồ nước của cư dân</CardDescription>
+              <CardTitle>Danh sách đồng hồ điện</CardTitle>
+              <CardDescription>Quản lý danh sách đồng hồ điện của cư dân</CardDescription>
             </CardHeader>
             <CardContent>
-              {filteredMeters.length > 0 ? (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Số đồng hồ</TableHead>
-                      <TableHead>Vị trí</TableHead>
-                      <TableHead>Cư dân</TableHead>
-                      <TableHead>Chỉ số sử dụng</TableHead>
-                      <TableHead>Lần cập nhật cuối</TableHead>
-                      <TableHead>Trạng thái</TableHead>
-                      <TableHead className="text-right">Hành động</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredMeters.map((meter) => {
-                      return (
-                        <TableRow key={meter.maDH}>
-                          <TableCell className="font-medium">{meter.soDongHo}</TableCell>
-                          <TableCell>{meter.maVT || "Unknown"}</TableCell>
-                          <TableCell>{meter.tenKH || "Unoccupied"}</TableCell>
-                          <TableCell>
-                            {meter.updatedDate}
-                          </TableCell>
-                          <TableCell>{meter.updatedDate}</TableCell>
-                          <TableCell>
-                            <Badge
-                              variant="outline"
-                              className={
-                                meter.trangThai === true
-                                  ? "bg-green-50 text-green-700 hover:bg-green-50"
-                                  : meter.trangThai === false
-                                    ? "bg-yellow-50 text-yellow-700 hover:bg-yellow-50"
-                                    : "bg-red-50 text-red-700 hover:bg-red-50"
-                              }
-                            >
-                              {meter.trangThai === true ? "Hoạt động" : meter.trangThai === false ? "Đang sửa chữa" : "Không xác định"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon">
-                                  <MoreVertical className="h-4 w-4" />
-                                  <span className="sr-only">Menu</span>
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem
-                                  onClick={() => {
-                                    setSelectedMeter(meter)
-                                    setIsReadingDialogOpen(true)
-                                  }}
-                                >
-                                  <Plus className="mr-2 h-4 w-4" />
-                                  Ghi chỉ số
-                                </DropdownMenuItem>
-                                {meter.trangThai === true ? (
-                                  <DropdownMenuItem onClick={() => handleChangeMeterStatus(meter.maDH, false)}>
-                                    <AlertTriangle className="mr-2 h-4 w-4 text-yellow-600" />
-                                    Bảo trì đồng hồ
+              <div className="border rounded-lg">
+                {/* Fixed Header */}
+                <div className="border-b bg-background">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-[120px]">Số đồng hồ</TableHead>
+                        <TableHead className="w-[100px]">Vị trí</TableHead>
+                        <TableHead className="w-[150px] text-center">Khách hàng</TableHead>
+                        <TableHead className="w-[120px]">Chỉ số hiện tại</TableHead>
+                        <TableHead className="w-[120px]">Cập nhật lần cuối</TableHead>
+                        <TableHead className="w-[120px]">Trạng thái</TableHead>
+                        <TableHead className="w-[80px] text-right">Hành động</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                  </Table>
+                </div>
+
+                {/* Scrollable Body */}
+                <ScrollArea className="h-[500px] w-full">
+                  <Table>
+                    <TableBody>
+                      {filteredMeters.length > 0 ? (
+                        filteredMeters.map((meter) => (
+                          <TableRow key={meter.maDH} className="hover:bg-muted/50">
+                            <TableCell className="w-[120px] font-medium font-mono">
+                              {meter.soDongHo}
+                            </TableCell>
+                            <TableCell className="w-[100px]">
+                              {meter.maVT || "Unknown"}
+                            </TableCell>
+                            <TableCell className="w-[150px]">
+                              <div className="max-w-[140px] truncate">
+                                {meter.tenKH || "Unoccupied"}
+                              </div>
+                            </TableCell>
+                            <TableCell className="w-[150px] text-center font-mono">
+                              {meter.chiSoSuDung.toLocaleString()}
+                              <span className="text-xs text-muted-foreground ml-1">
+                                {activeTab === "electricity" ? "kWh" : "m³"}
+                              </span>
+                            </TableCell>
+                            <TableCell className="w-[120px] text-sm">
+                              {new Date(meter.updatedDate).toLocaleDateString('vi-VN')}
+                            </TableCell>
+                            <TableCell className="w-[120px]">
+                              <Badge
+                                variant="outline"
+                                className={
+                                  meter.trangThai === true
+                                    ? "bg-green-50 text-green-700 border-green-200"
+                                    : "bg-yellow-50 text-yellow-700 border-yellow-200"
+                                }
+                              >
+                                {meter.trangThai === true ? "Hoạt động" : "Bảo trì"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="w-[80px] text-right">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                                    <MoreVertical className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem
+                                    onClick={() => {
+                                      setSelectedMeter(meter)
+                                      setIsReadingDialogOpen(true)
+                                      setNewReading(selectedMeter?.chiSoSuDung || 0)
+                                    }}
+                                  >
+                                    <Plus className="mr-2 h-4 w-4" />
+                                    Ghi chỉ số
                                   </DropdownMenuItem>
-                                ) : (
-                                  <DropdownMenuItem onClick={() => handleChangeMeterStatus(meter.maDH, true)}>
-                                    <CheckCircle2 className="mr-2 h-4 w-4 text-green-600" />
-                                    Đang hoạt động
+                                  {meter.trangThai === true ? (
+                                    <DropdownMenuItem onClick={() => handleChangeMeterStatus(meter.maDH, false)}>
+                                      <AlertTriangle className="mr-2 h-4 w-4 text-yellow-600" />
+                                      Bảo trì đồng hồ
+                                    </DropdownMenuItem>
+                                  ) : (
+                                    <DropdownMenuItem onClick={() => handleChangeMeterStatus(meter.maDH, true)}>
+                                      <CheckCircle2 className="mr-2 h-4 w-4 text-green-600" />
+                                      Đang hoạt động
+                                    </DropdownMenuItem>
+                                  )}
+                                  <DropdownMenuItem onClick={() => handleDeleteMeter(meter.maDH)}>
+                                    <Trash2 className="mr-2 h-4 w-4 text-red-600" />
+                                    Xóa
                                   </DropdownMenuItem>
-                                )}
-                                <DropdownMenuItem onClick={() => handleDeleteMeter(meter.maDH)}>
-                                  <Trash2 className="mr-2 h-4 w-4 text-red-600" />
-                                  Xóa
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={7} className="h-32 text-center">
+                            <div className="flex flex-col items-center justify-center space-y-3">
+                              <p className="text-sm font-medium">Không tìm thấy đồng hồ</p>
+                            </div>
                           </TableCell>
                         </TableRow>
-                      )
-                    })}
-                  </TableBody>
-                </Table>
-              ) : (
-                <div className="flex h-24 items-center justify-center rounded-md border border-dashed">
-                  <p className="text-sm text-muted-foreground">Không có đồng hồ nước nào được tìm thấy</p>
+                      )}
+                    </TableBody>
+                  </Table>
+                </ScrollArea>
+                <div className="border-t bg-background">
+                  <div className="flex items-center justify-between px-4 py-3">
+                    {/* Pagination Info */}
+                    <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                      <span>
+                        Hiển thị{" "}
+                        <span className="font-medium">
+                          {((activeTab === "electricity" ? electricMetters?.pageNumber : waterMetters?.pageNumber) || 1 - 1) *
+                            ((activeTab === "electricity" ? electricMetters?.pageSize : waterMetters?.pageSize) || 10) + 1 - ((activeTab === "electricity" ? electricMetters?.pageSize : waterMetters?.pageSize) || 10)}
+                        </span>{" "}
+                        /{" "}
+                        <span className="font-medium">
+                          {Math.min(
+                            ((activeTab === "electricity" ? electricMetters?.pageNumber : waterMetters?.pageNumber) || 1) *
+                            ((activeTab === "electricity" ? electricMetters?.pageSize : waterMetters?.pageSize) || 10),
+                            (activeTab === "electricity" ? electricMetters?.totalCount : waterMetters?.totalCount) || 0
+                          )}
+                        </span>{" "}
+                        trong tổng số{" "}
+                        <span className="font-medium">
+                          {(activeTab === "electricity" ? electricMetters?.totalCount : waterMetters?.totalCount) || 0}
+                        </span>{" "}
+                        đồng hồ
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(((activeTab === "electricity" ? electricMetters?.pageNumber : waterMetters?.pageNumber) ?? 1) - 1)}
+                        disabled={!(activeTab === "electricity" ? electricMetters?.hasPreviousPage : waterMetters?.hasPreviousPage)}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                        Trước
+                      </Button>
+
+                      {/* Page Numbers */}
+                      <div className="flex items-center space-x-1">
+                        {Array.from(
+                          {
+                            length: Math.min(
+                              5,
+                              (activeTab === "electricity" ? electricMetters?.totalPages : waterMetters?.totalPages) || 1
+                            )
+                          },
+                          (_, i) => {
+                            const currentPage = (activeTab === "electricity" ? electricMetters?.pageNumber : waterMetters?.pageNumber) || 1;
+                            const totalPages = (activeTab === "electricity" ? electricMetters?.totalPages : waterMetters?.totalPages) || 1;
+
+                            let pageNumber;
+                            if (totalPages <= 5) {
+                              pageNumber = i + 1;
+                            } else if (currentPage <= 3) {
+                              pageNumber = i + 1;
+                            } else if (currentPage >= totalPages - 2) {
+                              pageNumber = totalPages - 4 + i;
+                            } else {
+                              pageNumber = currentPage - 2 + i;
+                            }
+
+                            return (
+                              <Button
+                                key={pageNumber}
+                                variant={pageNumber === currentPage ? "default" : "outline"}
+                                size="sm"
+                                className="w-8 h-8 p-0"
+                                onClick={() => handlePageChange(pageNumber)}
+                              >
+                                {pageNumber}
+                              </Button>
+                            );
+                          }
+                        )}
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange(((activeTab === "electricity" ? electricMetters?.pageNumber : waterMetters?.pageNumber) ?? 1) + 1)}
+                        disabled={!(activeTab === "electricity" ? electricMetters?.hasNextPage : waterMetters?.hasNextPage)}
+                      >
+                        Sau
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
                 </div>
-              )}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -673,31 +1136,42 @@ export function MeterManagement() {
           <CardDescription>Thống kê số lượng sử dụng theo các loại đồng hồ đo</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-6 md:grid-cols-2">
-            {/* {meterTypes.map((type) => {
-              const typeMeters = meters.filter((meter) => meter.typeId === type.id)
+          <div className="grid gap-6 ">
+            {meterTypes.map((type) => {
+              // Lấy dữ liệu đồng hồ theo tab active
+              const currentData = activeTab === "electricity" ? electricMetters : waterMetters;
+
+              // Sửa lại logic filter - sử dụng tất cả data vì đã được filter theo tab
+              const typeMeters = currentData?.data || [];
+
+              // Chỉ hiển thị card tương ứng với tab đang active
+              if ((activeTab === "electricity" && type.id !== 1) ||
+                (activeTab === "water" && type.id !== 2)) {
+                return null;
+              }
+
+              // Tính tổng mức tiêu thụ (dựa trên chiSoSuDung)
               const totalConsumption = typeMeters.reduce((total, meter) => {
-                return (
-                  total +
-                  meter.readings.reduce((sum, reading) => {
-                    return sum + reading.consumption
-                  }, 0)
-                )
-              }, 0)
+                return total + (meter.chiSoSuDung || 0);
+              }, 0);
 
-              const averageConsumption = typeMeters.length > 0 ? totalConsumption / typeMeters.length : 0
+              const averageConsumption = typeMeters.length > 0 ? totalConsumption / typeMeters.length : 0;
 
-              // Find the meter with highest consumption
-              let highestConsumptionMeter = null
-              let highestConsumption = 0
+              // Tìm đồng hồ có mức tiêu thụ cao nhất
+              let highestConsumptionMeter: DongHo | null = null;
+              let highestConsumption = 0;
 
               typeMeters.forEach((meter) => {
-                const consumption = meter.readings.reduce((sum, reading) => sum + reading.consumption, 0)
+                const consumption = meter.chiSoSuDung || 0;
                 if (consumption > highestConsumption) {
-                  highestConsumption = consumption
-                  highestConsumptionMeter = meter
+                  highestConsumption = consumption;
+                  highestConsumptionMeter = meter;
                 }
-              })
+              });
+
+              // Tính số đồng hồ đang hoạt động
+              const activeMetersCount = typeMeters.filter((meter) => meter.trangThai === true).length;
+              const totalMetersCount = typeMeters.length;
 
               return (
                 <Card key={type.id} className="overflow-hidden">
@@ -705,53 +1179,113 @@ export function MeterManagement() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">
                         {type.icon}
-                        <CardTitle className="text-lg">{type.name} Usage</CardTitle>
+                        <CardTitle className="text-lg">Thống kê {type.name}</CardTitle>
                       </div>
+                      <Badge variant="outline" className="text-xs">
+                        {totalMetersCount} đồng hồ
+                      </Badge>
                     </div>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      <div className="space-y-2">
+                      <div className="space-y-3">
                         <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">Total Consumption:</span>
-                          <span className="font-medium">
-                            {totalConsumption} {type.unit}
+                          <span className="text-sm text-muted-foreground">Tổng chỉ số:</span>
+                          <span className="font-medium text-lg">
+                            {totalConsumption.toLocaleString()} {type.unit}
                           </span>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">Average per Meter:</span>
+                          <span className="text-sm text-muted-foreground">Trung bình/đồng hồ:</span>
                           <span className="font-medium">
-                            {averageConsumption.toFixed(2)} {type.unit}
+                            {averageConsumption.toLocaleString('vi-VN', {
+                              minimumFractionDigits: 0,
+                              maximumFractionDigits: 2
+                            })} {type.unit}
                           </span>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">Active Meters:</span>
-                          <span className="font-medium">
-                            {typeMeters.filter((meter) => meter.status === "active").length}
+                          <span className="text-sm text-muted-foreground">Đồng hồ hoạt động:</span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-green-600">{activeMetersCount}</span>
+                            <span className="text-xs text-muted-foreground">
+                              / {totalMetersCount}
+                            </span>
+                            <Progress
+                              value={totalMetersCount > 0 ? (activeMetersCount / totalMetersCount) * 100 : 0}
+                              className="w-16 h-2"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">Đồng hồ bảo trì:</span>
+                          <span className="font-medium text-yellow-600">
+                            {totalMetersCount - activeMetersCount}
                           </span>
                         </div>
                       </div>
 
-                      {highestConsumptionMeter && (
+                      {highestConsumptionMeter !== null && highestConsumption > 0 && (
                         <div className="rounded-md bg-muted p-3">
-                          <p className="text-sm font-medium">Highest Consumption</p>
-                          <p className="text-xs text-muted-foreground">
-                            {highestConsumptionMeter.serialNumber} -{" "}
-                            {getUnitById(highestConsumptionMeter.unitId)?.name || "Unknown"}
-                          </p>
-                          <div className="mt-2 flex items-center justify-between">
-                            <span className="text-sm">
-                              {highestConsumption} {type.unit}
+                          <p className="text-sm font-medium text-primary">Chỉ số cao nhất</p>
+                          <div className="mt-1 space-y-1">
+                            <p className="text-xs text-muted-foreground">
+                              Số đồng hồ: <span className="font-mono">{(highestConsumptionMeter as DongHo).soDongHo}</span>
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Khách hàng: {(highestConsumptionMeter as DongHo).tenKH || "Chưa có"}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Vị trí: {(highestConsumptionMeter as DongHo).maVT || "Không xác định"}
+                            </p>
+                          </div>
+                          <div className="mt-3 flex items-center justify-between">
+                            <span className="text-sm font-medium">
+                              {highestConsumption.toLocaleString()} {type.unit}
                             </span>
-                            <Progress value={(highestConsumption / (totalConsumption || 1)) * 100} className="w-1/2" />
+                            <div className="flex items-center gap-2">
+                              <Progress
+                                value={totalConsumption > 0 ? (highestConsumption / totalConsumption) * 100 : 0}
+                                className="w-20 h-2"
+                              />
+                              <span className="text-xs text-muted-foreground">
+                                {totalConsumption > 0 ?
+                                  ((highestConsumption / totalConsumption) * 100).toFixed(1) : 0
+                                }%
+                              </span>
+                            </div>
                           </div>
                         </div>
                       )}
+
+                      {/* Thêm thống kê cập nhật gần đây */}
+                      <div className="pt-2 border-t">
+                        <p className="text-xs text-muted-foreground mb-2">Cập nhật gần đây:</p>
+                        {typeMeters
+                          .sort((a, b) => new Date(b.updatedDate).getTime() - new Date(a.updatedDate).getTime())
+                          .slice(0, 5)
+                          .map((meter) => (
+                            <div key={meter.maDH} className="flex items-center justify-between py-1">
+                              <div className="flex-1 truncate">
+                                <span className="text-sm font-medium mr-2">{meter.soDongHo}</span>
+                                <span className="text-xs text-muted-foreground">
+                                  {meter.tenKH || "Chưa có"} - {meter.maVT}
+                                </span>
+                              </div>
+                              <span className="text-sm font-mono">
+                                {meter.chiSoSuDung.toLocaleString()}
+                                <span className="text-xs text-muted-foreground ml-1">
+                                  {activeTab === "electricity" ? "kWh" : "m³"}
+                                </span>
+                              </span>
+                            </div>
+                          ))}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
               )
-            })} */}
+            })}
           </div>
         </CardContent>
       </Card>

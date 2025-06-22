@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { ServiceUsage } from "@/components/buildingServices/service-usage"
+import { ServiceUsageStatistics } from "@/components/buildingServices/service-usage"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
 export const metadata: Metadata = {
@@ -21,7 +21,7 @@ export default function ServiceUsagePage() {
           <CardDescription>Theo dõi mức tiêu thụ dịch vụ và mô hình sử dụng</CardDescription>
         </CardHeader>
         <CardContent>
-          <ServiceUsage />
+          <ServiceUsageStatistics />
         </CardContent>
       </Card>
     </div>

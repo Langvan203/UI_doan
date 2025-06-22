@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { addMonths, format } from "date-fns";
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -19,6 +20,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { CraeteDichVuSuDung } from "../type/serviceUsage"
 import {
   Zap,
   Droplets,
@@ -34,176 +36,19 @@ import {
   Users,
   Gauge,
   AlertCircle,
+  ChevronLeft,
+  ChevronRight,
+  FileX,
 } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { useBuilding } from "../context/BuildingContext"
+import { useAuth } from "../context/AuthContext"
+import { useServicesUsage } from "../context/ServiceUsage"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { useServices } from "../context/ServicesContext"
+import { useResident } from "../context/ResidentContext"
+import { useApartment } from "../context/ApartmentContext"
 
-// Sample data for buildings
-const buildings = [
-  { id: 1, name: "Building A" },
-  { id: 2, name: "Building B" },
-  { id: 3, name: "Building C" },
-]
-
-// Sample data for blocks
-const blocks = [
-  { id: 1, buildingId: 1, name: "Block A1" },
-  { id: 2, buildingId: 1, name: "Block A2" },
-  { id: 3, buildingId: 2, name: "Block B1" },
-  { id: 4, buildingId: 3, name: "Block C1" },
-]
-
-// Sample data for floors
-const floors = [
-  { id: 1, blockId: 1, name: "Floor 1" },
-  { id: 2, blockId: 1, name: "Floor 2" },
-  { id: 3, blockId: 2, name: "Floor 1" },
-  { id: 4, blockId: 3, name: "Floor 1" },
-  { id: 5, blockId: 4, name: "Floor 1" },
-]
-
-// Sample data for residents
-const residents = [
-  { id: 1, name: "Nguyen Van A", unit: "A1-101", buildingId: 1, blockId: 1, floorId: 1 },
-  { id: 2, name: "Tran Thi B", unit: "A1-102", buildingId: 1, blockId: 1, floorId: 1 },
-  { id: 3, name: "Le Van C", unit: "A1-201", buildingId: 1, blockId: 1, floorId: 2 },
-  { id: 4, name: "Pham Thi D", unit: "A2-101", buildingId: 1, blockId: 2, floorId: 3 },
-  { id: 5, name: "Hoang Van E", unit: "B1-101", buildingId: 2, blockId: 3, floorId: 4 },
-  { id: 6, name: "Nguyen Thi F", unit: "C1-101", buildingId: 3, blockId: 4, floorId: 5 },
-]
-
-// Sample data for services
-const services = [
-  {
-    id: 1,
-    name: "Residential Electricity",
-    typeId: 1,
-    typeName: "Electricity",
-    icon: <Zap className="h-5 w-5 text-yellow-500" />,
-    price: 3500,
-    requiresMeter: true,
-  },
-  {
-    id: 2,
-    name: "Commercial Electricity",
-    typeId: 1,
-    typeName: "Electricity",
-    icon: <Zap className="h-5 w-5 text-yellow-500" />,
-    price: 4200,
-    requiresMeter: true,
-  },
-  {
-    id: 4,
-    name: "Residential Water",
-    typeId: 2,
-    typeName: "Water",
-    icon: <Droplets className="h-5 w-5 text-blue-500" />,
-    price: 15000,
-    requiresMeter: true,
-  },
-  {
-    id: 6,
-    name: "Basic Internet",
-    typeId: 3,
-    typeName: "Internet",
-    icon: <Wifi className="h-5 w-5 text-purple-500" />,
-    price: 200000,
-    requiresMeter: false,
-  },
-  {
-    id: 8,
-    name: "Car Parking",
-    typeId: 4,
-    typeName: "Parking",
-    icon: <Car className="h-5 w-5 text-gray-500" />,
-    price: 1200000,
-    requiresMeter: false,
-  },
-  {
-    id: 10,
-    name: "Gym Membership",
-    typeId: 5,
-    typeName: "Gym",
-    icon: <Dumbbell className="h-5 w-5 text-green-500" />,
-    price: 500000,
-    requiresMeter: false,
-  },
-]
-
-// Sample data for meters
-const meters = [
-  {
-    id: 1,
-    serialNumber: "E-A1-101",
-    typeId: 1,
-    unitId: 1,
-    status: "active",
-  },
-  {
-    id: 2,
-    serialNumber: "W-A1-101",
-    typeId: 2,
-    unitId: 1,
-    status: "active",
-  },
-  {
-    id: 3,
-    serialNumber: "E-A1-102",
-    typeId: 1,
-    unitId: 2,
-    status: "active",
-  },
-  {
-    id: 4,
-    serialNumber: "W-A1-102",
-    typeId: 2,
-    unitId: 2,
-    status: "active",
-  },
-  {
-    id: 5,
-    serialNumber: "E-A1-201",
-    typeId: 1,
-    unitId: 3,
-    status: "active",
-  },
-  {
-    id: 6,
-    serialNumber: "W-A1-201",
-    typeId: 2,
-    unitId: 3,
-    status: "active",
-  },
-  {
-    id: 7,
-    serialNumber: "E-A2-101",
-    typeId: 1,
-    unitId: 4,
-    status: "active",
-  },
-  {
-    id: 8,
-    serialNumber: "W-A2-101",
-    typeId: 2,
-    unitId: 4,
-    status: "active",
-  },
-  {
-    id: 9,
-    serialNumber: "E-B1-101",
-    typeId: 1,
-    unitId: 5,
-    status: "maintenance",
-  },
-  {
-    id: 10,
-    serialNumber: "W-B1-101",
-    typeId: 2,
-    unitId: 5,
-    status: "active",
-  },
-]
-
-// Sample data for service assignments
 const initialAssignments = [
   { id: 1, residentId: 1, serviceId: 1, meterId: 1, startDate: "2023-01-01", status: "active" },
   { id: 2, residentId: 1, serviceId: 4, meterId: 2, startDate: "2023-01-01", status: "active" },
@@ -216,14 +61,6 @@ const initialAssignments = [
 ]
 
 // Get unit ID by resident ID
-const getUnitIdByResidentId = (residentId: number) => {
-  const resident = residents.find((r) => r.id === residentId)
-  if (!resident) return null
-
-  const unit = resident.unit
-  return unit
-}
-
 export function ServiceAssignment() {
   const [assignments, setAssignments] = useState(initialAssignments)
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
@@ -232,6 +69,11 @@ export function ServiceAssignment() {
     serviceId: 0,
     meterId: null as number | null,
     startDate: new Date().toISOString().split("T")[0],
+    endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0], // 30 days from now
+    buildingId: null as number | null,
+    blockId: null as number | null,
+    floorId: null as number | null,
+    note: "",
   })
   const [selectedBuilding, setSelectedBuilding] = useState<number | null>(null)
   const [selectedBlock, setSelectedBlock] = useState<number | null>(null)
@@ -239,85 +81,168 @@ export function ServiceAssignment() {
   const [searchQuery, setSearchQuery] = useState("")
   const [activeTab, setActiveTab] = useState("all")
 
-  const handleAddAssignment = () => {
-    if (newAssignment.residentId === 0 || newAssignment.serviceId === 0) return
+  // Thêm state cho date range
+  const [dateRange, setDateRange] = useState({
+    startDate: new Date(), // Ngày hiện tại
+    endDate: addMonths(new Date(), 1) // Ngày hiện tại + 1 tháng
+  });
 
-    const service = services.find((s) => s.id === newAssignment.serviceId)
-    if (service?.requiresMeter && newAssignment.meterId === null) {
-      alert("This service requires a meter. Please select a meter.")
+  // Thêm error state cho validation
+  const [dateError, setDateError] = useState("")
+
+  // auth
+  const { token } = useAuth();
+
+  const { danhSachDangSuDung, getDanhSachDangSuDung,
+    createDichVuSuDung,
+    ngungSuDungDichVu,
+    tiepTucSuDungDichVu } = useServicesUsage();
+
+  // bộ lọc tòa nhà, khối nhà, tầng lầu
+  const { buildingListForDropdown, blockListForDropdown, floorListForDropdown,
+    getBlockListForDropdown,
+    getBuildingListForDropdown,
+    getFloorListForDropdown
+  } = useBuilding();
+
+
+  // bộ lọc dịch vụ
+  const { services, fetchServices } = useServices();
+  // bộ lọc mặt bằng
+  const { matBang, getDSMatBang } = useApartment();
+  // get building, block, floor list for dropdown
+  useEffect(() => {
+    if (token) {
+      getBuildingListForDropdown();
+      getBlockListForDropdown();
+      getFloorListForDropdown();
+      // Sử dụng date range khi fetch data
+      getDanhSachDangSuDung(1, dateRange.startDate, dateRange.endDate);
+      fetchServices()
+      getDSMatBang()
+    }
+  }, [token, dateRange]) // Thêm dateRange vào dependency
+
+  console.log(services)
+
+  // Helper function to get selected resident data
+  const getSelectedResidentData = () => {
+    if (!newAssignment.residentId) return null
+    return matBang.find(r => r.maMB === newAssignment.residentId)
+  }
+
+  // Helper function to get selected service data
+  const getSelectedServiceData = () => {
+    if (!newAssignment.serviceId) return null
+    return services.find(s => s.id === newAssignment.serviceId)
+  }
+
+  // Validation function
+  const isFormValid = () => {
+    return newAssignment.buildingId &&
+      newAssignment.blockId &&
+      newAssignment.floorId &&
+      newAssignment.residentId &&
+      newAssignment.serviceId &&
+      newAssignment.startDate &&
+      newAssignment.endDate &&
+      new Date(newAssignment.endDate) >= new Date(newAssignment.startDate)
+  }
+
+  const handleAddAssignment = async () => {
+    if (!newAssignment.buildingId ||
+      !newAssignment.blockId ||
+      !newAssignment.floorId ||
+      !newAssignment.residentId ||
+      !newAssignment.serviceId ||
+      !newAssignment.startDate ||
+      !newAssignment.endDate) {
       return
     }
 
-    const newId = Math.max(...assignments.map((assignment) => assignment.id)) + 1
-    const newAssignmentItem = {
-      id: newId,
-      residentId: newAssignment.residentId,
-      serviceId: newAssignment.serviceId,
-      meterId: newAssignment.meterId,
-      startDate: newAssignment.startDate,
-      status: "active",
-    }
+    try {
+      // Find selected resident and service
+      const selectedResident = matBang.find(r => r.maMB === newAssignment.residentId)
+      const selectedService = services.find(s => s.id === newAssignment.serviceId)
 
-    setAssignments([...assignments, newAssignmentItem])
-    setNewAssignment({
-      residentId: 0,
-      serviceId: 0,
-      meterId: null,
-      startDate: new Date().toISOString().split("T")[0],
-    })
-    setIsAddDialogOpen(false)
+      if (!selectedResident || !selectedService) {
+        console.error("Không tìm thấy cư dân hoặc dịch vụ được chọn")
+        return
+      }
+
+      // Calculate prices
+      const donGia = selectedService.donGia || 0
+      const tienVAT = Math.round(donGia * (selectedService.tyLeVAT || 0) / 100)
+      const tienBVMT = Math.round(donGia * (selectedService.tyLeBVMT || 0) / 100)
+      const thanhTien = donGia + tienVAT + tienBVMT
+
+      // Prepare data for API
+      const serviceUsageData: CraeteDichVuSuDung = {
+        ngayBatDauTinhPhi: new Date(newAssignment.startDate),
+        ngayKetThucTinhPhi: new Date(newAssignment.endDate),
+        thanhTien: thanhTien,
+        ghiChu: newAssignment.note || `Phí sử dụng ${selectedService.tenDV}`,
+        tienBVMT: tienBVMT,
+        tienVAT: tienVAT,
+        maDV: selectedService.id,
+        maKH: selectedResident.maKH,
+        maMB: selectedResident.maMB,
+        maKN: newAssignment.blockId,
+        maTL: newAssignment.floorId,
+        maTN: newAssignment.buildingId,
+      }
+
+      console.log("Data to be sent:", serviceUsageData)
+
+      // Call API
+      await createDichVuSuDung(serviceUsageData)
+
+      // Refresh data với date range hiện tại
+      getDanhSachDangSuDung(1, dateRange.startDate, dateRange.endDate)
+
+      // Reset form and close dialog
+      setNewAssignment({
+        residentId: 0,
+        serviceId: 0,
+        meterId: null,
+        startDate: new Date().toISOString().split("T")[0],
+        endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+        buildingId: null,
+        blockId: null,
+        floorId: null,
+        note: "",
+      })
+      setIsAddDialogOpen(false)
+
+      console.log("Thêm dịch vụ sử dụng thành công!")
+
+    } catch (error) {
+      console.error("Lỗi khi thêm dịch vụ sử dụng:", error)
+    }
   }
 
   const handleDeleteAssignment = (id: number) => {
     setAssignments(assignments.filter((assignment) => assignment.id !== id))
   }
 
-  // Filter residents based on selected building, block, floor
-  const filteredResidents = residents.filter(
+
+  const filteredApartments = matBang.filter(
     (resident) =>
-      (selectedBuilding === null || resident.buildingId === selectedBuilding) &&
-      (selectedBlock === null || resident.blockId === selectedBlock) &&
-      (selectedFloor === null || resident.floorId === selectedFloor) &&
-      (resident.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        resident.unit.toLowerCase().includes(searchQuery.toLowerCase())),
+      (selectedBuilding === null || resident.maTN === selectedBuilding) &&
+      (selectedBlock === null || resident.maKN === selectedBlock) &&
+      (selectedFloor === null || resident.maTL === selectedFloor)
   )
 
   // Filter blocks based on selected building
-  const filteredBlocks = blocks.filter((block) => selectedBuilding === null || block.buildingId === selectedBuilding)
+  const filteredBlocks = blockListForDropdown.filter((block) => selectedBuilding === null || block.maTN === selectedBuilding)
 
   // Filter floors based on selected block
-  const filteredFloors = floors.filter((floor) => selectedBlock === null || floor.blockId === selectedBlock)
+  const filteredFloors = floorListForDropdown.filter((floor) => selectedBlock === null || floor.maKN === selectedBlock)
 
-  // Get resident by ID
-  const getResidentById = (id: number) => {
-    return residents.find((resident) => resident.id === id)
-  }
 
-  // Get service by ID
-  const getServiceById = (id: number) => {
-    return services.find((service) => service.id === id)
-  }
 
-  // Get meter by ID
-  const getMeterById = (id: number | null) => {
-    if (id === null) return null
-    return meters.find((meter) => meter.id === id)
-  }
 
-  // Get available meters for a resident and service type
-  const getAvailableMeters = (residentId: number, serviceTypeId: number) => {
-    const resident = getResidentById(residentId)
-    if (!resident) return []
 
-    // Find meters that match the service type and are assigned to the resident's unit
-    return meters.filter(
-      (meter) =>
-        meter.typeId === serviceTypeId &&
-        meter.status === "active" &&
-        // Check if the meter is not already assigned to another service
-        !assignments.some((a) => a.meterId === meter.id && a.status === "active"),
-    )
-  }
 
   // Format price
   const formatPrice = (price: number) => {
@@ -327,426 +252,813 @@ export function ServiceAssignment() {
       maximumFractionDigits: 0,
     }).format(price)
   }
+  const handlePageChange = (page: number) => {
+    getDanhSachDangSuDung(page, dateRange.startDate, dateRange.endDate);
+  };
 
   // Filter assignments based on active tab
-  const filteredAssignments = assignments.filter((assignment) => {
-    const resident = getResidentById(assignment.residentId)
-    if (!resident) return false
-
-    const service = getServiceById(assignment.serviceId)
-    if (!service) return false
-
+  // Filter assignments based on active tab
+  const filteredAssignments = danhSachDangSuDung?.data?.filter((assignment) => {
     const matchesSearch =
-      resident.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      resident.unit.toLowerCase().includes(searchQuery.toLowerCase())
+      (assignment.tenKH?.toLowerCase() || "").includes(searchQuery.toLowerCase()) ||
+      (assignment.maVT?.toLowerCase() || "").includes(searchQuery.toLowerCase())
 
     const matchesFilters =
-      (selectedBuilding === null || resident.buildingId === selectedBuilding) &&
-      (selectedBlock === null || resident.blockId === selectedBlock) &&
-      (selectedFloor === null || resident.floorId === selectedFloor)
+      (selectedBuilding === null || assignment.maTN === selectedBuilding) &&
+      (selectedBlock === null || assignment.maKN === selectedBlock) &&
+      (selectedFloor === null || assignment.maTL === selectedFloor)
 
     const matchesTab =
       activeTab === "all" ||
-      (activeTab === "electricity" && service.typeId === 1) ||
-      (activeTab === "water" && service.typeId === 2) ||
-      (activeTab === "internet" && service.typeId === 3) ||
-      (activeTab === "other" && ![1, 2, 3].includes(service.typeId))
+      (activeTab === "electricity" && assignment.maLDV === 1) ||
+      (activeTab === "water" && assignment.maLDV === 2) ||
+      (activeTab === "internet" && assignment.maLDV === 3) ||
+      (activeTab === "other" && ![1, 2, 3].includes(assignment.maLDV))
 
     return matchesSearch && matchesFilters && matchesTab
-  })
+  }) || []
+
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* Alert */}
       <Alert>
         <AlertCircle className="h-4 w-4" />
-        <AlertTitle>Yêu cầu phân công mét</AlertTitle>
+        <AlertTitle>Yêu cầu đồng hồ đo</AlertTitle>
         <AlertDescription>
           Các dịch vụ điện và nước cần phải được chỉ định một đồng hồ đo. Hãy đảm bảo chọn một đồng hồ đo khi chỉ định
           các dịch vụ này.
         </AlertDescription>
       </Alert>
 
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center w-full">
-          <div className="relative w-full sm:w-96">
+      {/* Controls Section - Responsive */}
+      <div className="flex flex-col gap-4">
+        {/* Search and Filters Row */}
+        <div className="flex flex-col lg:flex-row gap-4 lg:items-end">
+          {/* Search */}
+          <div className="flex-1 max-w-md">
+            <Label htmlFor="search" className="text-sm font-medium">
+              Tìm kiếm cư dân
+            </Label>
             <Input
-              placeholder="Tìm kiếm cư dân"
+              id="search"
+              placeholder="Nhập tên cư dân hoặc căn hộ..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full"
+              className="mt-1"
             />
           </div>
-          <Select
-            value={selectedBuilding?.toString() || ""}
-            onValueChange={(value) => {
-              setSelectedBuilding(value ? Number.parseInt(value) : null)
-              setSelectedBlock(null)
-              setSelectedFloor(null)
-            }}
-          >
-            <SelectTrigger className="w-full sm:w-[180px]">
-              <SelectValue placeholder="Tất cả tòa nhà" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="0">Tất cả tòa nhà</SelectItem>
-              {buildings.map((building) => (
-                <SelectItem key={building.id} value={building.id.toString()}>
-                  {building.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select
-            value={selectedBlock?.toString() || ""}
-            onValueChange={(value) => {
-              setSelectedBlock(value ? Number.parseInt(value) : null)
-              setSelectedFloor(null)
-            }}
-            disabled={selectedBuilding === null}
-          >
-            <SelectTrigger className="w-full sm:w-[180px]">
-              <SelectValue placeholder="Tất cả khối nhà" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="0">Tất cả khối nhà</SelectItem>
-              {filteredBlocks.map((block) => (
-                <SelectItem key={block.id} value={block.id.toString()}>
-                  {block.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select
-            value={selectedFloor?.toString() || ""}
-            onValueChange={(value) => setSelectedFloor(value ? Number.parseInt(value) : null)}
-            disabled={selectedBlock === null}
-          >
-            <SelectTrigger className="w-full sm:w-[180px]">
-              <SelectValue placeholder="Tất cả tầng lầu" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="0">Tất cả tầng lầu</SelectItem>
-              {filteredFloors.map((floor) => (
-                <SelectItem key={floor.id} value={floor.id.toString()}>
-                  {floor.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="w-full sm:w-auto">
-              <Plus className="mr-2 h-4 w-4" />
-              Thêm dịch vụ sử dụng mới
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Thêm dịch vụ sử dụng cho cư dân</DialogTitle>
-              <DialogDescription>Thêm một dịch vụ cho cư dân trong tòa nhà</DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="resident">Căn hộ</Label>
-                <Select
-                  value={newAssignment.residentId ? newAssignment.residentId.toString() : ""}
-                  onValueChange={(value) => {
-                    const residentId = Number.parseInt(value)
-                    setNewAssignment({
-                      ...newAssignment,
-                      residentId,
-                      meterId: null, // Reset meter when resident changes
-                    })
-                  }}
-                >
-                  <SelectTrigger id="resident">
-                    <SelectValue placeholder="Select resident" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {residents.map((resident) => (
-                      <SelectItem key={resident.id} value={resident.id.toString()}>
-                        {resident.name} - {resident.unit}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="service">Dịch vụ</Label>
-                <Select
-                  value={newAssignment.serviceId ? newAssignment.serviceId.toString() : ""}
-                  onValueChange={(value) => {
-                    const serviceId = Number.parseInt(value)
-                    setNewAssignment({
-                      ...newAssignment,
-                      serviceId,
-                      meterId: null, // Reset meter when service changes
-                    })
-                  }}
-                >
-                  <SelectTrigger id="service">
-                    <SelectValue placeholder="Select service" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {services.map((service) => (
-                      <SelectItem key={service.id} value={service.id.toString()}>
-                        <div className="flex items-center">
-                          {service.icon}
-                          <span className="ml-2">
-                            {service.name} - {formatPrice(service.price)}
-                          </span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
 
-              {newAssignment.residentId > 0 &&
-                newAssignment.serviceId > 0 &&
-                services.find((s) => s.id === newAssignment.serviceId)?.requiresMeter && (
+          {/* Filters */}
+          <div className="flex flex-col sm:flex-row gap-3 lg:flex-1">
+            <div className="flex-1 min-w-[160px]">
+              <Label htmlFor="building" className="text-sm font-medium">
+                Tòa nhà
+              </Label>
+              <Select
+                value={selectedBuilding?.toString() || "0"}
+                onValueChange={(value) => {
+                  if (value === "0") {
+                    setSelectedBuilding(null)
+                  } else {
+                    setSelectedBuilding(value ? Number.parseInt(value) : null)
+                  }
+                  setSelectedBlock(null)
+                  setSelectedFloor(null)
+                }}
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Tất cả tòa nhà" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0">Tất cả tòa nhà</SelectItem>
+                  {buildingListForDropdown.map((building) => (
+                    <SelectItem key={building.id} value={building.id.toString()}>
+                      {building.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex-1 min-w-[160px]">
+              <Label htmlFor="block" className="text-sm font-medium">
+                Khối nhà
+              </Label>
+              <Select
+                value={selectedBlock?.toString() || "0"}
+                onValueChange={(value) => {
+                  setSelectedBlock(value === "0" ? null : Number.parseInt(value))
+                  setSelectedFloor(null)
+                }}
+                disabled={selectedBuilding === null}
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Tất cả khối nhà" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0">Tất cả khối nhà</SelectItem>
+                  {filteredBlocks.map((block) => (
+                    <SelectItem key={block.maKN} value={block.maKN.toString()}>
+                      {block.tenKN}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex-1 min-w-[160px]">
+              <Label htmlFor="floor" className="text-sm font-medium">
+                Tầng lầu
+              </Label>
+              <Select
+                value={selectedFloor?.toString() || "0"}
+                onValueChange={(value) => setSelectedFloor(value === "0" ? null : Number.parseInt(value))}
+                disabled={selectedBlock === null}
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Tất cả tầng lầu" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0">Tất cả tầng lầu</SelectItem>
+                  {filteredFloors.map((floor) => (
+                    <SelectItem key={floor.maTL} value={floor.maTL.toString()}>
+                      {floor.tenTL}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Add Button */}
+          <div className="lg:flex-shrink-0">
+            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="w-full lg:w-auto">
+                  <Plus className="mr-2 h-4 w-4" />
+                  <span className="hidden sm:inline">Thêm dịch vụ</span>
+                  <span className="sm:hidden">Thêm</span>
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Thêm dịch vụ sử dụng cho cư dân</DialogTitle>
+                  <DialogDescription>Thêm một dịch vụ cho cư dân trong tòa nhà</DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  {/* Row 1: Building, Block, Floor */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="dialogBuilding">Tòa nhà *</Label>
+                      <Select
+                        value={newAssignment.buildingId?.toString() || ""}
+                        onValueChange={(value) => {
+                          const buildingId = value ? Number.parseInt(value) : null
+                          setNewAssignment({
+                            ...newAssignment,
+                            buildingId,
+                            blockId: null,
+                            floorId: null,
+                            residentId: 0,
+                          })
+                        }}
+                      >
+                        <SelectTrigger id="dialogBuilding">
+                          <SelectValue placeholder="Chọn tòa nhà" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {buildingListForDropdown.map((building) => (
+                            <SelectItem key={building.id} value={building.id.toString()}>
+                              {building.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="grid gap-2">
+                      <Label htmlFor="dialogBlock">Khối nhà *</Label>
+                      <Select
+                        value={newAssignment.blockId?.toString() || ""}
+                        onValueChange={(value) => {
+                          const blockId = value ? Number.parseInt(value) : null
+                          setNewAssignment({
+                            ...newAssignment,
+                            blockId,
+                            floorId: null,
+                            residentId: 0,
+                          })
+                        }}
+                        disabled={!newAssignment.buildingId}
+                      >
+                        <SelectTrigger id="dialogBlock">
+                          <SelectValue placeholder="Chọn khối nhà" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {blockListForDropdown
+                            .filter(block => newAssignment.buildingId === null || block.maTN === newAssignment.buildingId)
+                            .map((block) => (
+                              <SelectItem key={block.maKN} value={block.maKN.toString()}>
+                                {block.tenKN}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="grid gap-2">
+                      <Label htmlFor="dialogFloor">Tầng lầu *</Label>
+                      <Select
+                        value={newAssignment.floorId?.toString() || ""}
+                        onValueChange={(value) => {
+                          const floorId = value ? Number.parseInt(value) : null
+                          setNewAssignment({
+                            ...newAssignment,
+                            floorId,
+                            residentId: 0,
+                          })
+                        }}
+                        disabled={!newAssignment.blockId}
+                      >
+                        <SelectTrigger id="dialogFloor">
+                          <SelectValue placeholder="Chọn tầng lầu" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {floorListForDropdown
+                            .filter(floor => newAssignment.blockId === null || floor.maKN === newAssignment.blockId)
+                            .map((floor) => (
+                              <SelectItem key={floor.maTL} value={floor.maTL.toString()}>
+                                {floor.tenTL}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  {/* Row 2: Resident */}
                   <div className="grid gap-2">
-                    <Label htmlFor="meter">
-                      Meter <span className="text-red-500">*</span>
-                    </Label>
+                    <Label htmlFor="resident">Khách hàng *</Label>
                     <Select
-                      value={newAssignment.meterId ? newAssignment.meterId.toString() : ""}
-                      onValueChange={(value) => setNewAssignment({ ...newAssignment, meterId: Number.parseInt(value) })}
+                      value={newAssignment.residentId ? newAssignment.residentId.toString() : ""}
+                      onValueChange={(value) => {
+                        const residentId = Number.parseInt(value)
+                        setNewAssignment({
+                          ...newAssignment,
+                          residentId,
+                        })
+                      }}
+                      disabled={!newAssignment.floorId}
                     >
-                      <SelectTrigger id="meter">
-                        <SelectValue placeholder="Select meter" />
+                      <SelectTrigger id="resident">
+                        <SelectValue placeholder="Chọn khách hàng" />
                       </SelectTrigger>
                       <SelectContent>
-                        {getAvailableMeters(
-                          newAssignment.residentId,
-                          services.find((s) => s.id === newAssignment.serviceId)?.typeId || 0,
-                        ).map((meter) => (
-                          <SelectItem key={meter.id} value={meter.id.toString()}>
-                            <div className="flex items-center">
-                              <Gauge className="h-4 w-4 mr-2" />
-                              {meter.serialNumber}
+                        {matBang
+                          .filter(resident =>
+                            (newAssignment.buildingId === null || resident.maTN === newAssignment.buildingId) &&
+                            (newAssignment.blockId === null || resident.maKN === newAssignment.blockId) &&
+                            (newAssignment.floorId === null || resident.maTL === newAssignment.floorId)
+                          )
+                          .map((resident) => (
+                            <SelectItem key={resident.maMB} value={resident.maMB.toString()}>
+                              {resident.maVT} - {resident.tenKH}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Row 3: Service */}
+                  <div className="grid gap-2">
+                    <Label htmlFor="service">Dịch vụ *</Label>
+                    <Select
+                      value={newAssignment.serviceId ? newAssignment.serviceId.toString() : ""}
+                      onValueChange={(value) => {
+                        const serviceId = Number.parseInt(value)
+                        setNewAssignment({
+                          ...newAssignment,
+                          serviceId,
+                        })
+                      }}
+                    >
+                      <SelectTrigger id="service">
+                        <SelectValue placeholder="Chọn dịch vụ" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {services.map((service) => (
+                          <SelectItem key={service.id} value={service.id.toString()}>
+                            <div className="flex flex-col">
+                              <span className="font-medium">{service.tenDV}</span>
+                              <span className="text-sm text-muted-foreground">
+                                Đơn giá: {formatPrice(service.donGia)}
+                              </span>
                             </div>
                           </SelectItem>
                         ))}
-                        {getAvailableMeters(
-                          newAssignment.residentId,
-                          services.find((s) => s.id === newAssignment.serviceId)?.typeId || 0,
-                        ).length === 0 && (
-                            <SelectItem value="no-meter" disabled>
-                              No available meters
-                            </SelectItem>
-                          )}
                       </SelectContent>
                     </Select>
-                    {getAvailableMeters(
-                      newAssignment.residentId,
-                      services.find((s) => s.id === newAssignment.serviceId)?.typeId || 0,
-                    ).length === 0 && (
-                        <p className="text-sm text-red-500">
-                          Không có đồng hồ nào khả dụng cho dịch vụ này. Vui lòng thêm đồng hồ mới hoặc chọn một đồng hồ khác.
-                        </p>
-                      )}
                   </div>
-                )}
 
-              <div className="grid gap-2">
-                <Label htmlFor="startDate">Ngày bắt đầu</Label>
-                <Input
-                  id="startDate"
-                  type="date"
-                  value={newAssignment.startDate}
-                  onChange={(e) => setNewAssignment({ ...newAssignment, startDate: e.target.value })}
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleAddAssignment}>Thêm dịch vụ sử dụng</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+                  {/* Service Price Summary */}
+                  {newAssignment.serviceId > 0 && (() => {
+                    const selectedService = services.find(s => s.id === newAssignment.serviceId)
+                    if (!selectedService) return null
+
+                    const donGia = selectedService.donGia || 0
+                    const tienVAT = Math.round(donGia * (selectedService.tyLeVAT || 0) / 100)
+                    const tienBVMT = Math.round(donGia * (selectedService.tyLeBVMT || 0) / 100)
+                    const thanhTien = donGia + tienVAT + tienBVMT
+
+                    return (
+                      <div className="grid gap-2">
+                        <Label>Chi tiết giá dịch vụ</Label>
+                        <div className="border rounded-lg p-4 bg-muted/50">
+                          <div className="grid grid-cols-2 gap-2 text-sm">
+                            <div className="flex justify-between">
+                              <span>Đơn giá:</span>
+                              <span className="font-medium">{formatPrice(donGia)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>VAT ({selectedService.tyLeVAT || 0}%):</span>
+                              <span className="font-medium">{formatPrice(tienVAT)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>BVMT ({selectedService.tyLeBVMT || 0}%):</span>
+                              <span className="font-medium">{formatPrice(tienBVMT)}</span>
+                            </div>
+                            <div className="flex justify-between pt-2 border-t font-semibold text-base">
+                              <span>Thành tiền:</span>
+                              <span className="text-primary">{formatPrice(thanhTien)}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })()}
+
+                  {/* Row 4: Dates */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="startDate">Ngày bắt đầu *</Label>
+                      <Input
+                        id="startDate"
+                        type="date"
+                        value={newAssignment.startDate}
+                        onChange={(e) => setNewAssignment({ ...newAssignment, startDate: e.target.value })}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="endDate">Ngày kết thúc *</Label>
+                      <Input
+                        id="endDate"
+                        type="date"
+                        value={newAssignment.endDate}
+                        onChange={(e) => setNewAssignment({ ...newAssignment, endDate: e.target.value })}
+                        min={newAssignment.startDate}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Row 5: Note */}
+                  <div className="grid gap-2">
+                    <Label htmlFor="note">Ghi chú</Label>
+                    <Input
+                      id="note"
+                      placeholder="Nhập ghi chú (tùy chọn)"
+                      value={newAssignment.note}
+                      onChange={(e) => setNewAssignment({ ...newAssignment, note: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => {
+                    setIsAddDialogOpen(false)
+                    // Reset form
+                    setNewAssignment({
+                      residentId: 0,
+                      serviceId: 0,
+                      meterId: null,
+                      startDate: new Date().toISOString().split("T")[0],
+                      endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+                      buildingId: null,
+                      blockId: null,
+                      floorId: null,
+                      note: "",
+                    })
+                  }}>
+                    Hủy
+                  </Button>
+                  <Button
+                    onClick={handleAddAssignment}
+                    disabled={
+                      !newAssignment.buildingId ||
+                      !newAssignment.blockId ||
+                      !newAssignment.floorId ||
+                      !newAssignment.residentId ||
+                      !newAssignment.serviceId ||
+                      !newAssignment.startDate ||
+                      !newAssignment.endDate
+                    }
+                  >
+                    Thêm dịch vụ sử dụng
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="all" className="flex items-center gap-2">
-            Tất cả dịch vụ
-          </TabsTrigger>
-          <TabsTrigger value="electricity" className="flex items-center gap-2">
-            <Zap className="h-4 w-4 text-yellow-500" />
-            <span>Electricity</span>
-          </TabsTrigger>
-          <TabsTrigger value="water" className="flex items-center gap-2">
-            <Droplets className="h-4 w-4 text-blue-500" />
-            <span>Water</span>
-          </TabsTrigger>
-          <TabsTrigger value="internet" className="flex items-center gap-2">
-            <Wifi className="h-4 w-4 text-purple-500" />
-            <span>Internet</span>
-          </TabsTrigger>
-          <TabsTrigger value="other" className="flex items-center gap-2">
-            Dịch vụ khác
-          </TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 min-w-max">
+            <TabsTrigger value="all" className="flex items-center gap-2 text-xs sm:text-sm">
+              <span>Tất cả</span>
+              <Badge variant="secondary" className="text-xs">
+                {danhSachDangSuDung?.totalCount || 0}
+              </Badge>
+            </TabsTrigger>
+            <TabsTrigger value="electricity" className="flex items-center gap-2 text-xs sm:text-sm">
+              <Zap className="h-3 w-3 sm:h-4 sm:w-4 text-yellow-500" />
+              <span className="hidden sm:inline">Điện</span>
+              <span className="sm:hidden">⚡</span>
+              <Badge variant="secondary" className="text-xs">
+                {danhSachDangSuDung?.data?.filter(a => a.maLDV === 1).length || 0}
+              </Badge>
+            </TabsTrigger>
+            <TabsTrigger value="water" className="flex items-center gap-2 text-xs sm:text-sm">
+              <Droplets className="h-3 w-3 sm:h-4 sm:w-4 text-blue-500" />
+              <span className="hidden sm:inline">Nước</span>
+              <span className="sm:hidden">💧</span>
+              <Badge variant="secondary" className="text-xs">
+                {danhSachDangSuDung?.data?.filter(a => a.maLDV === 2).length || 0}
+              </Badge>
+            </TabsTrigger>
+            <TabsTrigger value="internet" className="flex items-center gap-2 text-xs sm:text-sm">
+              <Wifi className="h-3 w-3 sm:h-4 sm:w-4 text-purple-500" />
+              <span className="hidden sm:inline">Internet</span>
+              <span className="sm:hidden">📶</span>
+              <Badge variant="secondary" className="text-xs">
+                {danhSachDangSuDung?.data?.filter(a => a.maLDV === 3).length || 0}
+              </Badge>
+            </TabsTrigger>
+            <TabsTrigger value="other" className="flex items-center gap-2 text-xs sm:text-sm">
+              <span>Khác</span>
+              <Badge variant="secondary" className="text-xs">
+                {danhSachDangSuDung?.data?.filter(a => ![1, 2, 3].includes(a.maLDV)).length || 0}
+              </Badge>
+            </TabsTrigger>
+          </TabsList>
+        </div>
       </Tabs>
 
       <Card>
         <CardHeader>
-          <CardTitle>Thêm dịch vụ sử dụng</CardTitle>
-          <CardDescription>Thêm dịch vụ sử dụng cho cư dân </CardDescription>
+          <CardTitle>Danh sách dịch vụ đang sử dụng</CardTitle>
+          <CardDescription>
+            Quản lý các dịch vụ được cung cấp cho cư dân ({danhSachDangSuDung?.totalCount || 0} dịch vụ)
+          </CardDescription>
         </CardHeader>
-        <CardContent>
-          {filteredAssignments.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Cư dân</TableHead>
-                  <TableHead>Vị trí</TableHead>
-                  <TableHead>Dịch vụ</TableHead>
-                  <TableHead>Đồng hồ</TableHead>
-                  <TableHead>Ngày bắt đầu</TableHead>
-                  <TableHead>Trạng thái</TableHead>
-                  <TableHead className="text-right">Hành động</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredAssignments.map((assignment) => {
-                  const resident = getResidentById(assignment.residentId)
-                  const service = getServiceById(assignment.serviceId)
-                  const meter = getMeterById(assignment.meterId)
+        <CardContent className="p-0">
+          {(filteredAssignments ?? []).length > 0 ? (
+            <div className="border rounded-lg overflow-hidden">
+              {/* Desktop Table */}
+              <div className="hidden lg:block">
+                {/* Horizontal Scrollable Container */}
+                <div className="overflow-x-auto w-full">
+                  {/* Set minimum width để force horizontal scroll */}
+                  <div className="min-w-[1200px]">
+                    {/* Fixed Header */}
+                    <div className="border-b bg-background sticky top-0 z-10">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-[200px] min-w-[200px]">Cư dân</TableHead>
+                            <TableHead className="w-[140px] min-w-[140px]">Vị trí</TableHead>
+                            <TableHead className="w-[220px] min-w-[220px]">Dịch vụ</TableHead>
+                            <TableHead className="w-[180px] min-w-[180px]">Ngày bắt đầu</TableHead>
+                            <TableHead className="w-[180px] min-w-[180px]">Ngày đến hạn</TableHead>
+                            <TableHead className="w-[140px] min-w-[140px]">Trạng thái</TableHead>
+                            <TableHead className="w-[120px] min-w-[120px] text-right">Hành động</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                      </Table>
+                    </div>
 
-                  if (!resident || !service) return null
+                    {/* Scrollable Body */}
+                    <div className="relative">
+                      <ScrollArea className="h-[500px] w-full">
+                        <Table>
+                          <TableBody>
+                            {filteredAssignments?.map((assignment) => (
+                              <TableRow key={assignment.maDVSD} className="hover:bg-muted/50">
+                                <TableCell className="w-[200px] min-w-[200px] font-medium">
+                                  <div className="max-w-[190px] truncate" title={assignment.tenKH}>
+                                    {assignment.tenKH}
+                                  </div>
+                                </TableCell>
+                                <TableCell className="w-[140px] min-w-[140px]">
+                                  <div className="font-mono text-sm bg-muted px-2 py-1 rounded max-w-[130px] truncate">
+                                    {assignment.maVT}
+                                  </div>
+                                </TableCell>
+                                <TableCell className="w-[220px] min-w-[220px]">
+                                  <div className="flex items-center space-x-2">
+                                    <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                      {assignment.maLDV === 1 && <Zap className="h-4 w-4 text-yellow-500" />}
+                                      {assignment.maLDV === 2 && <Droplets className="h-4 w-4 text-blue-500" />}
+                                      {assignment.maLDV === 3 && <Wifi className="h-4 w-4 text-purple-500" />}
+                                      {![1, 2, 3].includes(assignment.maLDV) && <Building className="h-4 w-4 text-gray-500" />}
+                                    </div>
+                                    <div className="max-w-[180px] truncate" title={assignment.tenDV}>
+                                      {assignment.tenDV}
+                                    </div>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="w-[180px] min-w-[180px] text-sm">
+                                  <div className="space-y-1">
+                                    <div>{format(new Date(assignment.ngayBatDauSuDung), "dd/MM/yyyy")}</div>
+                                    <div className="text-xs text-muted-foreground">
+                                      {format(new Date(assignment.ngayBatDauSuDung), "HH:mm")}
+                                    </div>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="w-[180px] min-w-[180px] text-sm">
+                                  <div className="space-y-1">
+                                    <div>{format(new Date(assignment.ngayDenHanThanhToan), "dd/MM/yyyy")}</div>
+                                    <div className="text-xs text-muted-foreground">
+                                      {format(new Date(assignment.ngayDenHanThanhToan), "HH:mm")}
+                                    </div>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="w-[140px] min-w-[140px]">
+                                  <Badge
+                                    variant="outline"
+                                    className={
+                                      assignment.trangThai === true
+                                        ? "bg-green-50 text-green-700 border-green-200"
+                                        : "bg-red-50 text-red-700 border-red-200"
+                                    }
+                                  >
+                                    {assignment.trangThai === true ? "Hoạt động" : "Tạm dừng"}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="w-[120px] min-w-[120px] text-right">
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                                        <MoreVertical className="h-4 w-4" />
+                                        <span className="sr-only">Menu</span>
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="w-48">
+                                      <DropdownMenuItem>
+                                        <Edit className="mr-2 h-4 w-4" />
+                                        Chỉnh sửa
+                                      </DropdownMenuItem>
+                                      {assignment.trangThai === true ? (
+                                        <DropdownMenuItem
+                                          onClick={() => ngungSuDungDichVu(assignment.maDVSD)}
+                                          className="text-red-600"
+                                        >
+                                          <FileX className="mr-2 h-4 w-4" />
+                                          Ngưng sử dụng
+                                        </DropdownMenuItem>
+                                      ) : (
+                                        <DropdownMenuItem
+                                          onClick={() => tiepTucSuDungDichVu(assignment.maDVSD)}
+                                          className="text-green-600"
+                                        >
+                                          <Building className="mr-2 h-4 w-4" />
+                                          Tiếp tục sử dụng
+                                        </DropdownMenuItem>
+                                      )}
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </ScrollArea>
+                    </div>
+                  </div>
+                </div>
 
-                  return (
-                    <TableRow key={assignment.id}>
-                      <TableCell className="font-medium">{resident.name}</TableCell>
-                      <TableCell>{resident.unit}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center space-x-2">
-                          {service.icon}
-                          <span>{service.name}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {service.requiresMeter ? (
-                          meter ? (
-                            <div className="flex items-center space-x-2">
-                              <Gauge className="h-4 w-4" />
-                              <span>{meter.serialNumber}</span>
-                            </div>
-                          ) : (
-                            <Badge variant="outline" className="bg-red-50 text-red-700 hover:bg-red-50">
-                              Không có đồng hồ
-                            </Badge>
-                          )
-                        ) : (
-                          <Badge variant="outline" className="bg-gray-50 text-gray-700 hover:bg-gray-50">
-                            Không yêu cầu đồng hồ
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>{assignment.startDate}</TableCell>
-                      <TableCell>
-                        <Badge
-                          variant="outline"
-                          className={
-                            assignment.status === "active"
-                              ? "bg-green-50 text-green-700 hover:bg-green-50"
-                              : "bg-yellow-50 text-yellow-700 hover:bg-yellow-50"
+                {/* Pagination - outside scrollable area */}
+                <div className="border-t bg-background">
+                  <div className="flex items-center justify-between px-4 py-3">
+                    {/* Pagination Info */}
+                    <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                      <span>
+                        Hiển thị{" "}
+                        <span className="font-medium">
+                          {((danhSachDangSuDung?.pageNumber || 1) - 1) *
+                            (danhSachDangSuDung?.pageSize || 10) + 1}
+                        </span>{" "}
+                        đến{" "}
+                        <span className="font-medium">
+                          {Math.min(
+                            (danhSachDangSuDung?.pageNumber || 1) *
+                            (danhSachDangSuDung?.pageSize || 10),
+                            danhSachDangSuDung?.totalCount || 0
+                          )}
+                        </span>{" "}
+                        trong tổng số{" "}
+                        <span className="font-medium">
+                          {danhSachDangSuDung?.totalCount || 0}
+                        </span>{" "}
+                        dịch vụ
+                      </span>
+                    </div>
+
+                    {/* Pagination Controls */}
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange((danhSachDangSuDung?.pageNumber || 1) - 1)}
+                        disabled={!(danhSachDangSuDung?.hasPreviousPage)}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                        Trước
+                      </Button>
+
+                      {/* Page Numbers */}
+                      <div className="flex items-center space-x-1">
+                        {Array.from(
+                          {
+                            length: Math.min(5, danhSachDangSuDung?.totalPages || 1)
+                          },
+                          (_, i) => {
+                            const currentPage = danhSachDangSuDung?.pageNumber || 1;
+                            const totalPages = danhSachDangSuDung?.totalPages || 1;
+
+                            let pageNumber;
+                            if (totalPages <= 5) {
+                              pageNumber = i + 1;
+                            } else if (currentPage <= 3) {
+                              pageNumber = i + 1;
+                            } else if (currentPage >= totalPages - 2) {
+                              pageNumber = totalPages - 4 + i;
+                            } else {
+                              pageNumber = currentPage - 2 + i;
+                            }
+
+                            return (
+                              <Button
+                                key={pageNumber}
+                                variant={pageNumber === currentPage ? "default" : "outline"}
+                                size="sm"
+                                className="w-8 h-8 p-0"
+                                onClick={() => handlePageChange(pageNumber)}
+                              >
+                                {pageNumber}
+                              </Button>
+                            );
                           }
-                        >
-                          {assignment.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreVertical className="h-4 w-4" />
-                              <span className="sr-only">Menu</span>
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem>
-                              <Edit className="mr-2 h-4 w-4" />
-                              Sửa
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleDeleteAssignment(assignment.id)}>
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Xóa
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  )
-                })}
-              </TableBody>
-            </Table>
+                        )}
+                      </div>
+
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePageChange((danhSachDangSuDung?.pageNumber || 1) + 1)}
+                        disabled={!(danhSachDangSuDung?.hasNextPage)}
+                      >
+                        Sau
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Mobile Cards - unchanged */}
+              <div className="lg:hidden">
+                <ScrollArea className="h-[600px] w-full">
+                  <div className="space-y-4 p-4">
+                    {filteredAssignments?.map((assignment) => (
+                      <Card key={assignment.maDVSD} className="p-4">
+                        <div className="space-y-3">
+                          {/* Header */}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                              <div className="font-medium truncate max-w-[200px]">{assignment.tenKH}</div>
+                              <Badge variant="outline" className="text-xs">
+                                {assignment.maVT}
+                              </Badge>
+                            </div>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem>
+                                  <Edit className="mr-2 h-4 w-4" />
+                                  Chỉnh sửa
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => ngungSuDungDichVu(assignment.maDVSD)}
+                                  className="text-red-600"
+                                >
+                                  <FileX className="mr-2 h-4 w-4" />
+                                  Ngưng sử dụng
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+
+                          {/* Service */}
+                          <div className="flex items-center space-x-2">
+                            {assignment.maLDV === 1 && <Zap className="h-4 w-4 text-yellow-500" />}
+                            {assignment.maLDV === 2 && <Droplets className="h-4 w-4 text-blue-500" />}
+                            {assignment.maLDV === 3 && <Wifi className="h-4 w-4 text-purple-500" />}
+                            {![1, 2, 3].includes(assignment.maLDV) && <Building className="h-4 w-4 text-gray-500" />}
+                            <span className="text-sm">{assignment.tenDV}</span>
+                          </div>
+
+                          {/* Dates */}
+                          <div className="grid grid-cols-2 gap-4 text-xs">
+                            <div>
+                              <span className="text-muted-foreground">Ngày bắt đầu:</span>
+                              <div className="font-medium">
+                                {format(new Date(assignment.ngayBatDauSuDung), "dd/MM/yyyy")}
+                              </div>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Đến hạn:</span>
+                              <div className="font-medium">
+                                {format(new Date(assignment.ngayDenHanThanhToan), "dd/MM/yyyy")}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Footer */}
+                          <div className="flex items-center justify-between pt-2 border-t">
+                            <Badge
+                              variant="outline"
+                              className={
+                                assignment.trangThai === true
+                                  ? "bg-green-50 text-green-700 border-green-200"
+                                  : "bg-red-50 text-red-700 border-red-200"
+                              }
+                            >
+                              {assignment.trangThai === true ? "Hoạt động" : "Tạm dừng"}
+                            </Badge>
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                </ScrollArea>
+
+                {/* Mobile Pagination */}
+                <div className="flex items-center justify-between p-4 border-t">
+                  <div className="text-sm text-muted-foreground">
+                    Trang {danhSachDangSuDung?.pageNumber || 1} / {danhSachDangSuDung?.totalPages || 1}
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange((danhSachDangSuDung?.pageNumber || 1) - 1)}
+                      disabled={!(danhSachDangSuDung?.hasPreviousPage)}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange((danhSachDangSuDung?.pageNumber || 1) + 1)}
+                      disabled={!(danhSachDangSuDung?.hasNextPage)}
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
           ) : (
-            <div className="flex h-24 items-center justify-center rounded-md border border-dashed">
-              <p className="text-sm text-muted-foreground">Không có dịch vụ nào được tìm thấy</p>
+            <div className="flex h-32 items-center justify-center rounded-md border border-dashed m-4">
+              <div className="text-center space-y-2">
+                <div className="rounded-full bg-muted p-3 w-12 h-12 flex items-center justify-center mx-auto">
+                  <Building className="h-6 w-6 text-muted-foreground" />
+                </div>
+                <p className="text-sm font-medium">Không có dịch vụ nào</p>
+                <p className="text-xs text-muted-foreground">
+                  Không tìm thấy dịch vụ nào phù hợp với bộ lọc hiện tại
+                </p>
+              </div>
             </div>
           )}
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Cư dân không có dịch vụ</CardTitle>
-          <CardDescription>Cư dân không được cung cấp bất kỳ dịch vụ nào</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {filteredResidents
-              .filter((resident) => !assignments.some((a) => a.residentId === resident.id))
-              .map((resident) => (
-                <Card key={resident.id} className="overflow-hidden">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <div className="flex items-center space-x-2">
-                      <Users className="h-5 w-5 text-gray-500" />
-                      <CardTitle className="text-lg">{resident.name}</CardTitle>
-                    </div>
-                    <Button
-                      size="sm"
-                      onClick={() => {
-                        setNewAssignment({ ...newAssignment, residentId: resident.id })
-                        setIsAddDialogOpen(true)
-                      }}
-                    >
-                      Assign
-                    </Button>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      <div className="flex items-center space-x-2">
-                        <Home className="h-4 w-4 text-gray-500" />
-                        <span>{resident.unit}</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Building className="h-4 w-4 text-gray-500" />
-                        <span>
-                          {buildings.find((b) => b.id === resident.buildingId)?.name},
-                          {blocks.find((b) => b.id === resident.blockId)?.name},
-                          {floors.find((f) => f.id === resident.floorId)?.name}
-                        </span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-          </div>
-          {filteredResidents.filter((resident) => !assignments.some((a) => a.residentId === resident.id)).length ===
-            0 && (
-              <div className="flex h-24 items-center justify-center rounded-md border border-dashed">
-                <p className="text-sm text-muted-foreground">Tất cả cư dân đều được cung cấp dịch vụ</p>
-              </div>
-            )}
-        </CardContent>
-      </Card>
     </div>
   )
 }

@@ -16,6 +16,8 @@ import { ServicesUsageProvider } from "@/components/context/ServiceUsage"
 import { ElectricityRateProvider } from "@/components/context/ElectricityRate"
 import { WaterRateProvider } from "@/components/context/WaterRate"
 import { MetterProvider } from "@/components/context/MetterContext"
+import { ResidentProvider } from "@/components/context/ResidentContext"
+import { ApartmentProvider } from "@/components/context/ApartmentContext"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata = {
@@ -45,7 +47,11 @@ export default function RootLayout({
                             <ElectricityRateProvider>
                               <WaterRateProvider>
                                 <MetterProvider>
+                                  <ResidentProvider>
+                                    <ApartmentProvider>
                                   {children}
+                                  </ApartmentProvider>
+                                  </ResidentProvider>
                                 </MetterProvider>
                               </WaterRateProvider>
                             </ElectricityRateProvider>

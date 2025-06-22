@@ -8,7 +8,7 @@ import { ServiceTypeList } from "./service-type-list"
 import { ServiceList } from "./service-list"
 import { ServiceAssignment } from "./service-assignment"
 import { ServiceApproval } from "./service-aproval"
-import { ServiceUsage } from "./service-usage"
+import { ServiceUsageStatistics } from "./service-usage"
 import { ServiceRateManagement } from "./service-rate-management"
 import { MeterManagement } from "./meter-management"
 
@@ -84,7 +84,7 @@ export function ServiceManagement() {
           <ServiceApproval />
         </TabsContent>
         <TabsContent value="usage" className="mt-6">
-          <ServiceUsage />
+          <ServiceUsageStatistics />
         </TabsContent>
       </Tabs>
     </div>

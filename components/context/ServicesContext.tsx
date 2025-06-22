@@ -14,6 +14,7 @@ interface ServicesContextType {
     filteredServices: GetDSDichVu[];
     createService: (service: CreateDichVu) => Promise<void>;
     removeService: (id: number) => Promise<void>;
+    fetchServices: () => Promise<void>;
 }
 
 
@@ -153,7 +154,7 @@ export const ServicesProvider = ({ children }: { children: React.ReactNode }) =>
         }
     };
     return (
-        <ServicesContext.Provider value={{ services, filteredServices, createService, removeService }}>
+        <ServicesContext.Provider value={{ services, filteredServices, createService, removeService, fetchServices }}>
             {children}
         </ServicesContext.Provider>
     );
