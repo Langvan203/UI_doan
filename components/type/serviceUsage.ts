@@ -109,6 +109,6 @@ export interface GetThongKeSuDung {
   maKN : number;
   maTL : number;
   maVT : number;
-  isDuyetHoaDon : number;
+  isDuyetHoaDon : boolean;
   maLDV : number;
 }

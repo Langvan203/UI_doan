@@ -253,7 +253,7 @@ export function ServiceUsageDetailDialog({
                 </div>
                 <div className="text-center p-4 bg-purple-50 rounded-lg">
                   <div className="text-2xl font-bold text-purple-600">
-                    {usageData.isDuyetHoaDon === 1 ? "Đã duyệt" : "Chờ duyệt"}
+                    {usageData.isDuyetHoaDon === true ? "Đã duyệt" : "Chờ duyệt"}
                   </div>
                   <div className="text-sm text-muted-foreground">Trạng thái</div>
                 </div>
@@ -283,8 +283,8 @@ export function ServiceUsageDetailDialog({
                         <h4 className="font-semibold text-lg">
                           Kỳ thanh toán hiện tại
                         </h4>
-                        <Badge variant={usageData.isDuyetHoaDon === 1 ? "default" : "secondary"}>
-                          {usageData.isDuyetHoaDon === 1 ? "Đã duyệt" : "Chờ duyệt"}
+                        <Badge variant={usageData.isDuyetHoaDon === true ? "default" : "secondary"}>
+                          {usageData.isDuyetHoaDon === true ? "Đã duyệt" : "Chờ duyệt"}
                         </Badge>
                       </div>
 

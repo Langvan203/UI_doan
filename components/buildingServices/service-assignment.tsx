@@ -117,7 +117,7 @@ export function ServiceAssignment() {
       getBlockListForDropdown();
       getFloorListForDropdown();
       // Sử dụng date range khi fetch data
-      getDanhSachDangSuDung(1, dateRange.startDate, dateRange.endDate);
+      getDanhSachDangSuDung(1);
       fetchServices()
       getDSMatBang()
     }
@@ -198,7 +198,7 @@ export function ServiceAssignment() {
       await createDichVuSuDung(serviceUsageData)
 
       // Refresh data với date range hiện tại
-      getDanhSachDangSuDung(1, dateRange.startDate, dateRange.endDate)
+      getDanhSachDangSuDung(1)
 
       // Reset form and close dialog
       setNewAssignment({
@@ -239,11 +239,6 @@ export function ServiceAssignment() {
   // Filter floors based on selected block
   const filteredFloors = floorListForDropdown.filter((floor) => selectedBlock === null || floor.maKN === selectedBlock)
 
-
-
-
-
-
   // Format price
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("vi-VN", {
@@ -253,7 +248,7 @@ export function ServiceAssignment() {
     }).format(price)
   }
   const handlePageChange = (page: number) => {
-    getDanhSachDangSuDung(page, dateRange.startDate, dateRange.endDate);
+    getDanhSachDangSuDung(page);
   };
 
   // Filter assignments based on active tab
@@ -280,7 +275,7 @@ export function ServiceAssignment() {
 
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="space-y-6 mx-auto px-4 sm:px-6 lg:px-8">
       {/* Alert */}
       <Alert>
         <AlertCircle className="h-4 w-4" />
@@ -725,212 +720,213 @@ export function ServiceAssignment() {
           {(filteredAssignments ?? []).length > 0 ? (
             <div className="border rounded-lg overflow-hidden">
               {/* Desktop Table */}
+              {/* Desktop Table */}
               <div className="hidden lg:block">
-                {/* Horizontal Scrollable Container */}
-                <div className="overflow-x-auto w-full">
-                  {/* Set minimum width để force horizontal scroll */}
-                  <div className="min-w-[1200px]">
-                    {/* Fixed Header */}
-                    <div className="border-b bg-background sticky top-0 z-10">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead className="w-[200px] min-w-[200px]">Cư dân</TableHead>
-                            <TableHead className="w-[140px] min-w-[140px]">Vị trí</TableHead>
-                            <TableHead className="w-[220px] min-w-[220px]">Dịch vụ</TableHead>
-                            <TableHead className="w-[180px] min-w-[180px]">Ngày bắt đầu</TableHead>
-                            <TableHead className="w-[180px] min-w-[180px]">Ngày đến hạn</TableHead>
-                            <TableHead className="w-[140px] min-w-[140px]">Trạng thái</TableHead>
-                            <TableHead className="w-[120px] min-w-[120px] text-right">Hành động</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                      </Table>
-                    </div>
-
-                    {/* Scrollable Body */}
-                    <div className="relative">
-                      <ScrollArea className="h-[500px] w-full">
-                        <Table>
-                          <TableBody>
-                            {filteredAssignments?.map((assignment) => (
-                              <TableRow key={assignment.maDVSD} className="hover:bg-muted/50">
-                                <TableCell className="w-[200px] min-w-[200px] font-medium">
-                                  <div className="max-w-[190px] truncate" title={assignment.tenKH}>
-                                    {assignment.tenKH}
-                                  </div>
-                                </TableCell>
-                                <TableCell className="w-[140px] min-w-[140px]">
-                                  <div className="font-mono text-sm bg-muted px-2 py-1 rounded max-w-[130px] truncate">
-                                    {assignment.maVT}
-                                  </div>
-                                </TableCell>
-                                <TableCell className="w-[220px] min-w-[220px]">
-                                  <div className="flex items-center space-x-2">
-                                    <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                                      {assignment.maLDV === 1 && <Zap className="h-4 w-4 text-yellow-500" />}
-                                      {assignment.maLDV === 2 && <Droplets className="h-4 w-4 text-blue-500" />}
-                                      {assignment.maLDV === 3 && <Wifi className="h-4 w-4 text-purple-500" />}
-                                      {![1, 2, 3].includes(assignment.maLDV) && <Building className="h-4 w-4 text-gray-500" />}
-                                    </div>
-                                    <div className="max-w-[180px] truncate" title={assignment.tenDV}>
-                                      {assignment.tenDV}
-                                    </div>
-                                  </div>
-                                </TableCell>
-                                <TableCell className="w-[180px] min-w-[180px] text-sm">
-                                  <div className="space-y-1">
-                                    <div>{format(new Date(assignment.ngayBatDauSuDung), "dd/MM/yyyy")}</div>
-                                    <div className="text-xs text-muted-foreground">
-                                      {format(new Date(assignment.ngayBatDauSuDung), "HH:mm")}
-                                    </div>
-                                  </div>
-                                </TableCell>
-                                <TableCell className="w-[180px] min-w-[180px] text-sm">
-                                  <div className="space-y-1">
-                                    <div>{format(new Date(assignment.ngayDenHanThanhToan), "dd/MM/yyyy")}</div>
-                                    <div className="text-xs text-muted-foreground">
-                                      {format(new Date(assignment.ngayDenHanThanhToan), "HH:mm")}
-                                    </div>
-                                  </div>
-                                </TableCell>
-                                <TableCell className="w-[140px] min-w-[140px]">
-                                  <Badge
-                                    variant="outline"
-                                    className={
-                                      assignment.trangThai === true
-                                        ? "bg-green-50 text-green-700 border-green-200"
-                                        : "bg-red-50 text-red-700 border-red-200"
-                                    }
-                                  >
-                                    {assignment.trangThai === true ? "Hoạt động" : "Tạm dừng"}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell className="w-[120px] min-w-[120px] text-right">
-                                  <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                                        <MoreVertical className="h-4 w-4" />
-                                        <span className="sr-only">Menu</span>
-                                      </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end" className="w-48">
-                                      <DropdownMenuItem>
-                                        <Edit className="mr-2 h-4 w-4" />
-                                        Chỉnh sửa
-                                      </DropdownMenuItem>
-                                      {assignment.trangThai === true ? (
-                                        <DropdownMenuItem
-                                          onClick={() => ngungSuDungDichVu(assignment.maDVSD)}
-                                          className="text-red-600"
-                                        >
-                                          <FileX className="mr-2 h-4 w-4" />
-                                          Ngưng sử dụng
-                                        </DropdownMenuItem>
-                                      ) : (
-                                        <DropdownMenuItem
-                                          onClick={() => tiepTucSuDungDichVu(assignment.maDVSD)}
-                                          className="text-green-600"
-                                        >
-                                          <Building className="mr-2 h-4 w-4" />
-                                          Tiếp tục sử dụng
-                                        </DropdownMenuItem>
-                                      )}
-                                    </DropdownMenuContent>
-                                  </DropdownMenu>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </ScrollArea>
-                    </div>
+                <div className="border rounded-lg overflow-hidden">
+                  {/* Fixed Header */}
+                  <div className="border-b bg-background">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-[200px]">Cư dân</TableHead>
+                          <TableHead className="w-[90px]">Vị trí</TableHead>
+                          <TableHead className="w-[180px]">Dịch vụ</TableHead>
+                          <TableHead className="w-[130px]">Ngày bắt đầu</TableHead>
+                          <TableHead className="w-[130px]">Ngày đến hạn</TableHead>
+                          <TableHead className="w-[120px]">Trạng thái</TableHead>
+                          <TableHead className="w-[150px] text-right">Hành động</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                    </Table>
                   </div>
-                </div>
 
-                {/* Pagination - outside scrollable area */}
-                <div className="border-t bg-background">
-                  <div className="flex items-center justify-between px-4 py-3">
-                    {/* Pagination Info */}
-                    <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                      <span>
-                        Hiển thị{" "}
-                        <span className="font-medium">
-                          {((danhSachDangSuDung?.pageNumber || 1) - 1) *
-                            (danhSachDangSuDung?.pageSize || 10) + 1}
-                        </span>{" "}
-                        đến{" "}
-                        <span className="font-medium">
-                          {Math.min(
-                            (danhSachDangSuDung?.pageNumber || 1) *
-                            (danhSachDangSuDung?.pageSize || 10),
-                            danhSachDangSuDung?.totalCount || 0
-                          )}
-                        </span>{" "}
-                        trong tổng số{" "}
-                        <span className="font-medium">
-                          {danhSachDangSuDung?.totalCount || 0}
-                        </span>{" "}
-                        dịch vụ
-                      </span>
-                    </div>
-
-                    {/* Pagination Controls */}
-                    <div className="flex items-center space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handlePageChange((danhSachDangSuDung?.pageNumber || 1) - 1)}
-                        disabled={!(danhSachDangSuDung?.hasPreviousPage)}
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                        Trước
-                      </Button>
-
-                      {/* Page Numbers */}
-                      <div className="flex items-center space-x-1">
-                        {Array.from(
-                          {
-                            length: Math.min(5, danhSachDangSuDung?.totalPages || 1)
-                          },
-                          (_, i) => {
-                            const currentPage = danhSachDangSuDung?.pageNumber || 1;
-                            const totalPages = danhSachDangSuDung?.totalPages || 1;
-
-                            let pageNumber;
-                            if (totalPages <= 5) {
-                              pageNumber = i + 1;
-                            } else if (currentPage <= 3) {
-                              pageNumber = i + 1;
-                            } else if (currentPage >= totalPages - 2) {
-                              pageNumber = totalPages - 4 + i;
-                            } else {
-                              pageNumber = currentPage - 2 + i;
-                            }
-
-                            return (
-                              <Button
-                                key={pageNumber}
-                                variant={pageNumber === currentPage ? "default" : "outline"}
-                                size="sm"
-                                className="w-8 h-8 p-0"
-                                onClick={() => handlePageChange(pageNumber)}
+                  {/* Scrollable Body */}
+                  <ScrollArea className="h-[500px] w-full">
+                    <Table>
+                      <TableBody>
+                        {filteredAssignments?.map((assignment) => (
+                          <TableRow key={assignment.maDVSD} className="hover:bg-muted/50">
+                            <TableCell className="w-[200px] font-medium">
+                              <div className="max-w-[190px] truncate" title={assignment.tenKH}>
+                                {assignment.tenKH}
+                              </div>
+                            </TableCell>
+                            <TableCell className="w-[90px]">
+                              <div className="font-mono text-sm bg-muted px-2 py-1 rounded">
+                                {assignment.maVT}
+                              </div>
+                            </TableCell>
+                            <TableCell className="w-[180px]">
+                              <div className="flex items-center space-x-2">
+                                <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                  {assignment.maLDV === 1 && <Zap className="h-4 w-4 text-yellow-500" />}
+                                  {assignment.maLDV === 2 && <Droplets className="h-4 w-4 text-blue-500" />}
+                                  {assignment.maLDV === 3 && <Wifi className="h-4 w-4 text-purple-500" />}
+                                  {![1, 2, 3].includes(assignment.maLDV) && <Building className="h-4 w-4 text-gray-500" />}
+                                </div>
+                                <div className="max-w-[140px] truncate" title={assignment.tenDV}>
+                                  {assignment.tenDV}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="w-[130px] text-sm">
+                              <div className="space-y-1">
+                                <div>{format(new Date(assignment.ngayBatDauSuDung), "dd/MM/yyyy")}</div>
+                                <div className="text-xs text-muted-foreground">
+                                  {format(new Date(assignment.ngayBatDauSuDung), "HH:mm")}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="w-[130px] text-sm">
+                              <div className="space-y-1">
+                                <div>{format(new Date(assignment.ngayDenHanThanhToan), "dd/MM/yyyy")}</div>
+                                <div className="text-xs text-muted-foreground">
+                                  {format(new Date(assignment.ngayDenHanThanhToan), "HH:mm")}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="w-[120px]">
+                              <Badge
+                                variant="outline"
+                                className={
+                                  assignment.trangThai === true
+                                    ? "bg-green-50 text-green-700 border-green-200"
+                                    : "bg-red-50 text-red-700 border-red-200"
+                                }
                               >
-                                {pageNumber}
-                              </Button>
-                            );
-                          }
-                        )}
+                                {assignment.trangThai === true ? "Hoạt động" : "Tạm dừng"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="w-[150px] text-right">
+                              <div className="flex justify-end space-x-2">
+                                {assignment.trangThai === true ? (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-8 px-3 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                    onClick={() => ngungSuDungDichVu(assignment.maDVSD)}
+                                  >
+                                    <FileX className="h-4 w-4 mr-1" />
+                                    Ngưng
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-8 px-3 text-green-600 hover:bg-green-50 hover:text-green-700"
+                                    onClick={() => tiepTucSuDungDichVu(assignment.maDVSD)}
+                                  >
+                                    <Building className="h-4 w-4 mr-1" />
+                                    Tiếp tục
+                                  </Button>
+                                )}
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                                      <MoreVertical className="h-4 w-4" />
+                                      <span className="sr-only">Menu</span>
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end" className="w-48">
+                                    <DropdownMenuItem>
+                                      <Edit className="mr-2 h-4 w-4" />
+                                      Chỉnh sửa
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </ScrollArea>
+
+                  {/* Pagination - outside scrollable area */}
+                  <div className="border-t bg-background">
+                    <div className="flex items-center justify-between px-4 py-3">
+                      {/* Pagination Info */}
+                      <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                        <span>
+                          Hiển thị{" "}
+                          <span className="font-medium">
+                            {((danhSachDangSuDung?.pageNumber || 1) - 1) *
+                              (danhSachDangSuDung?.pageSize || 10) + 1}
+                          </span>{" "}
+                          đến{" "}
+                          <span className="font-medium">
+                            {Math.min(
+                              (danhSachDangSuDung?.pageNumber || 1) *
+                              (danhSachDangSuDung?.pageSize || 10),
+                              danhSachDangSuDung?.totalCount || 0
+                            )}
+                          </span>{" "}
+                          trong tổng số{" "}
+                          <span className="font-medium">
+                            {danhSachDangSuDung?.totalCount || 0}
+                          </span>{" "}
+                          dịch vụ
+                        </span>
                       </div>
 
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handlePageChange((danhSachDangSuDung?.pageNumber || 1) + 1)}
-                        disabled={!(danhSachDangSuDung?.hasNextPage)}
-                      >
-                        Sau
-                        <ChevronRight className="h-4 w-4" />
-                      </Button>
+                      {/* Pagination Controls */}
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handlePageChange((danhSachDangSuDung?.pageNumber || 1) - 1)}
+                          disabled={!(danhSachDangSuDung?.hasPreviousPage)}
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                          Trước
+                        </Button>
+
+                        {/* Page Numbers */}
+                        <div className="flex items-center space-x-1">
+                          {Array.from(
+                            {
+                              length: Math.min(5, danhSachDangSuDung?.totalPages || 1)
+                            },
+                            (_, i) => {
+                              const currentPage = danhSachDangSuDung?.pageNumber || 1;
+                              const totalPages = danhSachDangSuDung?.totalPages || 1;
+
+                              let pageNumber;
+                              if (totalPages <= 5) {
+                                pageNumber = i + 1;
+                              } else if (currentPage <= 3) {
+                                pageNumber = i + 1;
+                              } else if (currentPage >= totalPages - 2) {
+                                pageNumber = totalPages - 4 + i;
+                              } else {
+                                pageNumber = currentPage - 2 + i;
+                              }
+
+                              return (
+                                <Button
+                                  key={pageNumber}
+                                  variant={pageNumber === currentPage ? "default" : "outline"}
+                                  size="sm"
+                                  className="w-8 h-8 p-0"
+                                  onClick={() => handlePageChange(pageNumber)}
+                                >
+                                  {pageNumber}
+                                </Button>
+                              );
+                            }
+                          )}
+                        </div>
+
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handlePageChange((danhSachDangSuDung?.pageNumber || 1) + 1)}
+                          disabled={!(danhSachDangSuDung?.hasNextPage)}
+                        >
+                          Sau
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </div>

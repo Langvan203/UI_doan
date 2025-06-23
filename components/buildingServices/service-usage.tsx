@@ -61,7 +61,7 @@ export function ServiceUsageStatistics() {
   // auth
   const { token } = useAuth();
 
-  const { danhsachThongKeSuDung, getDanhSachThongKeSuDung, exportToExcel } = useServicesUsage();
+  const { danhsachThongKeSuDung, getDanhSachThongKeSuDung, exportToExcel, duyetSangHoaDon } = useServicesUsage();
 
   // bộ lọc tòa nhà, khối nhà, tầng lầu
   const { buildingListForDropdown, blockListForDropdown, floorListForDropdown,
@@ -118,12 +118,12 @@ export function ServiceUsageStatistics() {
 
   // Filter floors based on selected block
   const filteredFloors = floorListForDropdown.filter((floor) => selectedBlock === null || floor.maKN === selectedBlock)
-  
+
   const getServiceType = (maLDV: number): number => {
     // This logic should match your service type mapping
     // You might need to adjust this based on your actual service ID ranges
-    if (maLDV === 1 ) return 1; // Electricity
-    if (maLDV === 2 ) return 2; // Water
+    if (maLDV === 1) return 1; // Electricity
+    if (maLDV === 2) return 2; // Water
     if (maLDV === 3) return 3; // Internet
     return 4; // Other
   }
@@ -137,7 +137,7 @@ export function ServiceUsageStatistics() {
       default: return <Building className="h-4 w-4 text-gray-500" />;
     }
   }
-  
+
   // Filter statistics based on active tab and filters
   const filteredStatistics = danhsachThongKeSuDung?.data?.filter((item) => {
     const matchesSearch =
@@ -163,7 +163,7 @@ export function ServiceUsageStatistics() {
   }) || []
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="space-y-6 mx-auto px-4 sm:px-6 lg:px-8">
       {/* Controls Section - Responsive */}
       <div className="flex flex-col gap-4">
         {/* Search and Filters Row */}
@@ -452,21 +452,6 @@ export function ServiceUsageStatistics() {
             </TabsList>
           </div>
         </Tabs>
-
-        {/* Export Button */}
-        {/* <div className="flex items-center gap-2">
-          <Button
-            onClick={handleExportExcel}
-            variant="outline"
-            size="sm"
-            className="flex items-center gap-2 whitespace-nowrap"
-            disabled={!danhsachThongKeSuDung?.data || danhsachThongKeSuDung.data.length === 0}
-          >
-            <Download className="h-4 w-4" />
-            <span className="hidden sm:inline">Xuất Excel</span>
-            <span className="sm:hidden">Excel</span>
-          </Button>
-        </div> */}
       </div>
 
       <Card>
@@ -477,7 +462,7 @@ export function ServiceUsageStatistics() {
               Thống kê chi tiết về việc sử dụng dịch vụ của cư dân ({danhsachThongKeSuDung?.totalCount || 0} bản ghi)
             </CardDescription>
           </div>
-          
+
           {/* Alternative: Export button in card header */}
           <Button
             onClick={handleExportExcel}
@@ -494,222 +479,219 @@ export function ServiceUsageStatistics() {
           {(filteredStatistics ?? []).length > 0 ? (
             <div className="border rounded-lg overflow-hidden">
               {/* Desktop Table */}
+              {/* Desktop Table */}
               <div className="hidden lg:block">
-                <div className="overflow-x-auto w-full">
-                  <div className="min-w-[1400px]">
-                    {/* Fixed Header */}
-                    <div className="border-b bg-background sticky top-0 z-10">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead className="w-[180px] min-w-[180px]">Cư dân</TableHead>
-                            <TableHead className="w-[120px] min-w-[120px]">Vị trí</TableHead>
-                            <TableHead className="w-[200px] min-w-[200px]">Dịch vụ</TableHead>
-                            <TableHead className="w-[140px] min-w-[140px]">Ngày bắt đầu</TableHead>
-                            <TableHead className="w-[140px] min-w-[140px]">Ngày đến hạn</TableHead>
-                            <TableHead className="w-[120px] min-w-[120px] text-right">VAT</TableHead>
-                            <TableHead className="w-[120px] min-w-[120px] text-right">BVMT</TableHead>
-                            <TableHead className="w-[140px] min-w-[140px] text-right">Thành tiền</TableHead>
-                            <TableHead className="w-[120px] min-w-[120px]">Trạng thái</TableHead>
-                            <TableHead className="w-[100px] min-w-[100px] text-right">Hành động</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                      </Table>
-                    </div>
-
-                    {/* Scrollable Body với cả vertical và horizontal scroll */}
-                    <div className="relative">
-                      <ScrollArea className="h-[500px] w-full">
-                        <Table>
-                          <TableBody>
-                            {filteredStatistics?.map((item) => (
-                              <TableRow key={item.maDVSD} className="hover:bg-muted/50">
-                                <TableCell className="w-[180px] min-w-[180px] font-medium">
-                                  <div className="max-w-[170px] truncate" title={item.tenKH?.toString()}>
-                                    {item.tenKH}
-                                  </div>
-                                </TableCell>
-                                <TableCell className="w-[120px] min-w-[120px]">
-                                  <div className="font-mono text-sm bg-muted px-2 py-1 rounded max-w-[110px] truncate">
-                                    {item.maVT}
-                                  </div>
-                                </TableCell>
-                                <TableCell className="w-[200px] min-w-[200px]">
-                                  <div className="flex items-center space-x-2">
-                                    <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                                      {getServiceIcon(item.maLDV)}
-                                    </div>
-                                    <div className="max-w-[160px] truncate" title={item.tenDV?.toString()}>
-                                      {item.tenDV}
-                                    </div>
-                                  </div>
-                                </TableCell>
-                                <TableCell className="w-[140px] min-w-[140px] text-sm">
-                                  <div className="space-y-1">
-                                    <div>{format(new Date(item.ngayBatDauSuDung), "dd/MM/yyyy")}</div>
-                                    <div className="text-xs text-muted-foreground">
-                                      {format(new Date(item.ngayBatDauSuDung), "HH:mm")}
-                                    </div>
-                                  </div>
-                                </TableCell>
-                                <TableCell className="w-[140px] min-w-[140px] text-sm">
-                                  <div className="space-y-1">
-                                    <div>{format(new Date(item.ngayDenHanThanhToan), "dd/MM/yyyy")}</div>
-                                    <div className="text-xs text-muted-foreground">
-                                      {format(new Date(item.ngayDenHanThanhToan), "HH:mm")}
-                                    </div>
-                                  </div>
-                                </TableCell>
-                                <TableCell className="w-[120px] min-w-[120px] text-right">
-                                  <div className="font-medium">
-                                    {formatPrice(item.tienVAT)}
-                                  </div>
-                                </TableCell>
-                                <TableCell className="w-[120px] min-w-[120px] text-right">
-                                  <div className="font-medium">
-                                    {formatPrice(item.tienBVMT)}
-                                  </div>
-                                </TableCell>
-                                <TableCell className="w-[140px] min-w-[140px] text-right">
-                                  <div className="font-bold text-primary">
-                                    {formatPrice(item.thanhTien)}
-                                  </div>
-                                </TableCell>
-                                <TableCell className="w-[120px] min-w-[120px]">
-                                  <Badge
-                                    variant="outline"
-                                    className={
-                                      item.isDuyetHoaDon === 1
-                                        ? "bg-green-50 text-green-700 border-green-200"
-                                        : "bg-yellow-50 text-yellow-700 border-yellow-200"
-                                    }
-                                  >
-                                    {item.isDuyetHoaDon === 1 ? (
-                                      <div className="flex items-center gap-1">
-                                        <CheckCircle className="h-3 w-3" />
-                                        <span>Đã duyệt</span>
-                                      </div>
-                                    ) : (
-                                      <div className="flex items-center gap-1">
-                                        <XCircle className="h-3 w-3" />
-                                        <span>Chờ duyệt</span>
-                                      </div>
-                                    )}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell className="w-[100px] min-w-[100px] text-right">
-                                  <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                                        <MoreVertical className="h-4 w-4" />
-                                        <span className="sr-only">Menu</span>
-                                      </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end" className="w-48">
-                                      <DropdownMenuItem onClick={() => handleViewDetail(item)}>
-                                        <Eye className="mr-2 h-4 w-4" />
-                                        Xem chi tiết
-                                      </DropdownMenuItem>
-                                      <DropdownMenuItem>
-                                        <FileText className="mr-2 h-4 w-4" />
-                                        Tạo hóa đơn
-                                      </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                  </DropdownMenu>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </ScrollArea>
-                    </div>
+                <div className="border rounded-lg overflow-hidden">
+                  {/* Fixed Header */}
+                  <div className="border-b bg-background">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-[150px]">Cư dân</TableHead>
+                          <TableHead className="w-[90px]">Vị trí</TableHead>
+                          <TableHead className="w-[180px]">Dịch vụ</TableHead>
+                          <TableHead className="w-[120px]">Ngày bắt đầu</TableHead>
+                          <TableHead className="w-[120px]">Ngày đến hạn</TableHead>
+                          <TableHead className="w-[100px] text-right">VAT</TableHead>
+                          <TableHead className="w-[100px] text-right">BVMT</TableHead>
+                          <TableHead className="w-[120px] text-right">Thành tiền</TableHead>
+                          <TableHead className="w-[100px]">Trạng thái</TableHead>
+                          <TableHead className="w-[100px] text-right">Hành động</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                    </Table>
                   </div>
-                </div>
 
-                {/* Pagination - outside scrollable area */}
-                <div className="border-t bg-background">
-                  <div className="flex items-center justify-between px-4 py-3">
-                    {/* Pagination Info */}
-                    <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                      <span>
-                        Hiển thị{" "}
-                        <span className="font-medium">
-                          {((danhsachThongKeSuDung?.pageNumber || 1) - 1) *
-                            (danhsachThongKeSuDung?.pageSize || 10) + 1}
-                        </span>{" "}
-                        đến{" "}
-                        <span className="font-medium">
-                          {Math.min(
-                            (danhsachThongKeSuDung?.pageNumber || 1) *
-                            (danhsachThongKeSuDung?.pageSize || 10),
-                            danhsachThongKeSuDung?.totalCount || 0
-                          )}
-                        </span>{" "}
-                        trong tổng số{" "}
-                        <span className="font-medium">
-                          {danhsachThongKeSuDung?.totalCount || 0}
-                        </span>{" "}
-                        bản ghi
-                      </span>
-                    </div>
-
-                    {/* Pagination Controls */}
-                    <div className="flex items-center space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handlePageChange((danhsachThongKeSuDung?.pageNumber || 1) - 1)}
-                        disabled={!(danhsachThongKeSuDung?.hasPreviousPage)}
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                        Trước
-                      </Button>
-
-                      {/* Page Numbers */}
-                      <div className="flex items-center space-x-1">
-                        {Array.from(
-                          {
-                            length: Math.min(5, danhsachThongKeSuDung?.totalPages || 1)
-                          },
-                          (_, i) => {
-                            const currentPage = danhsachThongKeSuDung?.pageNumber || 1;
-                            const totalPages = danhsachThongKeSuDung?.totalPages || 1;
-
-                            let pageNumber;
-                            if (totalPages <= 5) {
-                              pageNumber = i + 1;
-                            } else if (currentPage <= 3) {
-                              pageNumber = i + 1;
-                            } else if (currentPage >= totalPages - 2) {
-                              pageNumber = totalPages - 4 + i;
-                            } else {
-                              pageNumber = currentPage - 2 + i;
-                            }
-
-                            return (
-                              <Button
-                                key={pageNumber}
-                                variant={pageNumber === currentPage ? "default" : "outline"}
-                                size="sm"
-                                className="w-8 h-8 p-0"
-                                onClick={() => handlePageChange(pageNumber)}
+                  {/* Scrollable Body */}
+                  <ScrollArea className="h-[500px] w-full">
+                    <Table>
+                      <TableBody>
+                        {filteredStatistics?.map((item) => (
+                          <TableRow key={item.maDVSD} className="hover:bg-muted/50">
+                            <TableCell className="w-[150px] font-medium">
+                              <div className="max-w-[140px] truncate" title={item.tenKH?.toString()}>
+                                {item.tenKH}
+                              </div>
+                            </TableCell>
+                            <TableCell className="w-[90px]">
+                              <div className="font-mono text-sm bg-muted px-2 py-1 rounded">
+                                {item.maVT}
+                              </div>
+                            </TableCell>
+                            <TableCell className="w-[180px]">
+                              <div className="flex items-center space-x-2">
+                                <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                  {getServiceIcon(item.maLDV)}
+                                </div>
+                                <div className="max-w-[140px] truncate" title={item.tenDV?.toString()}>
+                                  {item.tenDV}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="w-[120px] text-sm">
+                              <div className="space-y-1">
+                                <div>{format(new Date(item.ngayBatDauSuDung), "dd/MM/yyyy")}</div>
+                                <div className="text-xs text-muted-foreground">
+                                  {format(new Date(item.ngayBatDauSuDung), "HH:mm")}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="w-[120px] text-sm">
+                              <div className="space-y-1">
+                                <div>{format(new Date(item.ngayDenHanThanhToan), "dd/MM/yyyy")}</div>
+                                <div className="text-xs text-muted-foreground">
+                                  {format(new Date(item.ngayDenHanThanhToan), "HH:mm")}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="w-[100px] text-right">
+                              <div className="font-medium text-sm">
+                                {formatPrice(item.tienVAT)}
+                              </div>
+                            </TableCell>
+                            <TableCell className="w-[100px] text-right">
+                              <div className="font-medium text-sm">
+                                {formatPrice(item.tienBVMT)}
+                              </div>
+                            </TableCell>
+                            <TableCell className="w-[120px] text-right">
+                              <div className="font-bold text-primary">
+                                {formatPrice(item.thanhTien)}
+                              </div>
+                            </TableCell>
+                            <TableCell className="w-[100px]">
+                              <Badge
+                                variant="outline"
+                                className={
+                                  item.isDuyetHoaDon === true
+                                    ? "bg-green-50 text-green-700 border-green-200"
+                                    : "bg-yellow-50 text-yellow-700 border-yellow-200"
+                                }
                               >
-                                {pageNumber}
-                              </Button>
-                            );
-                          }
-                        )}
+                                {item.isDuyetHoaDon === true ? (
+                                  <div className="flex items-center gap-1">
+                                    <CheckCircle className="h-3 w-3" />
+                                    <span className="text-xs">Duyệt</span>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-1">
+                                    <XCircle className="h-3 w-3" />
+                                    <span className="text-xs">Chờ</span>
+                                  </div>
+                                )}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="w-[100px] text-right">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                                    <MoreVertical className="h-4 w-4" />
+                                    <span className="sr-only">Menu</span>
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-48">
+                                  <DropdownMenuItem onClick={() => handleViewDetail(item)}>
+                                    <Eye className="mr-2 h-4 w-4" />
+                                    Xem chi tiết
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => duyetSangHoaDon(item.maDVSD, dateRange.startDate, dateRange.endDate)}>
+                                    <FileText className="mr-2 h-4 w-4" />
+                                    Duyệt sang hóa đơn
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </ScrollArea>
+
+                  {/* Pagination - outside scrollable area */}
+                  <div className="border-t bg-background">
+                    <div className="flex items-center justify-between px-4 py-3">
+                      {/* Pagination Info */}
+                      <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                        <span>
+                          Hiển thị{" "}
+                          <span className="font-medium">
+                            {((danhsachThongKeSuDung?.pageNumber || 1) - 1) *
+                              (danhsachThongKeSuDung?.pageSize || 10) + 1}
+                          </span>{" "}
+                          đến{" "}
+                          <span className="font-medium">
+                            {Math.min(
+                              (danhsachThongKeSuDung?.pageNumber || 1) *
+                              (danhsachThongKeSuDung?.pageSize || 10),
+                              danhsachThongKeSuDung?.totalCount || 0
+                            )}
+                          </span>{" "}
+                          trong tổng số{" "}
+                          <span className="font-medium">
+                            {danhsachThongKeSuDung?.totalCount || 0}
+                          </span>{" "}
+                          bản ghi
+                        </span>
                       </div>
 
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handlePageChange((danhsachThongKeSuDung?.pageNumber || 1) + 1)}
-                        disabled={!(danhsachThongKeSuDung?.hasNextPage)}
-                      >
-                        Sau
-                        <ChevronRight className="h-4 w-4" />
-                      </Button>
+                      {/* Pagination Controls */}
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handlePageChange((danhsachThongKeSuDung?.pageNumber || 1) - 1)}
+                          disabled={!(danhsachThongKeSuDung?.hasPreviousPage)}
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                          Trước
+                        </Button>
+
+                        {/* Page Numbers */}
+                        <div className="flex items-center space-x-1">
+                          {Array.from(
+                            {
+                              length: Math.min(5, danhsachThongKeSuDung?.totalPages || 1)
+                            },
+                            (_, i) => {
+                              const currentPage = danhsachThongKeSuDung?.pageNumber || 1;
+                              const totalPages = danhsachThongKeSuDung?.totalPages || 1;
+
+                              let pageNumber;
+                              if (totalPages <= 5) {
+                                pageNumber = i + 1;
+                              } else if (currentPage <= 3) {
+                                pageNumber = i + 1;
+                              } else if (currentPage >= totalPages - 2) {
+                                pageNumber = totalPages - 4 + i;
+                              } else {
+                                pageNumber = currentPage - 2 + i;
+                              }
+
+                              return (
+                                <Button
+                                  key={pageNumber}
+                                  variant={pageNumber === currentPage ? "default" : "outline"}
+                                  size="sm"
+                                  className="w-8 h-8 p-0"
+                                  onClick={() => handlePageChange(pageNumber)}
+                                >
+                                  {pageNumber}
+                                </Button>
+                              );
+                            }
+                          )}
+                        </div>
+
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handlePageChange((danhsachThongKeSuDung?.pageNumber || 1) + 1)}
+                          disabled={!(danhsachThongKeSuDung?.hasNextPage)}
+                        >
+                          Sau
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -792,12 +774,12 @@ export function ServiceUsageStatistics() {
                             <Badge
                               variant="outline"
                               className={
-                                item.isDuyetHoaDon === 1
+                                item.isDuyetHoaDon === true
                                   ? "bg-green-50 text-green-700 border-green-200"
                                   : "bg-yellow-50 text-yellow-700 border-yellow-200"
                               }
                             >
-                              {item.isDuyetHoaDon === 1 ? (
+                              {item.isDuyetHoaDon === true ? (
                                 <div className="flex items-center gap-1">
                                   <CheckCircle className="h-3 w-3" />
                                   <span>Đã duyệt</span>
@@ -912,7 +894,7 @@ export function ServiceUsageStatistics() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {filteredStatistics.filter(item => item.isDuyetHoaDon === 1).length}
+              {filteredStatistics.filter(item => item.isDuyetHoaDon === true).length}
             </div>
             <p className="text-xs text-muted-foreground">
               / {filteredStatistics.length} tổng số

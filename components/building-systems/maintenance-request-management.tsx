@@ -350,29 +350,36 @@ export function MaintenanceRequestManagement() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Maintenance Requests</h1>
+        <h1 className="text-2xl font-bold">Yêu cầu sửa chữa</h1>
         <Dialog open={isCreateRequestOpen} onOpenChange={setIsCreateRequestOpen}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="mr-2 h-4 w-4" />
-              New Request
+              Thêm yêu cầu mới
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
-              <DialogTitle>Submit Maintenance Request</DialogTitle>
+              <DialogTitle>
+                Tạo yêu cầu sửa chữa
+                <span className="text-sm text-muted-foreground ml-2">Thông tin yêu cầu</span>
+              </DialogTitle>
               <DialogDescription>
-                Please provide details about the maintenance issue you're experiencing.
+                Vui lòng điền đầy đủ thông tin để gửi yêu cầu sửa chữa. Các trường bắt buộc được đánh dấu sao (*).
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
-                  <Label htmlFor="title">Request Title</Label>
+                  <Label htmlFor="title">
+                    Tiêu đề yêu cầu <span className="text-red-500">*</span>
+                  </Label>
                   <Input id="title" placeholder="Brief description of the issue" />
                 </div>
                 <div>
-                  <Label htmlFor="category">Category</Label>
+                  <Label htmlFor="category">
+                    Danh mục yêu cầu <span className="text-red-500">*</span>
+                  </Label>
                   <Select>
                     <SelectTrigger>
                       <SelectValue placeholder="Select category" />
@@ -387,25 +394,31 @@ export function MaintenanceRequestManagement() {
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="priority">Priority</Label>
+                  <Label htmlFor="priority">
+                    Mức độ ưu tiên <span className="text-red-500">*</span>
+                  </Label>
                   <Select defaultValue="medium">
                     <SelectTrigger>
                       <SelectValue placeholder="Select priority" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="low">Low</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="high">High</SelectItem>
-                      <SelectItem value="emergency">Emergency</SelectItem>
+                      <SelectItem value="low">
+                        Thấp
+                      </SelectItem>
+                      <SelectItem value="medium">Vừa</SelectItem>
+                      <SelectItem value="high">Cao</SelectItem>
+                      <SelectItem value="emergency">Khẩn cấp</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="col-span-2">
-                  <Label htmlFor="location">Location</Label>
+                  <Label htmlFor="location">Vị trí</Label>
                   <Input id="location" placeholder="Building, floor, unit, or specific area" />
                 </div>
                 <div className="col-span-2">
-                  <Label htmlFor="description">Detailed Description</Label>
+                  <Label htmlFor="description">
+                    Mô tả chi tiết <span className="text-red-500">*</span>
+                  </Label>
                   <Textarea
                     id="description"
                     placeholder="Please provide detailed information about the issue..."
@@ -413,21 +426,25 @@ export function MaintenanceRequestManagement() {
                   />
                 </div>
                 <div className="col-span-2">
-                  <Label htmlFor="attachment">Attachment (Optional)</Label>
+                  <Label htmlFor="attachment">
+                    Tệp đính kèm (nếu có)
+                  </Label>
                   <div className="mt-1 flex items-center gap-2">
                     <Input id="attachment" type="file" className="flex-1" />
                   </div>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Upload photos of the issue to help maintenance staff prepare (max 5MB)
+                    Bạn có thể đính kèm hình ảnh hoặc tài liệu liên quan đến yêu cầu sửa chữa.
                   </p>
                 </div>
               </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsCreateRequestOpen(false)}>
-                Cancel
+                Hủy
               </Button>
-              <Button type="submit">Submit Request</Button>
+              <Button type="submit">
+                Gửi yêu cầu
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -435,27 +452,31 @@ export function MaintenanceRequestManagement() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Maintenance Requests</CardTitle>
-          <CardDescription>View and manage all maintenance requests from tenants and staff</CardDescription>
+          <CardTitle>
+            Quản lý yêu cầu sửa chữa
+          </CardTitle>
+          <CardDescription>
+            Quản lý tất cả yêu cầu sửa chữa từ cư dân, bao gồm duyệt, phân công, cập nhật trạng thái và ghi chú.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
             <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="all">All Requests</TabsTrigger>
+              <TabsTrigger value="all">Tất cả yêu cầu</TabsTrigger>
               <TabsTrigger value="pending">
-                Pending{" "}
+                Đang chờ duyệt{" "}
                 <Badge variant="outline" className="ml-1">
                   {pendingCount}
                 </Badge>
               </TabsTrigger>
               <TabsTrigger value="approved">
-                Approved{" "}
+                Đã duyệt{" "}
                 <Badge variant="outline" className="ml-1">
                   {approvedCount}
                 </Badge>
               </TabsTrigger>
               <TabsTrigger value="inProgress">
-                In Progress{" "}
+                Đang xử lý{" "}
                 <Badge variant="outline" className="ml-1">
                   {inProgressCount}
                 </Badge>
@@ -520,20 +541,20 @@ export function MaintenanceRequestManagement() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Request</TableHead>
-                    <TableHead>Location</TableHead>
-                    <TableHead>Submitted By</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Priority</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead>Tiêu đề</TableHead>
+                    <TableHead>Vị trí</TableHead>
+                    <TableHead>Người yêu cầu</TableHead>
+                    <TableHead>Ngày yêu cầu</TableHead>
+                    <TableHead>Mức độ</TableHead>
+                    <TableHead>Trạng thái</TableHead>
+                    <TableHead className="text-right">Hành động</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredRequests.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={7} className="text-center py-4">
-                        No maintenance requests found matching your criteria
+                        Không có yêu cầu nào phù hợp với tiêu chí tìm kiếm của bạn.
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -558,7 +579,7 @@ export function MaintenanceRequestManagement() {
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="sm">
                                 <MoreHorizontal className="h-4 w-4" />
-                                <span className="sr-only">Actions</span>
+                                <span className="sr-only">Hành động</span>
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
@@ -569,20 +590,20 @@ export function MaintenanceRequestManagement() {
                                 }}
                               >
                                 <Eye className="mr-2 h-4 w-4" />
-                                View Details
+                                Xem chi tiết
                               </DropdownMenuItem>
                               {request.status === "pending_approval" && (
                                 <>
                                   <DropdownMenuItem onClick={() => handleApproveRequest(request.id)}>
                                     <ThumbsUp className="mr-2 h-4 w-4" />
-                                    Approve Request
+                                    Duyệt yêu cầu
                                   </DropdownMenuItem>
                                   <DropdownMenuItem
                                     className="text-destructive"
                                     onClick={() => handleRejectRequest(request.id)}
                                   >
                                     <X className="mr-2 h-4 w-4" />
-                                    Reject Request
+                                    Từ chối yêu cầu
                                   </DropdownMenuItem>
                                 </>
                               )}
@@ -594,13 +615,13 @@ export function MaintenanceRequestManagement() {
                                   }}
                                 >
                                   <UserCog className="mr-2 h-4 w-4" />
-                                  Assign Technician
+                                  Giao cho nhân viên
                                 </DropdownMenuItem>
                               )}
                               {request.status === "in_progress" && (
                                 <DropdownMenuItem onClick={() => handleCompleteRequest(request.id)}>
                                   <CheckCircle2 className="mr-2 h-4 w-4" />
-                                  Mark as Completed
+                                  Đánh dấu hoàn thành
                                 </DropdownMenuItem>
                               )}
                               <DropdownMenuItem
@@ -610,7 +631,7 @@ export function MaintenanceRequestManagement() {
                                 }}
                               >
                                 <Pencil className="mr-2 h-4 w-4" />
-                                Update Request
+                                Cập nhật yêu cầu
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -631,29 +652,32 @@ export function MaintenanceRequestManagement() {
           <DialogContent className="sm:max-w-[700px]">
             <DialogHeader>
               <DialogTitle>{selectedRequest.title}</DialogTitle>
-              <DialogDescription>Maintenance request details and updates</DialogDescription>
+              <DialogDescription>
+                Chi tiết yêu cầu sửa chữa từ {selectedRequest.submittedBy} vào{" "}
+                {new Date(selectedRequest.submittedDate).toLocaleString()}
+              </DialogDescription>
             </DialogHeader>
 
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-muted-foreground">Category</Label>
+                  <Label className="text-muted-foreground">Hệ thống</Label>
                   <p className="font-medium">{selectedRequest.category}</p>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground">Location</Label>
+                  <Label className="text-muted-foreground">Vị trí</Label>
                   <p className="font-medium">{selectedRequest.location}</p>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground">Submitted By</Label>
+                  <Label className="text-muted-foreground">Người yêu cầu</Label>
                   <p className="font-medium">{selectedRequest.submittedBy}</p>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground">Submission Date</Label>
+                  <Label className="text-muted-foreground">Ngày yêu cầu</Label>
                   <p className="font-medium">{new Date(selectedRequest.submittedDate).toLocaleString()}</p>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground">Priority</Label>
+                  <Label className="text-muted-foreground">Mức độ</Label>
                   <div className="pt-1">
                     <Badge variant={getPriorityBadgeVariant(selectedRequest.priority) as any}>
                       {formatText(selectedRequest.priority)}
@@ -661,7 +685,7 @@ export function MaintenanceRequestManagement() {
                   </div>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground">Status</Label>
+                  <Label className="text-muted-foreground">Trạng thái</Label>
                   <div className="pt-1">
                     <Badge variant={getStatusBadgeVariant(selectedRequest.status) as any}>
                       {formatText(selectedRequest.status)}
@@ -672,11 +696,11 @@ export function MaintenanceRequestManagement() {
                 {selectedRequest.assignedTo && (
                   <>
                     <div>
-                      <Label className="text-muted-foreground">Assigned To</Label>
+                      <Label className="text-muted-foreground">Giao cho nhân viên</Label>
                       <p className="font-medium">{selectedRequest.assignedTo}</p>
                     </div>
                     <div>
-                      <Label className="text-muted-foreground">Scheduled Date</Label>
+                      <Label className="text-muted-foreground">Ngày sửa</Label>
                       <p className="font-medium">
                         {selectedRequest.scheduledDate
                           ? new Date(selectedRequest.scheduledDate).toLocaleString()
@@ -687,13 +711,17 @@ export function MaintenanceRequestManagement() {
                 )}
 
                 <div className="col-span-2">
-                  <Label className="text-muted-foreground">Description</Label>
+                  <Label className="text-muted-foreground">
+                    Mô tả yêu cầu
+                  </Label>
                   <p className="mt-1 whitespace-pre-line">{selectedRequest.description}</p>
                 </div>
 
                 {selectedRequest.attachments && selectedRequest.attachments.length > 0 && (
                   <div className="col-span-2">
-                    <Label className="text-muted-foreground">Attachments</Label>
+                    <Label className="text-muted-foreground">
+                      Tệp đính kèm
+                    </Label>
                     <div className="mt-2 flex flex-wrap gap-2">
                       {selectedRequest.attachments.map((attachment: string, index: number) => (
                         <div key={index} className="relative rounded-md border p-2 flex items-center gap-2">
@@ -706,7 +734,9 @@ export function MaintenanceRequestManagement() {
                 )}
 
                 <div className="col-span-2">
-                  <Label className="text-muted-foreground mb-2 block">Maintenance Notes</Label>
+                  <Label className="text-muted-foreground mb-2 block">
+                    Ghi chú
+                  </Label>
                   {selectedRequest.notes && selectedRequest.notes.length > 0 ? (
                     <div className="space-y-3 rounded-md border p-3">
                       {selectedRequest.notes.map((note: any) => (
@@ -720,12 +750,12 @@ export function MaintenanceRequestManagement() {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-sm text-muted-foreground">No notes added yet</p>
+                    <p className="text-sm text-muted-foreground">Không có ghi chú nào</p>
                   )}
                 </div>
 
                 <div className="col-span-2">
-                  <Label htmlFor="newNote">Add Note</Label>
+                  <Label htmlFor="newNote">Thêm ghi chú</Label>
                   <Textarea
                     id="newNote"
                     placeholder="Add a note about this maintenance request..."
@@ -739,23 +769,23 @@ export function MaintenanceRequestManagement() {
 
             <DialogFooter className="sm:justify-between">
               <Button variant="outline" onClick={() => setIsViewRequestOpen(false)}>
-                Close
+                Đóng
               </Button>
               <div className="flex gap-2">
                 <Button onClick={() => setNewNote("")} disabled={!newNote.trim()}>
                   <ClipboardList className="mr-2 h-4 w-4" />
-                  Add Note
+                  Thêm ghi chú
                 </Button>
                 {selectedRequest.status === "pending_approval" && (
                   <Button>
                     <ThumbsUp className="mr-2 h-4 w-4" />
-                    Approve
+                    Duyệt yêu cầu
                   </Button>
                 )}
                 {selectedRequest.status === "in_progress" && (
                   <Button>
                     <CheckCircle2 className="mr-2 h-4 w-4" />
-                    Complete
+                    Hoàn thành
                   </Button>
                 )}
               </div>
@@ -769,17 +799,21 @@ export function MaintenanceRequestManagement() {
         <Dialog open={isAssignRequestOpen} onOpenChange={setIsAssignRequestOpen}>
           <DialogContent className="sm:max-w-[500px]">
             <DialogHeader>
-              <DialogTitle>Assign Maintenance Technician</DialogTitle>
-              <DialogDescription>Assign a technician to handle this maintenance request</DialogDescription>
+              <DialogTitle>
+                Giao việc cho kỹ thuật viên
+              </DialogTitle>
+              <DialogDescription>
+                Chọn kỹ thuật viên và lên lịch sửa chữa cho yêu cầu bảo trì này.
+              </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div>
-                <Label className="text-base font-medium">Request: {selectedRequest.title}</Label>
+                <Label className="text-base font-medium">Yêu cầu {selectedRequest.title}</Label>
                 <p className="text-sm text-muted-foreground mt-1">{selectedRequest.location}</p>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
-                  <Label htmlFor="assignedTo">Assign To</Label>
+                  <Label htmlFor="assignedTo">Giao việc đến</Label>
                   <Select>
                     <SelectTrigger>
                       <SelectValue placeholder="Select staff member" />
@@ -794,22 +828,22 @@ export function MaintenanceRequestManagement() {
                   </Select>
                 </div>
                 <div className="col-span-2">
-                  <Label htmlFor="scheduledDate">Schedule Date</Label>
+                  <Label htmlFor="scheduledDate">Lịch sửa chữa</Label>
                   <Input id="scheduledDate" type="datetime-local" />
                 </div>
                 <div className="col-span-2">
-                  <Label htmlFor="assignmentNote">Note (Optional)</Label>
+                  <Label htmlFor="assignmentNote">Ghi chú</Label>
                   <Textarea id="assignmentNote" placeholder="Add any specific instructions for the technician..." />
                 </div>
               </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsAssignRequestOpen(false)}>
-                Cancel
+                Hủy
               </Button>
               <Button type="submit" onClick={() => setIsAssignRequestOpen(false)}>
                 <UserCog className="mr-2 h-4 w-4" />
-                Assign
+                Giao yêu cầu
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -821,17 +855,19 @@ export function MaintenanceRequestManagement() {
         <Dialog open={isUpdateRequestOpen} onOpenChange={setIsUpdateRequestOpen}>
           <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
-              <DialogTitle>Update Maintenance Request</DialogTitle>
-              <DialogDescription>Update the details of this maintenance request</DialogDescription>
+              <DialogTitle>Cập nhật yêu cầu</DialogTitle>
+              <DialogDescription>
+                Cập nhật thông tin yêu cầu bảo trì để phản ánh tình trạng hiện tại và các thay đổi cần thiết.
+              </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
-                  <Label htmlFor="update-title">Request Title</Label>
+                  <Label htmlFor="update-title">Tiêu đề yêu cầu</Label>
                   <Input id="update-title" defaultValue={selectedRequest.title} />
                 </div>
                 <div>
-                  <Label htmlFor="update-category">Category</Label>
+                  <Label htmlFor="update-category">Danh mục</Label>
                   <Select defaultValue={selectedRequest.category}>
                     <SelectTrigger>
                       <SelectValue />
@@ -846,41 +882,47 @@ export function MaintenanceRequestManagement() {
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="update-priority">Priority</Label>
+                  <Label htmlFor="update-priority">Mức độ</Label>
                   <Select defaultValue={selectedRequest.priority}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="low">Low</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="high">High</SelectItem>
-                      <SelectItem value="emergency">Emergency</SelectItem>
+                      <SelectItem value="low">
+                        Thấp
+                      </SelectItem>
+                      <SelectItem value="medium">Vừa</SelectItem>
+                      <SelectItem value="high">Cao</SelectItem>
+                      <SelectItem value="emergency">Khẩn cấp</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="col-span-2">
-                  <Label htmlFor="update-location">Location</Label>
+                  <Label htmlFor="update-location">
+                    vị trí
+                  </Label>
                   <Input id="update-location" defaultValue={selectedRequest.location} />
                 </div>
                 <div className="col-span-2">
-                  <Label htmlFor="update-description">Detailed Description</Label>
+                  <Label htmlFor="update-description">
+                    Chi tiết mô tả
+                  </Label>
                   <Textarea id="update-description" defaultValue={selectedRequest.description} rows={4} />
                 </div>
                 {selectedRequest.status !== "pending_approval" && (
                   <div className="col-span-2">
-                    <Label htmlFor="update-status">Status</Label>
+                    <Label htmlFor="update-status">Trạng thái</Label>
                     <Select defaultValue={selectedRequest.status}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="pending_approval">Pending Approval</SelectItem>
-                        <SelectItem value="approved">Approved</SelectItem>
-                        <SelectItem value="in_progress">In Progress</SelectItem>
-                        <SelectItem value="on_hold">On Hold</SelectItem>
-                        <SelectItem value="completed">Completed</SelectItem>
-                        <SelectItem value="rejected">Rejected</SelectItem>
+                        <SelectItem value="pending_approval">Đang chờ duyệt</SelectItem>
+                        <SelectItem value="approved">Duyệt</SelectItem>
+                        <SelectItem value="in_progress">Đang xử lý</SelectItem>
+                        <SelectItem value="on_hold">Chờ xác nhận</SelectItem>
+                        <SelectItem value="completed">Hoàn thành</SelectItem>
+                        <SelectItem value="rejected">Từ chối</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -889,10 +931,10 @@ export function MaintenanceRequestManagement() {
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsUpdateRequestOpen(false)}>
-                Cancel
+                Hủy
               </Button>
               <Button type="submit" onClick={() => setIsUpdateRequestOpen(false)}>
-                Update Request
+                Cập nhật yêu cầu
               </Button>
             </DialogFooter>
           </DialogContent>

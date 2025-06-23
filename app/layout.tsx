@@ -18,6 +18,10 @@ import { WaterRateProvider } from "@/components/context/WaterRate"
 import { MetterProvider } from "@/components/context/MetterContext"
 import { ResidentProvider } from "@/components/context/ResidentContext"
 import { ApartmentProvider } from "@/components/context/ApartmentContext"
+import { BuildingSystemProvider } from "@/components/context/BuildingSystemContext"
+import { StaffProvider } from "@/components/context/StaffContext"
+import { StatusMaintanceProvider } from "@/components/context/StatusMaintance"
+import { MaintancePlanProvider } from "@/components/context/MaintancePlan"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata = {
@@ -49,8 +53,16 @@ export default function RootLayout({
                                 <MetterProvider>
                                   <ResidentProvider>
                                     <ApartmentProvider>
-                                  {children}
-                                  </ApartmentProvider>
+                                      <BuildingSystemProvider>
+                                        <StaffProvider>
+                                          <StatusMaintanceProvider>
+                                            <MaintancePlanProvider>
+                                              {children}
+                                            </MaintancePlanProvider>
+                                          </StatusMaintanceProvider>
+                                        </StaffProvider>
+                                      </BuildingSystemProvider>
+                                    </ApartmentProvider>
                                   </ResidentProvider>
                                 </MetterProvider>
                               </WaterRateProvider>

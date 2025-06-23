@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState, FormEvent } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -19,210 +19,130 @@ import { Textarea } from "@/components/ui/textarea"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Plus, Search, Filter, Pencil, Trash2, MoreHorizontal, Eye, Wrench } from "lucide-react"
+import { Plus, Search, Filter, Pencil, Trash2, MoreHorizontal, Eye, Wrench, AlertCircle, ChevronLeft, ChevronRight } from "lucide-react"
 import { Checkbox } from "@/components/ui/checkbox"
+import { useBuilding } from "../context/BuildingContext"
+import { useBuildingSystem } from "../context/BuildingSystemContext"
+import { useAuth } from "../context/AuthContext"
+import { HeThong, HeThongPaged, HeThongUpdate, CreateHeThong } from "../type/systems"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { useToast } from "@/components/ui/use-toast"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { useStatusMaintance } from "../context/StatusMaintance"
+import { useMaintancePlan } from "../context/MaintancePlan"
+import { CreateKeHoachBaoTri, CreateMaintancePlan } from "../type/maintancePlan"
 
-// Mock data for building systems
-const systemsData = [
-  {
-    id: 1,
-    name: "Hệ thống HVAC trung tâm",
-    category: "HVAC",
-    location: "Khối A, Tầng 1",
-    installationDate: "2020-05-15",
-    lastMaintenance: "2025-04-01",
-    nextMaintenance: "2025-07-01",
-    status: "Hoạt động",
-    manufacturer: "Daikin",
-    model: "HVAC-2020-PRO",
-    serialNumber: "DK2020-56789",
-    description: "Central heating, ventilation, and air conditioning system for Block A",
-  },
-  {
-    id: 2,
-    name: "Máy phát điện dự phòng",
-    category: "Điện",
-    location: "Khối B, Tầng hầm",
-    installationDate: "2020-03-10",
-    lastMaintenance: "2025-03-15",
-    nextMaintenance: "2025-06-15",
-    status: "Hoạt động",
-    manufacturer: "Caterpillar",
-    model: "CAT-G3520E",
-    serialNumber: "CAT2020-12345",
-    description: "Emergency backup generator for the building",
-  },
-  {
-    id: 3,
-    name: "Hệ thống báo cháy",
-    category: "Anh ninh",
-    location: "Khối A, Tầng 2",
-    installationDate: "2020-02-01",
-    lastMaintenance: "2025-04-20",
-    nextMaintenance: "2025-07-20",
-    status: "Hoạt động",
-    manufacturer: "Honeywell",
-    model: "FA-5000",
-    serialNumber: "HW2020-45678",
-    description: "Building-wide fire detection and alarm system",
-  },
-  {
-    id: 4,
-    name: "Hệ thống cấp nước",
-    category: "Diễn nước",
-    location: "Khối A, Tầng hầm",
-    installationDate: "2020-01-15",
-    lastMaintenance: "2025-02-28",
-    nextMaintenance: "2025-05-28",
-    status: "Bảo trì",
-    manufacturer: "Grundfos",
-    model: "WP-2000",
-    serialNumber: "GF2020-87654",
-    description: "Main water supply and distribution system",
-  },
-  {
-    id: 5,
-    name: "Thang máy #1",
-    category: "Di chuyển",
-    location: "Khối A",
-    installationDate: "2020-01-20",
-    lastMaintenance: "2025-04-10",
-    nextMaintenance: "2025-07-10",
-    status: "Hoạt động",
-    manufacturer: "OTIS",
-    model: "Elevator-X5",
-    serialNumber: "OT2020-34567",
-    description: "Main passenger elevator in Block A",
-  },
-  {
-    id: 6,
-    name: "Elevator #2",
-    category: "Transportation",
-    location: "Block B",
-    installationDate: "2020-01-25",
-    lastMaintenance: "2025-03-05",
-    nextMaintenance: "2025-06-05",
-    status: "under_maintenance",
-    manufacturer: "OTIS",
-    model: "Elevator-X5",
-    serialNumber: "OT2020-34568",
-    description: "Main passenger elevator in Block B",
-  },
-  {
-    id: 7,
-    name: "CCTV System",
-    category: "Security",
-    location: "All Blocks",
-    installationDate: "2020-02-10",
-    lastMaintenance: "2025-04-15",
-    nextMaintenance: "2025-07-15",
-    status: "operational",
-    manufacturer: "Hikvision",
-    model: "CCTV-Pro-2020",
-    serialNumber: "HK2020-23456",
-    description: "Building-wide security camera system",
-  },
-  {
-    id: 8,
-    name: "Access Control System",
-    category: "Security",
-    location: "All Entrances",
-    installationDate: "2020-02-15",
-    lastMaintenance: "2025-03-30",
-    nextMaintenance: "2025-06-30",
-    status: "operational",
-    manufacturer: "HID Global",
-    model: "AC-1000",
-    serialNumber: "HID2020-78901",
-    description: "Electronic door access control system",
-  },
-  {
-    id: 9,
-    name: "Solar Panel System",
-    category: "Electrical",
-    location: "Roof, All Blocks",
-    installationDate: "2020-06-01",
-    lastMaintenance: "2025-03-20",
-    nextMaintenance: "2025-06-20",
-    status: "operational",
-    manufacturer: "SunPower",
-    model: "SP-X22-370",
-    serialNumber: "SP2020-12345",
-    description: "Rooftop solar energy generation system",
-  },
-  {
-    id: 10,
-    name: "Sewage Treatment System",
-    category: "Plumbing",
-    location: "Block C, Basement",
-    installationDate: "2020-04-10",
-    lastMaintenance: "2025-04-05",
-    nextMaintenance: "2025-07-05",
-    status: "needs_attention",
-    manufacturer: "Veolia",
-    model: "STP-2000",
-    serialNumber: "VL2020-45678",
-    description: "Wastewater treatment system",
-  },
+// Status options for the new status codes
+const statusOptions = [
+  { value: "all", label: "Tất cả trạng thái" },
+  { value: "0", label: "Không hoạt động" },
+  { value: "1", label: "Đang hoạt động" },
+  { value: "2", label: "Đang bảo trì" }
 ]
-
-// System categories for filtering
-const systemCategories = [
-  "All Categories",
-  "HVAC",
-  "Electrical",
-  "Plumbing",
-  "Safety",
-  "Security",
-  "Transportation",
-  "Communication",
-  "Others",
-]
-
-// Building locations for filtering
-const buildingLocations = ["All Locations", "Block A", "Block B", "Block C", "All Blocks", "Roof", "Basement"]
-
-// Status options
-const statusOptions = ["All Statuses", "operational", "under_maintenance", "needs_attention", "out_of_service"]
 
 export function BuildingSystemList() {
   const [searchTerm, setSearchTerm] = useState("")
-  const [selectedCategory, setSelectedCategory] = useState("All Categories")
-  const [selectedLocation, setSelectedLocation] = useState("All Locations")
-  const [selectedStatus, setSelectedStatus] = useState("All Statuses")
+  const [selectedLocation, setSelectedLocation] = useState("all")
+  const [selectedStatus, setSelectedStatus] = useState("all")
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isScheduleMaintenanceOpen, setIsScheduleMaintenanceOpen] = useState(false)
-  const [selectedSystem, setSelectedSystem] = useState<any>(null)
+  const [selectedSystem, setSelectedSystem] = useState<HeThong | null>(null)
+  const [confirmDeleteDialogOpen, setConfirmDeleteDialogOpen] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const { toast } = useToast()
 
-  // Function to filter systems based on search and filters
-  const filteredSystems = systemsData.filter((system) => {
-    const matchesSearch =
-      system.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      system.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      system.manufacturer.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      system.model.toLowerCase().includes(searchTerm.toLowerCase())
-
-    const matchesCategory = selectedCategory === "All Categories" || system.category === selectedCategory
-
-    const matchesLocation = selectedLocation === "All Locations" || system.location.includes(selectedLocation)
-
-    const matchesStatus = selectedStatus === "All Statuses" || system.status === selectedStatus
-
-    return matchesSearch && matchesCategory && matchesLocation && matchesStatus
+  // Form state cho thêm mới
+  const [newSystem, setNewSystem] = useState<CreateHeThong>({
+    tenHeThong: "",
+    maTN: 0,
+    ghiChu: "",
+    model: "",
+    nhanHieu: "",
+    trangThai: 1,
+    serialNumber: ""
   })
 
+  // Form state cho chỉnh sửa
+  const [editedSystem, setEditedSystem] = useState<HeThongUpdate>({
+    maHeThong: 0,
+    tenHeThong: "",
+    maTN: 0,
+    nhanHieu: "",
+    model: "",
+    trangThai: 1,
+    serialNumber: "",
+    ghiChu: "",
+    ngayLapDat: new Date()
+  })
+
+  // auth
+  const { token } = useAuth()
+
+  // bộ lọc danh sách tòa nhà
+  const { buildingListForDropdown, getBuildingListForDropdown } = useBuilding()
+  // danh sách thiết bị tòa nhà
+  const { heThong, getDanhSachHeThong, updateHeThong, xoaHeThong, addHeThong } = useBuildingSystem()
+
+  // form load trang thai
+  const { statusMaintance, getStatusMaintance } = useStatusMaintance();
+
+  // ham them ke hoach bao tri cho he thong 
+  const { addMaintancePlan } = useMaintancePlan();
+
+  // Thêm vào phần state declarations ở đầu component
+  const [maintenancePlan, setMaintenancePlan] = useState<CreateKeHoachBaoTri>({
+    tenKeHoach: "",
+    loaiBaoTri: 1, // Mặc định: Bảo trì định kỳ
+    maHeThong: 0,
+    maTrangThai: 1, // Mặc định: Lên kế hoạch
+    tanSuat: 1,
+    moTaCongViec: "",
+    ngayBaoTri: new Date(),
+    chiTietBaoTris: [],
+    danhSachNhanVien: []
+  });
+
+  useEffect(() => {
+    if (token) {
+      // Fetch building list for dropdown
+      getBuildingListForDropdown()
+      // Fetch status maintenance options
+      getStatusMaintance()
+      // Fetch building systems with pagination
+      getDanhSachHeThong(currentPage)
+    }
+  }, [token])
+
+  // Function to handle page change
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  }
+
+  // Function to filter systems based on search and filters
+  const filteredSystems = heThong?.data?.filter((system) => {
+    const matchesSearch =
+      (system.tenHeThong?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+      (system.ghiChu?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+      (system.nhanHieu?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+      (system.model?.toLowerCase() || "").includes(searchTerm.toLowerCase())
+
+    const matchesLocation = selectedLocation === "all" || system.maTN.toString() === selectedLocation
+    const matchesStatus = selectedStatus === "all" || system.trangThai.toString() === selectedStatus
+
+    return matchesSearch && matchesLocation && matchesStatus
+  }) || []
+
   // Function to get status badge variant
-  const getStatusBadgeVariant = (status: string) => {
+  const getStatusBadgeVariant = (status: number) => {
     switch (status) {
-      case "operational":
-        return "default"
-      case "under_maintenance":
-        return "secondary"
-      case "needs_attention":
-        return "warning"
-      case "out_of_service":
+      case 1:
+        return "default" // Changed from "success"
+      case 2:
+        return "secondary" // Changed from "warning"
+      case 0:
         return "destructive"
       default:
         return "outline"
@@ -230,12 +150,174 @@ export function BuildingSystemList() {
   }
 
   // Function to format status for display
-  const formatStatus = (status: string) => {
-    return status
-      .split("_")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ")
+  const formatStatus = (status: number) => {
+    switch (status) {
+      case 0: return "Không hoạt động"
+      case 1: return "Đang hoạt động"
+      case 2: return "Đang bảo trì"
+      default: return "Không xác định"
+    }
   }
+
+  // Hàm format date
+  const formatDate = (dateString: string) => {
+    if (!dateString) return "N/A"
+    try {
+      return new Date(dateString).toLocaleDateString("vi-VN")
+    } catch (error) {
+      return "Invalid date"
+    }
+  }
+
+  // Xử lý khi người dùng nhấn nút chỉnh sửa
+  const handleEditClick = (system: HeThong) => {
+    setSelectedSystem(system)
+    setEditedSystem({
+      maHeThong: system.maHeThong,
+      tenHeThong: system.tenHeThong,
+      maTN: system.maTN,
+      nhanHieu: system.nhanHieu || "",
+      model: system.model || "",
+      trangThai: system.trangThai,
+      serialNumber: system.serialNumber || "",
+      ghiChu: system.ghiChu || "",
+      ngayLapDat: system.installationDate ? new Date(system.installationDate) : new Date()
+    })
+    setIsEditDialogOpen(true)
+  }
+
+  // Xử lý thêm mới
+  const handleAddSystem = async (e: FormEvent) => {
+    e.preventDefault()
+    setIsSubmitting(true)
+
+    try {
+      await addHeThong(newSystem)
+      setIsAddDialogOpen(false)
+      // Reset form
+      setNewSystem({
+        tenHeThong: "",
+        maTN: 0,
+        ghiChu: "",
+        model: "",
+        nhanHieu: "",
+        trangThai: 1,
+        serialNumber: ""
+      })
+      // Reload data
+      getDanhSachHeThong(currentPage)
+      toast({
+        title: "Thành công",
+        description: "Đã thêm hệ thống mới",
+        variant: "default",
+      })
+    } catch (error) {
+      console.error("Error adding system:", error)
+      toast({
+        title: "Lỗi",
+        description: "Không thể thêm hệ thống. Vui lòng thử lại sau.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  // Xử lý cập nhật
+  const handleUpdateSystem = async (e: FormEvent) => {
+    e.preventDefault()
+    setIsSubmitting(true)
+
+    try {
+      await updateHeThong(editedSystem)
+      setIsEditDialogOpen(false)
+      // Reload data
+      getDanhSachHeThong(currentPage)
+      toast({
+        title: "Thành công",
+        description: "Đã cập nhật hệ thống",
+        variant: "default",
+      })
+    } catch (error) {
+      console.error("Error updating system:", error)
+      toast({
+        title: "Lỗi",
+        description: "Không thể cập nhật hệ thống. Vui lòng thử lại sau.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  // Xử lý xóa
+  const handleDeleteSystem = async () => {
+    if (!selectedSystem) return
+    setIsSubmitting(true)
+
+    try {
+      await xoaHeThong(selectedSystem.maHeThong)
+      setConfirmDeleteDialogOpen(false)
+      // Reload data
+      getDanhSachHeThong(currentPage)
+      toast({
+        title: "Thành công",
+        description: "Đã xóa hệ thống",
+        variant: "default",
+      })
+    } catch (error) {
+      console.error("Error deleting system:", error)
+      toast({
+        title: "Lỗi",
+        description: "Không thể xóa hệ thống. Vui lòng thử lại sau.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  // Xử lý thêm lịch bảo trì
+  const handleAddMaintenancePlan = async (e: FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      await addMaintancePlan(maintenancePlan);
+      setIsScheduleMaintenanceOpen(false);
+
+      // Reset form
+      setMaintenancePlan({
+        tenKeHoach: "",
+        loaiBaoTri: 1,
+        maHeThong: 0,
+        maTrangThai: 1,
+        tanSuat: 1,
+        moTaCongViec: "",
+        ngayBaoTri: new Date(),
+        chiTietBaoTris: [],
+        danhSachNhanVien: []
+      });
+
+      // Refresh data
+      getDanhSachHeThong(currentPage);
+
+      toast({
+        title: "Thành công",
+        description: "Đã thêm kế hoạch bảo trì mới",
+        variant: "default",
+      });
+    } catch (error) {
+      console.error("Error adding maintenance plan:", error);
+      toast({
+        title: "Lỗi",
+        description: "Không thể thêm kế hoạch bảo trì. Vui lòng thử lại sau.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -249,79 +331,112 @@ export function BuildingSystemList() {
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[600px]">
-            <DialogHeader>
-              <DialogTitle>Thêm hệ thống thiết bị mới</DialogTitle>
-              <DialogDescription>
-                Nhập thông tin chi tiết cho hệ thống thiết bị mới của bạn
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2">
-                  <Label htmlFor="name">Tên hệ thống</Label>
-                  <Input id="name" placeholder="Enter system name" />
-                </div>
-                <div>
-                  <Label htmlFor="category">Danh mục</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {systemCategories.slice(1).map((category) => (
-                        <SelectItem key={category} value={category}>
-                          {category}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="location">Location</Label>
-                  <Input id="location" placeholder="e.g. Block A, Floor 1" />
-                </div>
-                <div>
-                  <Label htmlFor="installationDate">Installation Date</Label>
-                  <Input id="installationDate" type="date" />
-                </div>
-                <div>
-                  <Label htmlFor="status">Status</Label>
-                  <Select defaultValue="operational">
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="operational">Operational</SelectItem>
-                      <SelectItem value="under_maintenance">Under Maintenance</SelectItem>
-                      <SelectItem value="needs_attention">Needs Attention</SelectItem>
-                      <SelectItem value="out_of_service">Out of Service</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="manufacturer">Manufacturer</Label>
-                  <Input id="manufacturer" placeholder="Enter manufacturer" />
-                </div>
-                <div>
-                  <Label htmlFor="model">Model</Label>
-                  <Input id="model" placeholder="Enter model number" />
-                </div>
-                <div>
-                  <Label htmlFor="serialNumber">Serial Number</Label>
-                  <Input id="serialNumber" placeholder="Enter serial number" />
-                </div>
-                <div className="col-span-2">
-                  <Label htmlFor="description">Description</Label>
-                  <Textarea id="description" placeholder="Enter system description" />
+            <form onSubmit={handleAddSystem}>
+              <DialogHeader>
+                <DialogTitle>Thêm hệ thống thiết bị mới</DialogTitle>
+                <DialogDescription>
+                  Nhập thông tin chi tiết cho hệ thống thiết bị mới của bạn
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="col-span-2">
+                    <Label htmlFor="name">Tên hệ thống <span className="text-red-500">*</span></Label>
+                    <Input
+                      id="name"
+                      placeholder="Nhập tên hệ thống"
+                      value={newSystem.tenHeThong}
+                      onChange={(e) => setNewSystem({ ...newSystem, tenHeThong: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="location">Tòa nhà <span className="text-red-500">*</span></Label>
+                    <Select
+                      value={newSystem.maTN.toString()}
+                      onValueChange={(value) => setNewSystem({ ...newSystem, maTN: Number(value) })}
+                      required
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Chọn tòa nhà" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {buildingListForDropdown.map((building) => (
+                          <SelectItem key={building.id} value={building.id.toString()}>
+                            {building.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="status">Trạng thái <span className="text-red-500">*</span></Label>
+                    <Select
+                      value={newSystem.trangThai.toString()}
+                      onValueChange={(value) => setNewSystem({ ...newSystem, trangThai: Number(value) })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Chọn trạng thái" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">Đang hoạt động</SelectItem>
+                        <SelectItem value="2">Đang bảo trì</SelectItem>
+                        <SelectItem value="0">Không hoạt động</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="manufacturer">Nhãn hiệu</Label>
+                    <Input
+                      id="manufacturer"
+                      placeholder="Nhập nhãn hiệu"
+                      value={newSystem.nhanHieu}
+                      onChange={(e) => setNewSystem({ ...newSystem, nhanHieu: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="model">Model</Label>
+                    <Input
+                      id="model"
+                      placeholder="Nhập model"
+                      value={newSystem.model}
+                      onChange={(e) => setNewSystem({ ...newSystem, model: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="serialNumber">Serial Number</Label>
+                    <Input
+                      id="serialNumber"
+                      placeholder="Nhập serial number"
+                      value={newSystem.serialNumber}
+                      onChange={(e) => setNewSystem({ ...newSystem, serialNumber: e.target.value })}
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <Label htmlFor="description">Ghi chú</Label>
+                    <Textarea
+                      id="description"
+                      placeholder="Nhập mô tả hệ thống"
+                      value={newSystem.ghiChu}
+                      onChange={(e) => setNewSystem({ ...newSystem, ghiChu: e.target.value })}
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button type="submit">Save System</Button>
-            </DialogFooter>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  type="button"
+                  onClick={() => setIsAddDialogOpen(false)}
+                  disabled={isSubmitting}
+                >
+                  Hủy
+                </Button>
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? 'Đang lưu...' : 'Lưu hệ thống'}
+                </Button>
+              </DialogFooter>
+            </form>
           </DialogContent>
         </Dialog>
       </div>
@@ -333,54 +448,52 @@ export function BuildingSystemList() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {/* Search and Filters */}
-            <div className="flex flex-col space-y-2 md:flex-row md:items-center md:space-x-2 md:space-y-0">
-              <div className="flex items-center gap-2 md:w-1/3">
-                <Search className="h-4 w-4 text-muted-foreground" />
+            {/* Search and Filters - Cải thiện UI */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              {/* Search input */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Tìm kiếm hệ thống..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="flex-1"
+                  className="pl-10"
                 />
               </div>
 
-              <div className="flex flex-1 items-center gap-2">
-                <Filter className="h-4 w-4 text-muted-foreground" />
-                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                  <SelectTrigger className="w-full md:w-[180px]">
-                    <SelectValue placeholder="Category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {systemCategories.map((category) => (
-                      <SelectItem key={category} value={category}>
-                        {category}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
+              {/* Building filter */}
+              <div>
                 <Select value={selectedLocation} onValueChange={setSelectedLocation}>
-                  <SelectTrigger className="w-full md:w-[180px]">
-                    <SelectValue placeholder="Location" />
+                  <SelectTrigger className="w-full">
+                    <div className="flex items-center">
+                      <Filter className="mr-2 h-4 w-4 text-muted-foreground" />
+                      <SelectValue placeholder="Tòa nhà" />
+                    </div>
                   </SelectTrigger>
                   <SelectContent>
-                    {buildingLocations.map((location) => (
-                      <SelectItem key={location} value={location}>
-                        {location}
+                    <SelectItem value="all">Tất cả tòa nhà</SelectItem>
+                    {buildingListForDropdown.map((building) => (
+                      <SelectItem key={building.id} value={building.id.toString()}>
+                        {building.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
 
+              {/* Status filter */}
+              <div>
                 <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                  <SelectTrigger className="w-full md:w-[180px]">
-                    <SelectValue placeholder="Status" />
+                  <SelectTrigger className="w-full">
+                    <div className="flex items-center">
+                      <Filter className="mr-2 h-4 w-4 text-muted-foreground" />
+                      <SelectValue placeholder="Trạng thái" />
+                    </div>
                   </SelectTrigger>
                   <SelectContent>
                     {statusOptions.map((status) => (
-                      <SelectItem key={status} value={status}>
-                        {status === "Tất cả trạng thái" ? status : formatStatus(status)}
+                      <SelectItem key={status.value} value={status.value}>
+                        {status.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -388,88 +501,179 @@ export function BuildingSystemList() {
               </div>
             </div>
 
-            {/* Systems Table */}
+            {/* Systems Table with Fixed Header */}
             <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Tên hệ thống</TableHead>
-                    <TableHead>Danh mục</TableHead>
-                    <TableHead>Vị trí</TableHead>
-                    <TableHead>Lần bảo trì cuối</TableHead>
-                    <TableHead>Lần bào trì tiếp theo</TableHead>
-                    <TableHead>Trạng thái</TableHead>
-                    <TableHead className="text-right">Hành động</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredSystems.length === 0 ? (
+              {/* Fixed Table Header */}
+              <div className="border-b bg-background sticky top-0 z-10">
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-4">
-                        Khoảng có hệ thống nào phù hợp với bộ lọc của bạn.
-                      </TableCell>
+                      <TableHead className="w-[200px]">Tên hệ thống</TableHead>
+                      <TableHead className="w-[150px]">Nhãn hiệu</TableHead>
+                      <TableHead className="w-[150px]">Tòa nhà</TableHead>
+                      <TableHead className="w-[150px]">Lần bảo trì cuối</TableHead>
+                      <TableHead className="w-[150px]">Lần bảo trì tiếp theo</TableHead>
+                      <TableHead className="w-[120px]">Trạng thái</TableHead>
+                      <TableHead className="w-[100px] text-right">Hành động</TableHead>
                     </TableRow>
-                  ) : (
-                    filteredSystems.map((system) => (
-                      <TableRow key={system.id}>
-                        <TableCell className="font-medium">{system.name}</TableCell>
-                        <TableCell>{system.category}</TableCell>
-                        <TableCell>{system.location}</TableCell>
-                        <TableCell>{new Date(system.lastMaintenance).toLocaleDateString()}</TableCell>
-                        <TableCell>{new Date(system.nextMaintenance).toLocaleDateString()}</TableCell>
-                        <TableCell>
-                          <Badge variant={getStatusBadgeVariant(system.status) as any}>
-                            {formatStatus(system.status)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm">
-                                <MoreHorizontal className="h-4 w-4" />
-                                <span className="sr-only">Actions</span>
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                onClick={() => {
-                                  setSelectedSystem(system)
-                                  setIsViewDialogOpen(true)
-                                }}
-                              >
-                                <Eye className="mr-2 h-4 w-4" />
-                                View Details
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => {
-                                  setSelectedSystem(system)
-                                  setIsEditDialogOpen(true)
-                                }}
-                              >
-                                <Pencil className="mr-2 h-4 w-4" />
-                                Edit System
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => {
-                                  setSelectedSystem(system)
-                                  setIsScheduleMaintenanceOpen(true)
-                                }}
-                              >
-                                <Wrench className="mr-2 h-4 w-4" />
-                                Schedule Maintenance
-                              </DropdownMenuItem>
-                              <DropdownMenuItem className="text-destructive">
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Delete System
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                  </TableHeader>
+                </Table>
+              </div>
+
+              {/* Scrollable Table Body */}
+              <ScrollArea className="h-[460px]">
+                <Table>
+                  <TableBody>
+                    {filteredSystems.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-10">
+                          <div className="flex flex-col items-center justify-center text-muted-foreground">
+                            <Filter className="h-10 w-10 mb-2" />
+                            <p>Không có hệ thống nào phù hợp với bộ lọc của bạn.</p>
+                          </div>
                         </TableCell>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+                    ) : (
+                      filteredSystems.map((system) => (
+                        <TableRow key={system.maHeThong}>
+                          <TableCell className="w-[200px] font-medium">{system.tenHeThong}</TableCell>
+                          <TableCell className="w-[150px]">{system.nhanHieu}</TableCell>
+                          <TableCell className="w-[150px]">{system.tenTN}</TableCell>
+                          <TableCell className="w-[150px]">{formatDate(system.lastMaintenanceDate)}</TableCell>
+                          <TableCell className="w-[150px]">{formatDate(system.nextMaintenanceDate)}</TableCell>
+                          <TableCell className="w-[120px]">
+                            <Badge variant={getStatusBadgeVariant(system.trangThai)}>
+                              {formatStatus(system.trangThai)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="w-[100px] text-right">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                  <span className="sr-only">Actions</span>
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    setSelectedSystem(system)
+                                    setIsViewDialogOpen(true)
+                                  }}
+                                >
+                                  <Eye className="mr-2 h-4 w-4" />
+                                  Xem chi tiết
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => handleEditClick(system)}
+                                >
+                                  <Pencil className="mr-2 h-4 w-4" />
+                                  Chỉnh sửa
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    setSelectedSystem(system)
+                                    setMaintenancePlan(prev => ({
+                                      ...prev,
+                                      maHeThong: system.maHeThong,
+                                      tenKeHoach: `Bảo trì định kỳ cho ${system.tenHeThong}`
+                                    }));
+                                    setIsScheduleMaintenanceOpen(true)
+                                  }}
+                                >
+                                  <Wrench className="mr-2 h-4 w-4" />
+                                  Lịch bảo trì
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className="text-destructive"
+                                  onClick={() => {
+                                    setSelectedSystem(system)
+                                    setConfirmDeleteDialogOpen(true)
+                                  }}
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Xóa hệ thống
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </ScrollArea>
+
+              {/* Pagination */}
+              {(heThong?.totalCount ?? 0) > 0 && (
+                <div className="border-t bg-background px-4 py-3 flex items-center justify-between">
+                  {/* Pagination Info */}
+                  <div className="text-sm text-muted-foreground">
+                    Hiển thị <span className="font-medium">{((heThong?.pageNumber || 1) - 1) * (heThong?.pageSize || 10) + 1}</span> đến{" "}
+                    <span className="font-medium">
+                      {Math.min((heThong?.pageNumber || 1) * (heThong?.pageSize || 10), (heThong?.totalCount || 0))}
+                    </span>{" "}
+                    trong tổng số <span className="font-medium">{heThong?.totalCount || 0}</span> hệ thống
+                  </div>
+
+                  {/* Pagination Controls */}
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={!heThong?.hasPreviousPage}
+                    >
+                      <ChevronLeft className="h-4 w-4 mr-1" />
+                      Trước
+                    </Button>
+
+                    {/* Page Numbers */}
+                    <div className="flex items-center space-x-1">
+                      {Array.from(
+                        { length: Math.min(5, heThong?.totalPages || 1) },
+                        (_, i) => {
+                          const currentPageNumber = heThong?.pageNumber || 1;
+                          const totalPages = heThong?.totalPages || 1;
+
+                          let pageNumber;
+                          if (totalPages <= 5) {
+                            pageNumber = i + 1;
+                          } else if (currentPageNumber <= 3) {
+                            pageNumber = i + 1;
+                          } else if (currentPageNumber >= totalPages - 2) {
+                            pageNumber = totalPages - 4 + i;
+                          } else {
+                            pageNumber = currentPageNumber - 2 + i;
+                          }
+
+                          return (
+                            <Button
+                              key={pageNumber}
+                              variant={pageNumber === currentPageNumber ? "default" : "outline"}
+                              size="sm"
+                              className="w-8 h-8 p-0"
+                              onClick={() => handlePageChange(pageNumber)}
+                            >
+                              {pageNumber}
+                            </Button>
+                          );
+                        }
+                      )}
+                    </div>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={!heThong?.hasNextPage}
+                    >
+                      Sau
+                      <ChevronRight className="h-4 w-4 ml-1" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </CardContent>
@@ -480,68 +684,68 @@ export function BuildingSystemList() {
         <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
           <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
-              <DialogTitle>{selectedSystem.name}</DialogTitle>
-              <DialogDescription>Detailed information about this building system</DialogDescription>
+              <DialogTitle>{selectedSystem.tenHeThong}</DialogTitle>
+              <DialogDescription>Thông tin chi tiết về hệ thống thiết bị này</DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-muted-foreground">Category</Label>
-                  <p className="font-medium">{selectedSystem.category}</p>
+                  <Label className="text-muted-foreground">Mã hệ thống</Label>
+                  <p className="font-medium">{selectedSystem.maHeThong}</p>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground">Location</Label>
-                  <p className="font-medium">{selectedSystem.location}</p>
+                  <Label className="text-muted-foreground">Tòa nhà</Label>
+                  <p className="font-medium">{selectedSystem.tenTN}</p>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground">Installation Date</Label>
-                  <p className="font-medium">{new Date(selectedSystem.installationDate).toLocaleDateString()}</p>
+                  <Label className="text-muted-foreground">Ngày lắp đặt</Label>
+                  <p className="font-medium">{formatDate(selectedSystem.installationDate)}</p>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground">Status</Label>
+                  <Label className="text-muted-foreground">Trạng thái</Label>
                   <div className="pt-1">
-                    <Badge variant={getStatusBadgeVariant(selectedSystem.status) as any}>
-                      {formatStatus(selectedSystem.status)}
+                    <Badge variant={getStatusBadgeVariant(selectedSystem.trangThai)}>
+                      {formatStatus(selectedSystem.trangThai)}
                     </Badge>
                   </div>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground">Manufacturer</Label>
-                  <p className="font-medium">{selectedSystem.manufacturer}</p>
+                  <Label className="text-muted-foreground">Nhãn hiệu</Label>
+                  <p className="font-medium">{selectedSystem.nhanHieu || "N/A"}</p>
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Model</Label>
-                  <p className="font-medium">{selectedSystem.model}</p>
+                  <p className="font-medium">{selectedSystem.model || "N/A"}</p>
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Serial Number</Label>
-                  <p className="font-medium">{selectedSystem.serialNumber}</p>
+                  <p className="font-medium">{selectedSystem.serialNumber || "N/A"}</p>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground">Last Maintenance</Label>
-                  <p className="font-medium">{new Date(selectedSystem.lastMaintenance).toLocaleDateString()}</p>
+                  <Label className="text-muted-foreground">Lần bảo trì cuối</Label>
+                  <p className="font-medium">{formatDate(selectedSystem.lastMaintenanceDate)}</p>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground">Next Maintenance</Label>
-                  <p className="font-medium">{new Date(selectedSystem.nextMaintenance).toLocaleDateString()}</p>
+                  <Label className="text-muted-foreground">Lần bảo trì tiếp theo</Label>
+                  <p className="font-medium">{formatDate(selectedSystem.nextMaintenanceDate)}</p>
                 </div>
                 <div className="col-span-2">
-                  <Label className="text-muted-foreground">Description</Label>
-                  <p className="font-medium">{selectedSystem.description}</p>
+                  <Label className="text-muted-foreground">Ghi chú</Label>
+                  <p className="font-medium">{selectedSystem.ghiChu || "Không có ghi chú"}</p>
                 </div>
               </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
-                Close
+                Đóng
               </Button>
               <Button
                 onClick={() => {
                   setIsViewDialogOpen(false)
-                  setIsScheduleMaintenanceOpen(true)
+                  handleEditClick(selectedSystem)
                 }}
               >
-                Schedule Maintenance
+                Chỉnh sửa
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -552,83 +756,114 @@ export function BuildingSystemList() {
       {selectedSystem && (
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
           <DialogContent className="sm:max-w-[600px]">
-            <DialogHeader>
-              <DialogTitle>Edit Building System</DialogTitle>
-              <DialogDescription>Update the details of this building system</DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2">
-                  <Label htmlFor="edit-name">System Name</Label>
-                  <Input id="edit-name" defaultValue={selectedSystem.name} />
-                </div>
-                <div>
-                  <Label htmlFor="edit-category">Category</Label>
-                  <Select defaultValue={selectedSystem.category}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {systemCategories.slice(1).map((category) => (
-                        <SelectItem key={category} value={category}>
-                          {category}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="edit-location">Location</Label>
-                  <Input id="edit-location" defaultValue={selectedSystem.location} />
-                </div>
-                <div>
-                  <Label htmlFor="edit-installationDate">Installation Date</Label>
-                  <Input
-                    id="edit-installationDate"
-                    type="date"
-                    defaultValue={selectedSystem.installationDate.split("T")[0]}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="edit-status">Status</Label>
-                  <Select defaultValue={selectedSystem.status}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="operational">Operational</SelectItem>
-                      <SelectItem value="under_maintenance">Under Maintenance</SelectItem>
-                      <SelectItem value="needs_attention">Needs Attention</SelectItem>
-                      <SelectItem value="out_of_service">Out of Service</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="edit-manufacturer">Manufacturer</Label>
-                  <Input id="edit-manufacturer" defaultValue={selectedSystem.manufacturer} />
-                </div>
-                <div>
-                  <Label htmlFor="edit-model">Model</Label>
-                  <Input id="edit-model" defaultValue={selectedSystem.model} />
-                </div>
-                <div>
-                  <Label htmlFor="edit-serialNumber">Serial Number</Label>
-                  <Input id="edit-serialNumber" defaultValue={selectedSystem.serialNumber} />
-                </div>
-                <div className="col-span-2">
-                  <Label htmlFor="edit-description">Description</Label>
-                  <Textarea id="edit-description" defaultValue={selectedSystem.description} />
+            <form onSubmit={handleUpdateSystem}>
+              <DialogHeader>
+                <DialogTitle>Chỉnh sửa hệ thống thiết bị</DialogTitle>
+                <DialogDescription>Cập nhật thông tin chi tiết của hệ thống thiết bị này</DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="col-span-2">
+                    <Label htmlFor="edit-name">Tên hệ thống <span className="text-red-500">*</span></Label>
+                    <Input
+                      id="edit-name"
+                      value={editedSystem.tenHeThong}
+                      onChange={(e) => setEditedSystem({ ...editedSystem, tenHeThong: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-location">Tòa nhà <span className="text-red-500">*</span></Label>
+                    <Select
+                      value={editedSystem.maTN.toString()}
+                      onValueChange={(value) => setEditedSystem({ ...editedSystem, maTN: Number(value) })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {buildingListForDropdown.map((building) => (
+                          <SelectItem key={building.id} value={building.id.toString()}>
+                            {building.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-installationDate">Ngày lắp đặt <span className="text-red-500">*</span></Label>
+                    <Input
+                      id="edit-installationDate"
+                      type="date"
+                      value={editedSystem.ngayLapDat instanceof Date ? editedSystem.ngayLapDat.toISOString().split('T')[0] : ''}
+                      onChange={(e) => setEditedSystem({ ...editedSystem, ngayLapDat: new Date(e.target.value) })}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-status">Trạng thái <span className="text-red-500">*</span></Label>
+                    <Select
+                      value={editedSystem.trangThai.toString()}
+                      onValueChange={(value) => setEditedSystem({ ...editedSystem, trangThai: Number(value) })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">Đang hoạt động</SelectItem>
+                        <SelectItem value="2">Đang bảo trì</SelectItem>
+                        <SelectItem value="0">Không hoạt động</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-manufacturer">Nhãn hiệu</Label>
+                    <Input
+                      id="edit-manufacturer"
+                      value={editedSystem.nhanHieu}
+                      onChange={(e) => setEditedSystem({ ...editedSystem, nhanHieu: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-model">Model</Label>
+                    <Input
+                      id="edit-model"
+                      value={editedSystem.model}
+                      onChange={(e) => setEditedSystem({ ...editedSystem, model: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-serialNumber">Serial Number</Label>
+                    <Input
+                      id="edit-serialNumber"
+                      value={editedSystem.serialNumber}
+                      onChange={(e) => setEditedSystem({ ...editedSystem, serialNumber: e.target.value })}
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <Label htmlFor="edit-description">Ghi chú</Label>
+                    <Textarea
+                      id="edit-description"
+                      value={editedSystem.ghiChu}
+                      onChange={(e) => setEditedSystem({ ...editedSystem, ghiChu: e.target.value })}
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" onClick={() => setIsEditDialogOpen(false)}>
-                Save Changes
-              </Button>
-            </DialogFooter>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  type="button"
+                  onClick={() => setIsEditDialogOpen(false)}
+                  disabled={isSubmitting}
+                >
+                  Hủy
+                </Button>
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? 'Đang lưu...' : 'Lưu thay đổi'}
+                </Button>
+              </DialogFooter>
+            </form>
           </DialogContent>
         </Dialog>
       )}
@@ -637,104 +872,153 @@ export function BuildingSystemList() {
       {selectedSystem && (
         <Dialog open={isScheduleMaintenanceOpen} onOpenChange={setIsScheduleMaintenanceOpen}>
           <DialogContent className="sm:max-w-[600px]">
-            <DialogHeader>
-              <DialogTitle>Schedule Maintenance</DialogTitle>
-              <DialogDescription>Schedule maintenance for {selectedSystem.name}</DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2">
-                  <Label htmlFor="maintenance-title">Maintenance Title</Label>
-                  <Input
-                    id="maintenance-title"
-                    placeholder={`${selectedSystem.category} Maintenance for ${selectedSystem.name}`}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="maintenance-type">Type</Label>
-                  <Select defaultValue="routine">
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="routine">Routine</SelectItem>
-                      <SelectItem value="preventive">Preventive</SelectItem>
-                      <SelectItem value="corrective">Corrective</SelectItem>
-                      <SelectItem value="emergency">Emergency</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="maintenance-frequency">Frequency</Label>
-                  <Select defaultValue="one-time">
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="one-time">One Time</SelectItem>
-                      <SelectItem value="daily">Daily</SelectItem>
-                      <SelectItem value="weekly">Weekly</SelectItem>
-                      <SelectItem value="monthly">Monthly</SelectItem>
-                      <SelectItem value="quarterly">Quarterly</SelectItem>
-                      <SelectItem value="annually">Annually</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="maintenance-date">Date</Label>
-                  <Input id="maintenance-date" type="date" />
-                </div>
-                <div>
-                  <Label htmlFor="assigned-to">Assign To</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select technician" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="maintenance-team">Maintenance Team</SelectItem>
-                      <SelectItem value="john-doe">John Doe</SelectItem>
-                      <SelectItem value="jane-smith">Jane Smith</SelectItem>
-                      <SelectItem value="external-vendor">External Vendor</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="col-span-2">
-                  <Label htmlFor="maintenance-description">Description</Label>
-                  <Textarea id="maintenance-description" placeholder="Describe the maintenance to be performed" />
-                </div>
-                <div className="col-span-2">
-                  <Label>Tasks</Label>
-                  <div className="space-y-2 mt-2">
-                    <div className="flex items-center space-x-2">
-                      <Checkbox id="task-1" />
-                      <Label htmlFor="task-1">Inspection</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox id="task-2" />
-                      <Label htmlFor="task-2">Cleaning</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox id="task-3" />
-                      <Label htmlFor="task-3">Lubrication</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox id="task-4" />
-                      <Label htmlFor="task-4">Part Replacement</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox id="task-5" />
-                      <Label htmlFor="task-5">Testing</Label>
-                    </div>
+            <form onSubmit={handleAddMaintenancePlan}>
+              <DialogHeader>
+                <DialogTitle>Lịch bảo trì</DialogTitle>
+                <DialogDescription>Lên lịch bảo trì cho {selectedSystem.tenHeThong}</DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="col-span-2">
+                    <Label htmlFor="maintenance-title">Tiêu đề bảo trì <span className="text-red-500">*</span></Label>
+                    <Input
+                      id="maintenance-title"
+                      placeholder={`Bảo trì định kỳ cho ${selectedSystem.tenHeThong}`}
+                      value={maintenancePlan.tenKeHoach}
+                      onChange={(e) => setMaintenancePlan({ ...maintenancePlan, tenKeHoach: e.target.value })}
+                      required
+                    />
                   </div>
+                  <div>
+                    <Label htmlFor="maintenance-type">Loại bảo trì <span className="text-red-500">*</span></Label>
+                    <Select
+                      value={maintenancePlan.loaiBaoTri.toString()}
+                      onValueChange={(value) => setMaintenancePlan({ ...maintenancePlan, loaiBaoTri: Number(value) })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">Định kỳ</SelectItem>
+                        <SelectItem value="2">Phòng ngừa</SelectItem>
+                        <SelectItem value="3">Sửa chữa</SelectItem>
+                        <SelectItem value="4">Khẩn cấp</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="maintenance-status">Trạng thái <span className="text-red-500">*</span></Label>
+                    <Select
+                      value={maintenancePlan.maTrangThai.toString()}
+                      onValueChange={(value) => setMaintenancePlan({ ...maintenancePlan, maTrangThai: Number(value) })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {statusMaintance?.map((status) => (
+                          <SelectItem key={status.maTrangThai} value={status.maTrangThai.toString()}>
+                            {status.tenTrangThai}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="maintenance-frequency">Tần suất <span className="text-red-500">*</span></Label>
+                    <Select
+                      value={maintenancePlan.tanSuat.toString()}
+                      onValueChange={(value) => setMaintenancePlan({ ...maintenancePlan, tanSuat: Number(value) })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">Một lần</SelectItem>
+                        <SelectItem value="2">Hàng ngày</SelectItem>
+                        <SelectItem value="3">Hàng tuần</SelectItem>
+                        <SelectItem value="4">Hàng tháng</SelectItem>
+                        <SelectItem value="5">Hàng quý</SelectItem>
+                        <SelectItem value="6">Hàng năm</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="maintenance-date">Ngày bảo trì <span className="text-red-500">*</span></Label>
+                    <Input
+                      id="maintenance-date"
+                      type="date"
+                      value={maintenancePlan.ngayBaoTri instanceof Date ? maintenancePlan.ngayBaoTri.toISOString().split('T')[0] : ''}
+                      onChange={(e) => setMaintenancePlan({ ...maintenancePlan, ngayBaoTri: new Date(e.target.value) })}
+                      required
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <Label htmlFor="maintenance-description">Mô tả công việc <span className="text-red-500">*</span></Label>
+                    <Textarea
+                      id="maintenance-description"
+                      placeholder="Mô tả công việc bảo trì cần thực hiện"
+                      value={maintenancePlan.moTaCongViec}
+                      onChange={(e) => setMaintenancePlan({ ...maintenancePlan, moTaCongViec: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  {/* Danh sách công việc */}
+
                 </div>
               </div>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  type="button"
+                  onClick={() => setIsScheduleMaintenanceOpen(false)}
+                  disabled={isSubmitting}
+                >
+                  Hủy
+                </Button>
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? 'Đang lưu...' : 'Lên lịch bảo trì'}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Confirm Delete Dialog */}
+      {selectedSystem && (
+        <Dialog open={confirmDeleteDialogOpen} onOpenChange={setConfirmDeleteDialogOpen}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Xác nhận xóa hệ thống</DialogTitle>
+              <DialogDescription>
+                Bạn có chắc chắn muốn xóa hệ thống "{selectedSystem.tenHeThong}"?
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Cảnh báo</AlertTitle>
+                <AlertDescription>
+                  Hành động này không thể hoàn tác. Việc xóa hệ thống sẽ xóa tất cả dữ liệu liên quan.
+                </AlertDescription>
+              </Alert>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsScheduleMaintenanceOpen(false)}>
-                Cancel
+              <Button
+                variant="outline"
+                onClick={() => setConfirmDeleteDialogOpen(false)}
+                disabled={isSubmitting}
+              >
+                Hủy
               </Button>
-              <Button type="submit" onClick={() => setIsScheduleMaintenanceOpen(false)}>
-                Schedule
+              <Button
+                variant="destructive"
+                onClick={handleDeleteSystem}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? 'Đang xóa...' : 'Xóa hệ thống'}
               </Button>
             </DialogFooter>
           </DialogContent>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -34,221 +34,254 @@ import {
   Trash2,
   UserCog,
   Wrench,
+  ChevronLeft,
+  ChevronRight,
+  Users,
 } from "lucide-react"
 import { Checkbox } from "@/components/ui/checkbox"
+import { useStatusMaintance } from "../context/StatusMaintance"
+import { useMaintancePlan } from "../context/MaintancePlan"
+import { useAuth } from "../context/AuthContext"
+import { useBuildingSystem } from "../context/BuildingSystemContext"
+import { useStaff } from "../context/StaffContext"
+import { GetDSNhanVien } from "../type/employee"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { GetKeHoachBaoTriDetail, CreateKeHoachBaoTri, chiTietKeHoachBaoTri, GiaoViecChoNhanVien } from "../type/maintancePlan"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger
+} from "@/components/ui/popover"
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 
-// Mock data for maintenance plans
-const maintenancePlansData = [
-  {
-    id: 1,
-    title: "HVAC Quarterly Maintenance",
-    systemId: 1,
-    systemName: "Central HVAC System",
-    frequency: "Quarterly",
-    nextScheduledDate: "2025-07-01",
-    assignedTo: "Nguyễn Văn A",
-    status: "scheduled",
-    description:
-      "Complete inspection and maintenance of the HVAC system including filter replacement, coil cleaning, and performance checks.",
-    tasks: [
-      { id: 1, description: "Replace air filters", completed: false },
-      { id: 2, description: "Clean condenser coils", completed: false },
-      { id: 3, description: "Check refrigerant levels", completed: false },
-      { id: 4, description: "Inspect electrical components", completed: false },
-      { id: 5, description: "Test system performance", completed: false },
-    ],
-  },
-  {
-    id: 2,
-    title: "Emergency Generator Monthly Test",
-    systemId: 2,
-    systemName: "Emergency Generator",
-    frequency: "Monthly",
-    nextScheduledDate: "2025-06-01",
-    assignedTo: "Trần Văn B",
-    status: "scheduled",
-    description: "Monthly test run of the emergency generator to ensure proper operation during power outages.",
-    tasks: [
-      { id: 6, description: "Visual inspection of the generator", completed: false },
-      { id: 7, description: "Check fuel levels", completed: false },
-      { id: 8, description: "Test start and run for 30 minutes", completed: false },
-      { id: 9, description: "Check battery condition", completed: false },
-      { id: 10, description: "Record performance metrics", completed: false },
-    ],
-  },
-  {
-    id: 3,
-    title: "Fire Alarm System Annual Certification",
-    systemId: 3,
-    systemName: "Fire Alarm System",
-    frequency: "Annually",
-    nextScheduledDate: "2025-09-15",
-    assignedTo: "Certified External Contractor",
-    status: "scheduled",
-    description: "Annual certification of the fire alarm system as required by regulations.",
-    tasks: [
-      { id: 11, description: "Test all smoke detectors", completed: false },
-      { id: 12, description: "Test all manual pull stations", completed: false },
-      { id: 13, description: "Test alarm notification devices", completed: false },
-      { id: 14, description: "Inspect control panel", completed: false },
-      { id: 15, description: "Update certification documentation", completed: false },
-    ],
-  },
-  {
-    id: 4,
-    title: "Elevator #1 Bi-monthly Maintenance",
-    systemId: 5,
-    systemName: "Elevator #1",
-    frequency: "Bi-monthly",
-    nextScheduledDate: "2025-06-10",
-    assignedTo: "OTIS Service Technician",
-    status: "in_progress",
-    description: "Regular maintenance of Elevator #1 to ensure safe and efficient operation.",
-    tasks: [
-      { id: 16, description: "Inspect door operation", completed: true },
-      { id: 17, description: "Check cable condition", completed: true },
-      { id: 18, description: "Test emergency phone", completed: false },
-      { id: 19, description: "Lubricate moving parts", completed: false },
-      { id: 20, description: "Test safety features", completed: false },
-    ],
-  },
-  {
-    id: 5,
-    title: "Elevator #2 Repair",
-    systemId: 6,
-    systemName: "Elevator #2",
-    frequency: "One-time",
-    nextScheduledDate: "2025-05-20",
-    assignedTo: "OTIS Service Technician",
-    status: "in_progress",
-    description: "Repair of the unusual noise issue in Elevator #2.",
-    tasks: [
-      { id: 21, description: "Diagnose noise source", completed: true },
-      { id: 22, description: "Replace faulty component", completed: false },
-      { id: 23, description: "Test operation after repair", completed: false },
-      { id: 24, description: "Update maintenance log", completed: false },
-    ],
-  },
-  {
-    id: 6,
-    title: "Water Pump Semi-annual Maintenance",
-    systemId: 4,
-    systemName: "Water Supply System",
-    frequency: "Semi-annually",
-    nextScheduledDate: "2025-08-15",
-    assignedTo: "Plumbing Team",
-    status: "scheduled",
-    description: "Regular maintenance of the water pump system.",
-    tasks: [
-      { id: 25, description: "Inspect pump condition", completed: false },
-      { id: 26, description: "Check pressure settings", completed: false },
-      { id: 27, description: "Clean filters", completed: false },
-      { id: 28, description: "Test backup pump", completed: false },
-    ],
-  },
-  {
-    id: 7,
-    title: "CCTV System Quarterly Check",
-    systemId: 7,
-    systemName: "CCTV System",
-    frequency: "Quarterly",
-    nextScheduledDate: "2025-07-15",
-    assignedTo: "Security Team",
-    status: "scheduled",
-    description: "Regular check of all security cameras and recording equipment.",
-    tasks: [
-      { id: 29, description: "Test all cameras", completed: false },
-      { id: 30, description: "Clean camera lenses", completed: false },
-      { id: 31, description: "Check recording quality", completed: false },
-      { id: 32, description: "Verify storage capacity", completed: false },
-      { id: 33, description: "Update firmware if needed", completed: false },
-    ],
-  },
-  {
-    id: 8,
-    title: "Solar Panel System Annual Inspection",
-    systemId: 9,
-    systemName: "Solar Panel System",
-    frequency: "Annually",
-    nextScheduledDate: "2025-10-01",
-    assignedTo: "Solar System Specialist",
-    status: "scheduled",
-    description: "Annual inspection and cleaning of the solar panel system.",
-    tasks: [
-      { id: 34, description: "Clean all solar panels", completed: false },
-      { id: 35, description: "Inspect mounting hardware", completed: false },
-      { id: 36, description: "Test inverter performance", completed: false },
-      { id: 37, description: "Check electrical connections", completed: false },
-      { id: 38, description: "Measure output efficiency", completed: false },
-    ],
-  },
-]
+function BuildingBadges({ staffs }: { staffs: GetDSNhanVien[] }) {
+  const maxVisible = 2
+  const visibleStaff = staffs.slice(0, maxVisible)
+  const remainingCount = staffs.length - maxVisible
 
-// Mock data for building systems (for dropdown selection)
-const systemsForSelection = [
-  { id: 1, name: "Central HVAC System" },
-  { id: 2, name: "Emergency Generator" },
-  { id: 3, name: "Fire Alarm System" },
-  { id: 4, name: "Water Supply System" },
-  { id: 5, name: "Elevator #1" },
-  { id: 6, name: "Elevator #2" },
-  { id: 7, name: "CCTV System" },
-  { id: 8, name: "Access Control System" },
-  { id: 9, name: "Solar Panel System" },
-  { id: 10, name: "Sewage Treatment System" },
-]
+  if (staffs.length === 0) {
+    return <span className="text-muted-foreground text-sm">Chưa phân công</span>
+  }
 
-// Maintenance frequencies
-const frequencies = [
-  "Daily",
-  "Weekly",
-  "Bi-weekly",
-  "Monthly",
-  "Bi-monthly",
-  "Quarterly",
-  "Semi-annually",
-  "Annually",
-  "One-time",
-]
+  if (staffs.length <= maxVisible) {
+    return (
+      <div className="flex flex-wrap gap-1">
+        {staffs.map((staff, index) => (
+          <Badge key={index} variant="secondary" className="text-xs">
+            {staff.tenNV}
+          </Badge>
+        ))}
+      </div>
+    )
+  }
 
-// Maintenance statuses
-const statuses = ["All Statuses", "scheduled", "in_progress", "completed", "cancelled", "overdue"]
+  return (
+    <div className="flex flex-wrap gap-1">
+      {visibleStaff.map((staff, index) => (
+        <Badge key={index} variant="secondary" className="text-xs">
+          {staff.tenNV}
+        </Badge>
+      ))}
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Badge variant="outline" className="text-xs cursor-help">
+              +{remainingCount}
+            </Badge>
+          </TooltipTrigger>
+          <TooltipContent>
+            <div className="space-y-1">
+              {staffs.slice(maxVisible).map((staff, index) => (
+                <div key={index} className="text-sm">
+                  {staff.tenNV}
+                </div>
+              ))}
+            </div>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    </div>
+  )
+}
 
-// Staff for assignment
-const staffMembers = [
-  "Nguyễn Văn A",
-  "Trần Văn B",
-  "Lê Thị C",
-  "Phạm Văn D",
-  "OTIS Service Technician",
-  "Plumbing Team",
-  "Security Team",
-  "Electrical Team",
-  "Certified External Contractor",
-  "Solar System Specialist",
-]
+// Component multi-select cho nhân viên
+function StaffMultiSelect({
+  staffList,
+  selectedStaff,
+  onStaffChange
+}: {
+  staffList: GetDSNhanVien[]
+  selectedStaff: number[]
+  onStaffChange: (staffIds: number[]) => void
+}) {
+  const [open, setOpen] = useState(false)
+
+  const handleStaffToggle = (staffId: number) => {
+    if (selectedStaff.includes(staffId)) {
+      onStaffChange(selectedStaff.filter(id => id !== staffId))
+    } else {
+      onStaffChange([...selectedStaff, staffId])
+    }
+  }
+
+  const selectedStaffNames = staffList
+    .filter(staff => selectedStaff.includes(staff.maNV))
+    .map(staff => staff.tenNV)
+    .join(", ")
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className="justify-between w-full"
+        >
+          <div className="flex items-center">
+            <Users className="mr-2 h-4 w-4" />
+            <span className="truncate">
+              {selectedStaff.length === 0
+                ? "Chọn nhân viên..."
+                : selectedStaff.length === 1
+                  ? selectedStaffNames
+                  : `${selectedStaff.length} nhân viên được chọn`
+              }
+            </span>
+          </div>
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[300px] p-0">
+        <Command>
+          <CommandInput placeholder="Tìm kiếm nhân viên..." />
+          <CommandEmpty>Không tìm thấy nhân viên nào.</CommandEmpty>
+          <CommandGroup>
+            <CommandList>
+              {staffList.map((staff) => (
+                <CommandItem
+                  key={staff.maNV}
+                  onSelect={() => handleStaffToggle(staff.maNV)}
+                  className="flex items-center space-x-2"
+                >
+                  <Checkbox
+                    checked={selectedStaff.includes(staff.maNV)}
+                    onChange={() => handleStaffToggle(staff.maNV)}
+                  />
+                  <span>{staff.tenNV}</span>
+                </CommandItem>
+              ))}
+            </CommandList>
+          </CommandGroup>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  )
+}
 
 export function MaintenancePlanManagement() {
   const [searchTerm, setSearchTerm] = useState("")
-  const [selectedStatus, setSelectedStatus] = useState("All Statuses")
+  const [selectedStatus, setSelectedStatus] = useState("all")
   const [isAddPlanDialogOpen, setIsAddPlanDialogOpen] = useState(false)
-  const [selectedPlan, setSelectedPlan] = useState<any>(null)
+  const [selectedPlan, setSelectedPlan] = useState<GetKeHoachBaoTriDetail>()
   const [isViewPlanDialogOpen, setIsViewPlanDialogOpen] = useState(false)
   const [newTaskDescription, setNewTaskDescription] = useState("")
-  const [newPlanTasks, setNewPlanTasks] = useState<{ id: number; description: string; completed: boolean }[]>([])
-  const [nextTaskId, setNextTaskId] = useState(100) // Start from a high number to avoid conflicts
   const [isEditPlanDialogOpen, setIsEditPlanDialogOpen] = useState(false)
   const [isReassignDialogOpen, setIsReassignDialogOpen] = useState(false)
   const [isRescheduleDialogOpen, setIsRescheduleDialogOpen] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [reassignStaff, setReassignStaff] = useState<number[]>([])
+  const [notifyOldStaff, setNotifyOldStaff] = useState(true)
+  const [notifyNewStaff, setNotifyNewStaff] = useState(true)
+  // State cho form thêm mới kế hoạch
+  const [newPlan, setNewPlan] = useState<CreateKeHoachBaoTri>({
+    tenKeHoach: "",
+    loaiBaoTri: 1,
+    maHeThong: 0,
+    maTrangThai: 1,
+    tanSuat: 1,
+    moTaCongViec: "",
+    ngayBaoTri: new Date(),
+    chiTietBaoTris: [],
+    danhSachNhanVien: []
+  })
+
+
+  // State cho danh sách công việc mới
+  const [newPlanTasks, setNewPlanTasks] = useState<chiTietKeHoachBaoTri[]>([])
+
+  // Thêm state cho form sửa kế hoạch
+  const [editPlan, setEditPlan] = useState<CreateKeHoachBaoTri>({
+    tenKeHoach: "",
+    loaiBaoTri: 1,
+    maHeThong: 0,
+    maTrangThai: 1,
+    tanSuat: 1,
+    moTaCongViec: "",
+    ngayBaoTri: new Date(),
+    chiTietBaoTris: [],
+    danhSachNhanVien: []
+  })
+
+
+  const [editPlanTasks, setEditPlanTasks] = useState<chiTietKeHoachBaoTri[]>([])
+
+  const frequencies = [
+    { value: 1, label: "Một lần" },
+    { value: 2, label: "Hàng ngày" },
+    { value: 3, label: "Hàng tuần" },
+    { value: 4, label: "Hàng tháng" },
+    { value: 5, label: "Hàng quý" },
+    { value: 6, label: "Hàng năm" },
+  ]
+
+  const maintenanceTypes = [
+    { value: 1, label: "Định kỳ" },
+    { value: 2, label: "Phòng ngừa" },
+    { value: 3, label: "Sửa chữa" },
+    { value: 4, label: "Khẩn cấp" },
+  ]
+
+  const { token } = useAuth()
+  // danh sách trạng thái bảo trì
+  const { statusMaintance, getStatusMaintance } = useStatusMaintance()
+  // danh sách kế hoạch bảo trì
+  const { danhSachKeHoachBaoTri, getDanhSachKeHoachBaoTri,
+    addMaintancePlan, giaoViecNhanVien,
+    batDauKeHoachBaoTri,
+    hoanThanhKeHoachBaoTri,
+    huyKeHoachBaoTri,
+    deleteMaintancePlan,
+  } = useMaintancePlan()
+  // danh sách hệ thống
+  const { heThong, getDanhSachHeThong } = useBuildingSystem()
+  // danh sách nhân viên
+  const { staffList, getStaffList } = useStaff()
+
+  // khởi tạo
+  useEffect(() => {
+    if (token) {
+      // Lấy danh sách trạng thái bảo trì
+      getStatusMaintance()
+      // Lấy danh sách hệ thống
+      getDanhSachHeThong(0)
+      // Lấy danh sách kế hoạch bảo trì
+      getDanhSachKeHoachBaoTri(currentPage)
+      // Lấy danh sách nhân viên
+      getStaffList()
+    }
+  }, [token, currentPage])
+
+  const currentSystem = heThong?.data || []
 
   // Filter plans based on search and status filter
-  const filteredPlans = maintenancePlansData.filter((plan) => {
+  const filteredPlans = danhSachKeHoachBaoTri?.data.filter((plan) => {
     const matchesSearch =
-      plan.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      plan.systemName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      plan.assignedTo.toLowerCase().includes(searchTerm.toLowerCase())
+      plan.tenHeThong.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      plan.tenKeHoach.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      plan.nhanVienInBaoTris.some(x => x.tenNV.toLowerCase().includes(searchTerm.toLowerCase()))
 
-    const matchesStatus = selectedStatus === "All Statuses" || plan.status === selectedStatus
+    const matchesStatus = selectedStatus === "all" || plan.trangThai.toString() === selectedStatus
 
     return matchesSearch && matchesStatus
   })
@@ -256,165 +289,313 @@ export function MaintenancePlanManagement() {
   // Function to add a new task to the list when creating a plan
   const handleAddTask = () => {
     if (newTaskDescription.trim()) {
-      setNewPlanTasks([...newPlanTasks, { id: nextTaskId, description: newTaskDescription.trim(), completed: false }])
-      setNextTaskId(nextTaskId + 1)
+      const newTask: chiTietKeHoachBaoTri = {
+        ghiChu: newTaskDescription.trim(),
+        maTrangThai: 1 // Chưa thực hiện
+      }
+      setNewPlanTasks([...newPlanTasks, newTask])
       setNewTaskDescription("")
     }
   }
 
   // Function to remove a task from the list when creating a plan
-  const handleRemoveTask = (taskId: number) => {
-    setNewPlanTasks(newPlanTasks.filter((task) => task.id !== taskId))
+  const handleRemoveTask = (index: number) => {
+    setNewPlanTasks(newPlanTasks.filter((_, i) => i !== index))
   }
 
   // Function to get status badge variant
-  const getStatusBadgeVariant = (status: string) => {
+  const getStatusBadgeVariant = (status: number) => {
     switch (status) {
-      case "scheduled":
-        return "secondary"
-      case "in_progress":
-        return "default"
-      case "completed":
-        return "success"
-      case "cancelled":
-        return "outline"
-      case "overdue":
-        return "destructive"
-      default:
-        return "outline"
+      case 1: return "secondary" // Chưa thực hiện
+      case 2: return "default"   // Đang thực hiện
+      case 3: return "success"   // Hoàn thành
+      case 4: return "destructive" // Đã hủy
+      default: return "outline"
     }
   }
 
   // Function to format status for display
-  const formatStatus = (status: string) => {
-    return status
-      .split("_")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ")
+  const formatStatus = (status: number) => {
+    const statusItem = statusMaintance?.find(s => s.maTrangThai === status)
+    return statusItem?.tenTrangThai || "Không xác định"
+  }
+
+  // Function to handle page change
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page)
+  }
+
+  // Handle form submission for new plan
+  const handleAddPlan = async () => {
+    try {
+      const planToSubmit = {
+        ...newPlan,
+        chiTietBaoTris: newPlanTasks
+      }
+      console.log("Submitting new plan:", planToSubmit)
+      await addMaintancePlan(planToSubmit)
+      setIsAddPlanDialogOpen(false)
+      // Reset form
+      setNewPlan({
+        tenKeHoach: "",
+        loaiBaoTri: 1,
+        maHeThong: 0,
+        maTrangThai: 1,
+        tanSuat: 1,
+        moTaCongViec: "",
+        ngayBaoTri: new Date(),
+        chiTietBaoTris: [],
+        danhSachNhanVien: []
+      })
+      setNewPlanTasks([])
+      // Refresh data
+      getDanhSachKeHoachBaoTri(currentPage)
+    } catch (error) {
+      console.error("Error adding maintenance plan:", error)
+    }
+  }
+
+  // Hàm xử lý khi mở form sửa
+  const handleEditPlan = (plan: GetKeHoachBaoTriDetail) => {
+    setEditPlan({
+      tenKeHoach: plan.tenKeHoach,
+      loaiBaoTri: plan.loaiBaoTri || 1,
+      maHeThong: plan.maHeThong,
+      maTrangThai: plan.trangThai,
+      tanSuat: plan.tanSuat,
+      moTaCongViec: plan.moTa || "",
+      ngayBaoTri: new Date(plan.ngayBaoTri),
+      chiTietBaoTris: plan.chiTietInKeHoachBaoTris || [],
+      danhSachNhanVien: plan.nhanVienInBaoTris.map(nv => nv.maNV) || []
+    })
+    setEditPlanTasks(plan.chiTietInKeHoachBaoTris || [])
+    setIsEditPlanDialogOpen(true)
+  }
+
+  const handleGiaoViec = async () => {
+    if (!selectedPlan || reassignStaff.length === 0) {
+      console.error("Chưa chọn kế hoạch hoặc nhân viên")
+      return
+    }
+
+    const giaoViecData: GiaoViecChoNhanVien = {
+      maKeHoach: selectedPlan.maKeHoach,
+      maNV: reassignStaff,
+      isThongBaoNhanVienCu: notifyOldStaff,
+      isThongBaoNhanVienMoi: notifyNewStaff
+    }
+
+    try {
+      console.log("Giao việc cho nhân viên:", giaoViecData)
+      await giaoViecNhanVien(giaoViecData)
+
+      // Reset và đóng dialog
+      setReassignStaff([])
+      setIsReassignDialogOpen(false)
+
+      // Refresh data
+      getDanhSachKeHoachBaoTri(currentPage)
+
+      // Thông báo thành công (nếu có toast)
+      // toast.success("Giao việc thành công!")
+    } catch (error) {
+      console.error("Error assigning staff:", error)
+      // toast.error("Lỗi khi giao việc!")
+    }
+  }
+
+  async function batDau(maKeHoach: number) {
+    await batDauKeHoachBaoTri(maKeHoach)
+    setIsViewPlanDialogOpen(false)
+  }
+  async function hoanThanh(maKeHoach: number) {
+    await hoanThanhKeHoachBaoTri(maKeHoach)
+    setIsViewPlanDialogOpen(false)
+  }
+  async function huyKeHoach(maKeHoach: number) {
+    await huyKeHoachBaoTri(maKeHoach)
+    setIsViewPlanDialogOpen(false)
+  }
+
+  async function handleDeleteKeHoach(maKeHoach: number) {
+    await deleteMaintancePlan(maKeHoach)
+    setIsViewPlanDialogOpen(false)
   }
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Maintenance Plans</h1>
+        <h1 className="text-2xl font-bold">Kế hoạch bảo trì</h1>
         <Dialog open={isAddPlanDialogOpen} onOpenChange={setIsAddPlanDialogOpen}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="mr-2 h-4 w-4" />
-              Create Maintenance Plan
+              Thêm kế hoạch mới
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[700px]">
-            <DialogHeader>
-              <DialogTitle>Create New Maintenance Plan</DialogTitle>
+          <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-hidden flex flex-col">
+            <DialogHeader className="flex-shrink-0">
+              <DialogTitle>Thêm mới kế hoạch bảo trì</DialogTitle>
               <DialogDescription>
-                Set up a maintenance plan for a building system. Add detailed tasks to be completed.
+                Thiết lập các thông tin cần thiết cho kế hoạch bảo trì mới, bao gồm tiêu đề, hệ thống, tần suất và ngày dự kiến.
               </DialogDescription>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2">
-                  <Label htmlFor="title">Plan Title</Label>
-                  <Input id="title" placeholder="Enter maintenance plan title" />
-                </div>
-                <div>
-                  <Label htmlFor="system">Building System</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select system" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {systemsForSelection.map((system) => (
-                        <SelectItem key={system.id} value={system.id.toString()}>
-                          {system.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="frequency">Frequency</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select frequency" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {frequencies.map((frequency) => (
-                        <SelectItem key={frequency} value={frequency}>
-                          {frequency}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="scheduledDate">Scheduled Date</Label>
-                  <Input id="scheduledDate" type="date" />
-                </div>
-                <div>
-                  <Label htmlFor="assignedTo">Assigned To</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select staff member" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {staffMembers.map((staff) => (
-                        <SelectItem key={staff} value={staff}>
-                          {staff}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="col-span-2">
-                  <Label htmlFor="description">Description</Label>
-                  <Textarea id="description" placeholder="Enter plan description" />
-                </div>
-                <div className="col-span-2">
-                  <div className="flex justify-between items-center mb-2">
-                    <Label>Tasks</Label>
-                    <span className="text-xs text-muted-foreground">Add tasks to be completed during maintenance</span>
-                  </div>
-                  <div className="flex items-center space-x-2 mb-2">
+            <div className="flex-1 overflow-y-auto">
+              <div className="grid gap-4 py-4 pr-1 pl-1">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="col-span-2">
+                    <Label htmlFor="title">Tiêu đề <span className="text-red-500">*</span></Label>
                     <Input
-                      placeholder="Enter task description"
-                      value={newTaskDescription}
-                      onChange={(e) => setNewTaskDescription(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          handleAddTask()
-                        }
-                      }}
+                      id="title"
+                      placeholder="Nhập tiêu đề kế hoạch bảo trì"
+                      value={newPlan.tenKeHoach}
+                      onChange={(e) => setNewPlan({ ...newPlan, tenKeHoach: e.target.value })}
                     />
-                    <Button type="button" onClick={handleAddTask} size="sm">
-                      Add
-                    </Button>
                   </div>
-                  <div className="rounded-md border">
-                    {newPlanTasks.length === 0 ? (
-                      <div className="p-4 text-center text-muted-foreground">
-                        No tasks added yet. Add tasks using the field above.
-                      </div>
-                    ) : (
-                      <ul className="divide-y">
-                        {newPlanTasks.map((task) => (
-                          <li key={task.id} className="flex items-center justify-between p-3">
-                            <div className="flex items-center">
-                              <CheckCircle2 className="h-4 w-4 mr-2 text-muted-foreground" />
-                              <span>{task.description}</span>
-                            </div>
-                            <Button variant="ghost" size="sm" onClick={() => handleRemoveTask(task.id)}>
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </li>
+                  <div>
+                    <Label htmlFor="system">Hệ thống <span className="text-red-500">*</span></Label>
+                    <Select
+                      value={newPlan.maHeThong.toString()}
+                      onValueChange={(value) => setNewPlan({ ...newPlan, maHeThong: Number(value) })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Chọn hệ thống" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {currentSystem.map((system) => (
+                          <SelectItem key={system.maHeThong} value={system.maHeThong.toString()}>
+                            {system.tenHeThong}
+                          </SelectItem>
                         ))}
-                      </ul>
-                    )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="type">Loại bảo trì <span className="text-red-500">*</span></Label>
+                    <Select
+                      value={newPlan.loaiBaoTri.toString()}
+                      onValueChange={(value) => setNewPlan({ ...newPlan, loaiBaoTri: Number(value) })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Chọn loại bảo trì" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {maintenanceTypes.map((type) => (
+                          <SelectItem key={type.value} value={type.value.toString()}>
+                            {type.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="frequency">Tần suất <span className="text-red-500">*</span></Label>
+                    <Select
+                      value={newPlan.tanSuat.toString()}
+                      onValueChange={(value) => setNewPlan({ ...newPlan, tanSuat: Number(value) })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Chọn tần suất" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {frequencies.map((frequency) => (
+                          <SelectItem key={frequency.value} value={frequency.value.toString()}>
+                            {frequency.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="scheduledDate">Ngày bảo trì <span className="text-red-500">*</span></Label>
+                    <Input
+                      id="scheduledDate"
+                      type="date"
+                      value={newPlan.ngayBaoTri instanceof Date ? newPlan.ngayBaoTri.toISOString().split('T')[0] : ''}
+                      onChange={(e) => setNewPlan({ ...newPlan, ngayBaoTri: new Date(e.target.value) })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="status">Trạng thái <span className="text-red-500">*</span></Label>
+                    <Select
+                      value={newPlan.maTrangThai.toString()}
+                      onValueChange={(value) => setNewPlan({ ...newPlan, maTrangThai: Number(value) })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Chọn trạng thái" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {statusMaintance?.map((status) => (
+                          <SelectItem key={status.maTrangThai} value={status.maTrangThai.toString()}>
+                            {status.tenTrangThai}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="assignedTo">Giao việc cho <span className="text-red-500">*</span></Label>
+                    <StaffMultiSelect
+                      staffList={staffList || []}
+                      selectedStaff={newPlan.danhSachNhanVien}
+                      onStaffChange={(staffIds) => setNewPlan({ ...newPlan, danhSachNhanVien: staffIds })}
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <Label htmlFor="description">Mô tả</Label>
+                    <Textarea
+                      id="description"
+                      placeholder="Nhập mô tả kế hoạch bảo trì"
+                      value={newPlan.moTaCongViec}
+                      onChange={(e) => setNewPlan({ ...newPlan, moTaCongViec: e.target.value })}
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <div className="flex justify-between items-center mb-2">
+                      <Label>Danh sách công việc</Label>
+                      <span className="text-xs text-muted-foreground">Thêm chi tiết công việc cho kế hoạch bảo trì này</span>
+                    </div>
+                    <div className="flex items-center space-x-2 mb-2">
+                      <Input
+                        placeholder="Nhập mô tả công việc"
+                        value={newTaskDescription}
+                        onChange={(e) => setNewTaskDescription(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            handleAddTask()
+                          }
+                        }}
+                      />
+                      <Button type="button" onClick={handleAddTask} size="sm">
+                        Thêm
+                      </Button>
+                    </div>
+                    <div className="rounded-md border">
+                      {newPlanTasks.length === 0 ? (
+                        <div className="p-4 text-center text-muted-foreground">
+                          Chưa có công việc nào được thêm vào. Vui lòng nhập mô tả công việc và nhấn "Thêm".
+                        </div>
+                      ) : (
+                        <ul className="divide-y">
+                          {newPlanTasks.map((task, index) => (
+                            <li key={index} className="flex items-center justify-between p-3">
+                              <div className="flex items-center">
+                                <CheckCircle2 className="h-4 w-4 mr-2 text-muted-foreground" />
+                                <span>{task.ghiChu}</span>
+                              </div>
+                              <Button variant="ghost" size="sm" onClick={() => handleRemoveTask(index)}>
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-            <DialogFooter>
+            <DialogFooter className="flex-shrink-0 border-t pt-4">
               <Button
                 variant="outline"
                 onClick={() => {
@@ -422,16 +603,10 @@ export function MaintenancePlanManagement() {
                   setIsAddPlanDialogOpen(false)
                 }}
               >
-                Cancel
+                Hủy
               </Button>
-              <Button
-                type="submit"
-                onClick={() => {
-                  setNewPlanTasks([])
-                  setIsAddPlanDialogOpen(false)
-                }}
-              >
-                Create Plan
+              <Button type="submit" onClick={handleAddPlan}>
+                Thêm kế hoạch
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -440,33 +615,40 @@ export function MaintenancePlanManagement() {
 
       <Card>
         <CardHeader>
-          <CardTitle>All Maintenance Plans</CardTitle>
-          <CardDescription>View and manage all scheduled and ongoing maintenance activities</CardDescription>
+          <CardTitle>Tất cả kế hoạch bảo trì</CardTitle>
+          <CardDescription>
+            Quản lý và theo dõi tất cả các kế hoạch bảo trì hệ thống trong tòa nhà của bạn. Tìm kiếm, lọc và xem chi tiết từng kế hoạch.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {/* Search and Filters */}
-            <div className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:space-x-2 sm:space-y-0">
-              <div className="flex items-center gap-2 sm:w-1/3">
-                <Search className="h-4 w-4 text-muted-foreground" />
+            {/* Search and Filters - Cải thiện UI */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              {/* Search input */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search plans..."
+                  placeholder="Tìm kiếm kế hoạch bảo trì..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="flex-1"
+                  className="pl-10"
                 />
               </div>
 
-              <div className="flex flex-1 items-center gap-2">
-                <Filter className="h-4 w-4 text-muted-foreground" />
+              {/* Status filter */}
+              <div>
                 <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                  <SelectTrigger className="w-full md:w-[180px]">
-                    <SelectValue placeholder="Status" />
+                  <SelectTrigger className="w-full">
+                    <div className="flex items-center">
+                      <Filter className="mr-2 h-4 w-4 text-muted-foreground" />
+                      <SelectValue placeholder="Trạng thái" />
+                    </div>
                   </SelectTrigger>
                   <SelectContent>
-                    {statuses.map((status) => (
-                      <SelectItem key={status} value={status}>
-                        {status === "All Statuses" ? status : formatStatus(status)}
+                    <SelectItem value="all">Tất cả trạng thái</SelectItem>
+                    {statusMaintance?.map((status) => (
+                      <SelectItem key={status.maTrangThai} value={status.maTrangThai.toString()}>
+                        {status.tenTrangThai}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -474,95 +656,175 @@ export function MaintenancePlanManagement() {
               </div>
             </div>
 
-            {/* Maintenance Plans Table */}
+            {/* Maintenance Plans Table with Fixed Header and ScrollArea */}
             <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Title</TableHead>
-                    <TableHead>System</TableHead>
-                    <TableHead>Scheduled Date</TableHead>
-                    <TableHead>Frequency</TableHead>
-                    <TableHead>Assigned To</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredPlans.length === 0 ? (
+              {/* Fixed Table Header */}
+              <div className="border-b bg-background sticky top-0 z-10">
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-4">
-                        No maintenance plans found matching your criteria
-                      </TableCell>
+                      <TableHead className="w-[200px]">Tên kế hoạch</TableHead>
+                      <TableHead className="w-[150px]">Hệ thống</TableHead>
+                      <TableHead className="w-[120px]">Ngày bảo trì</TableHead>
+                      <TableHead className="w-[100px]">Tần suất</TableHead>
+                      <TableHead className="w-[180px]">Nhân viên thực hiện</TableHead>
+                      <TableHead className="w-[120px]">Trạng thái</TableHead>
+                      <TableHead className="w-[100px] text-right">Hành động</TableHead>
                     </TableRow>
-                  ) : (
-                    filteredPlans.map((plan) => (
-                      <TableRow key={plan.id}>
-                        <TableCell className="font-medium">{plan.title}</TableCell>
-                        <TableCell>{plan.systemName}</TableCell>
-                        <TableCell>{new Date(plan.nextScheduledDate).toLocaleDateString()}</TableCell>
-                        <TableCell>{plan.frequency}</TableCell>
-                        <TableCell>{plan.assignedTo}</TableCell>
-                        <TableCell>
-                          <Badge variant={getStatusBadgeVariant(plan.status) as any}>{formatStatus(plan.status)}</Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm">
-                                <MoreHorizontal className="h-4 w-4" />
-                                <span className="sr-only">Actions</span>
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                onClick={() => {
-                                  setSelectedPlan(plan)
-                                  setIsViewPlanDialogOpen(true)
-                                }}
-                              >
-                                <ListChecks className="mr-2 h-4 w-4" />
-                                View Tasks & Details
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => {
-                                  setSelectedPlan(plan)
-                                  setIsEditPlanDialogOpen(true)
-                                }}
-                              >
-                                <Pencil className="mr-2 h-4 w-4" />
-                                Edit Plan
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => {
-                                  setSelectedPlan(plan)
-                                  setIsReassignDialogOpen(true)
-                                }}
-                              >
-                                <UserCog className="mr-2 h-4 w-4" />
-                                Reassign
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => {
-                                  setSelectedPlan(plan)
-                                  setIsRescheduleDialogOpen(true)
-                                }}
-                              >
-                                <Calendar className="mr-2 h-4 w-4" />
-                                Reschedule
-                              </DropdownMenuItem>
-                              <DropdownMenuItem className="text-destructive">
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Delete Plan
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                  </TableHeader>
+                </Table>
+              </div>
+
+              {/* Scrollable Table Body */}
+              <ScrollArea className="h-[460px]">
+                <Table>
+                  <TableBody>
+                    {filteredPlans?.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-10">
+                          <div className="flex flex-col items-center justify-center text-muted-foreground">
+                            <Filter className="h-10 w-10 mb-2" />
+                            <p>Không có kế hoạch bảo trì nào phù hợp với tìm kiếm của bạn.</p>
+                          </div>
                         </TableCell>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+                    ) : (
+                      filteredPlans?.map((plan) => (
+                        <TableRow key={plan.maKeHoach}>
+                          <TableCell className="w-[200px] font-medium">{plan.tenKeHoach}</TableCell>
+                          <TableCell className="w-[150px]">{plan.tenHeThong}</TableCell>
+                          <TableCell className="w-[120px]">{new Date(plan.ngayBaoTri).toLocaleDateString('vi-VN')}</TableCell>
+                          <TableCell className="w-[100px]">
+                            {frequencies.find(f => f.value === plan.tanSuat)?.label || plan.tanSuat}
+                          </TableCell>
+                          <TableCell className="w-[180px]">
+                            <BuildingBadges staffs={plan.nhanVienInBaoTris} />
+                          </TableCell>
+                          <TableCell className="w-[120px]">
+                            <Badge variant={getStatusBadgeVariant(plan.trangThai) as any}>
+                              {formatStatus(plan.trangThai)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="w-[100px] text-right">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                  <span className="sr-only">Hành động</span>
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    setSelectedPlan(plan)
+                                    setIsViewPlanDialogOpen(true)
+                                  }}
+                                >
+                                  <ListChecks className="mr-2 h-4 w-4" />
+                                  Xem chi tiết kế hoạch
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    setSelectedPlan(plan)
+                                    setIsReassignDialogOpen(true)
+                                  }}
+                                >
+                                  <UserCog className="mr-2 h-4 w-4" />
+                                  Giao việc cho nhân viên
+                                </DropdownMenuItem>
+                                {/* <DropdownMenuItem
+                                  onClick={() => {
+                                    setSelectedPlan(plan)
+                                    setIsRescheduleDialogOpen(true)
+                                  }}
+                                >
+                                  <Calendar className="mr-2 h-4 w-4" />
+                                  Đặt lại lịch bảo trì
+                                </DropdownMenuItem> */}
+                                <DropdownMenuItem onClick={() => handleDeleteKeHoach(plan.maKeHoach)} className="text-destructive">
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Xóa kế hoạch
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </ScrollArea>
+
+              {/* Pagination */}
+              {danhSachKeHoachBaoTri && danhSachKeHoachBaoTri.totalCount > 0 && (
+                <div className="border-t bg-background px-4 py-3 flex items-center justify-between">
+                  {/* Pagination Info */}
+                  <div className="text-sm text-muted-foreground">
+                    Hiển thị <span className="font-medium">{((danhSachKeHoachBaoTri.pageNumber || 1) - 1) * (danhSachKeHoachBaoTri.pageSize || 10) + 1}</span> đến{" "}
+                    <span className="font-medium">
+                      {Math.min(danhSachKeHoachBaoTri.pageNumber * danhSachKeHoachBaoTri.pageSize, danhSachKeHoachBaoTri.totalCount)}
+                    </span>{" "}
+                    trong tổng số <span className="font-medium">{danhSachKeHoachBaoTri.totalCount}</span> kế hoạch
+                  </div>
+
+                  {/* Pagination Controls */}
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={!danhSachKeHoachBaoTri.hasPreviousPage}
+                    >
+                      <ChevronLeft className="h-4 w-4 mr-1" />
+                      Trước
+                    </Button>
+
+                    {/* Page Numbers */}
+                    <div className="flex items-center space-x-1">
+                      {Array.from(
+                        { length: Math.min(5, danhSachKeHoachBaoTri.totalPages || 1) },
+                        (_, i) => {
+                          const currentPageNumber = danhSachKeHoachBaoTri.pageNumber || 1;
+                          const totalPages = danhSachKeHoachBaoTri.totalPages || 1;
+
+                          let pageNumber;
+                          if (totalPages <= 5) {
+                            pageNumber = i + 1;
+                          } else if (currentPageNumber <= 3) {
+                            pageNumber = i + 1;
+                          } else if (currentPageNumber >= totalPages - 2) {
+                            pageNumber = totalPages - 4 + i;
+                          } else {
+                            pageNumber = currentPageNumber - 2 + i;
+                          }
+
+                          return (
+                            <Button
+                              key={pageNumber}
+                              variant={pageNumber === currentPageNumber ? "default" : "outline"}
+                              size="sm"
+                              className="w-8 h-8 p-0"
+                              onClick={() => handlePageChange(pageNumber)}
+                            >
+                              {pageNumber}
+                            </Button>
+                          );
+                        }
+                      )}
+                    </div>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={!danhSachKeHoachBaoTri.hasNextPage}
+                    >
+                      Sau
+                      <ChevronRight className="h-4 w-4 ml-1" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </CardContent>
@@ -571,397 +833,341 @@ export function MaintenancePlanManagement() {
       {/* View Plan Details Dialog */}
       {selectedPlan && (
         <Dialog open={isViewPlanDialogOpen} onOpenChange={setIsViewPlanDialogOpen}>
-          <DialogContent className="sm:max-w-[700px]">
-            <DialogHeader>
-              <DialogTitle>{selectedPlan.title}</DialogTitle>
-              <DialogDescription>Maintenance plan for {selectedPlan.systemName}</DialogDescription>
+          <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-hidden flex flex-col">
+            <DialogHeader className="flex-shrink-0">
+              <DialogTitle>{selectedPlan.tenKeHoach}</DialogTitle>
+              <DialogDescription>
+                Chi tiết kế hoạch bảo trì cho hệ thống {selectedPlan.tenHeThong}
+              </DialogDescription>
             </DialogHeader>
 
-            <Tabs defaultValue="details" className="w-full">
-              <TabsList className="w-full">
-                <TabsTrigger value="details" className="flex-1">
-                  Details
-                </TabsTrigger>
-                <TabsTrigger value="tasks" className="flex-1">
-                  Tasks
-                </TabsTrigger>
-                <TabsTrigger value="history" className="flex-1">
-                  History
-                </TabsTrigger>
-              </TabsList>
+            <div className="flex-1 overflow-hidden">
+              <Tabs defaultValue="details" className="w-full h-full flex flex-col">
+                <TabsList className="w-full flex-shrink-0">
+                  <TabsTrigger value="details" className="flex-1">Chi tiết</TabsTrigger>
+                  <TabsTrigger value="tasks" className="flex-1">Danh sách công việc</TabsTrigger>
+                  <TabsTrigger value="history" className="flex-1">Lịch sử</TabsTrigger>
+                </TabsList>
 
-              <TabsContent value="details" className="space-y-4 pt-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-muted-foreground">System</Label>
-                    <p className="font-medium">{selectedPlan.systemName}</p>
-                  </div>
-                  <div>
-                    <Label className="text-muted-foreground">Frequency</Label>
-                    <p className="font-medium">{selectedPlan.frequency}</p>
-                  </div>
-                  <div>
-                    <Label className="text-muted-foreground">Scheduled Date</Label>
-                    <p className="font-medium">{new Date(selectedPlan.nextScheduledDate).toLocaleDateString()}</p>
-                  </div>
-                  <div>
-                    <Label className="text-muted-foreground">Status</Label>
-                    <div className="pt-1">
-                      <Badge variant={getStatusBadgeVariant(selectedPlan.status) as any}>
-                        {formatStatus(selectedPlan.status)}
-                      </Badge>
+                <div className="flex-1 overflow-y-auto">
+                  <TabsContent value="details" className="space-y-4 pt-4 h-full">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-muted-foreground">Hệ thống</Label>
+                        <p className="font-medium">{selectedPlan.tenHeThong}</p>
+                      </div>
+                      <div>
+                        <Label className="text-muted-foreground">Tần suất</Label>
+                        <p className="font-medium">
+                          {frequencies.find(f => f.value === selectedPlan.tanSuat)?.label || selectedPlan.tanSuat}
+                        </p>
+                      </div>
+                      <div>
+                        <Label className="text-muted-foreground">Ngày bảo trì</Label>
+                        <p className="font-medium">{new Date(selectedPlan.ngayBaoTri).toLocaleDateString('vi-VN')}</p>
+                      </div>
+                      <div>
+                        <Label className="text-muted-foreground">Trạng thái</Label>
+                        <div className="pt-1">
+                          <Badge variant={getStatusBadgeVariant(selectedPlan.trangThai) as any}>
+                            {formatStatus(selectedPlan.trangThai)}
+                          </Badge>
+                        </div>
+                      </div>
+                      <div className="col-span-2">
+                        <Label className="text-muted-foreground">Nhân viên được giao</Label>
+                        <div className="pt-1">
+                          {selectedPlan.nhanVienInBaoTris.length > 0 ? (
+                            <div className="flex flex-wrap gap-1">
+                              {selectedPlan.nhanVienInBaoTris.map((staff, index) => (
+                                <Badge key={index} variant="secondary">
+                                  {staff.tenNV}
+                                </Badge>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">Chưa phân công</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="col-span-2">
+                        <Label className="text-muted-foreground">Mô tả</Label>
+                        <p className="font-medium">{selectedPlan.moTa || "Không có mô tả"}</p>
+                      </div>
                     </div>
-                  </div>
-                  <div>
-                    <Label className="text-muted-foreground">Assigned To</Label>
-                    <p className="font-medium">{selectedPlan.assignedTo}</p>
-                  </div>
-                  <div className="col-span-2">
-                    <Label className="text-muted-foreground">Description</Label>
-                    <p className="font-medium">{selectedPlan.description}</p>
-                  </div>
+                  </TabsContent>
+
+                  <TabsContent value="tasks" className="pt-4 h-full">
+                    <Card className="h-full flex flex-col">
+                      <CardHeader className="pb-2 flex-shrink-0">
+                        <CardTitle>Danh sách công việc</CardTitle>
+                        <CardDescription>Danh sách công việc để hoàn thành kế hoạch bảo trì</CardDescription>
+                      </CardHeader>
+                      <CardContent className="flex-1 overflow-hidden">
+                        <ScrollArea className="h-full">
+                          {selectedPlan.chiTietInKeHoachBaoTris.length === 0 ? (
+                            <div className="text-center py-8 text-muted-foreground">
+                              <ListChecks className="h-12 w-12 mx-auto mb-2" />
+                              <p>Chưa có công việc nào được thiết lập</p>
+                            </div>
+                          ) : (
+                            <ul className="space-y-2">
+                              {selectedPlan.chiTietInKeHoachBaoTris.map((task, index) => (
+                                <li key={index} className="flex items-start space-x-2 p-2 rounded-md hover:bg-muted/50">
+                                  <div className={`mt-0.5 h-5 w-5 flex-shrink-0 ${task.maTrangThai === 3 ? "text-green-500" : task.maTrangThai === 2 ? "text-blue-500" : "text-muted-foreground"}`}>
+                                    {task.maTrangThai === 3 ? (
+                                      <CheckCircle2 className="h-5 w-5" />
+                                    ) : task.maTrangThai === 2 ? (
+                                      <Clock className="h-5 w-5" />
+                                    ) : (
+                                      <Clock className="h-5 w-5" />
+                                    )}
+                                  </div>
+                                  <div className="flex-1">
+                                    <p className={`${task.maTrangThai === 3 ? "line-through text-muted-foreground" : ""}`}>
+                                      {index + 1}. {task.ghiChu}
+                                    </p>
+                                    <div className="mt-1">
+                                      <Badge
+                                        variant={getStatusBadgeVariant(task.maTrangThai) as any}
+                                        className="text-xs"
+                                      >
+                                        {formatStatus(task.maTrangThai)}
+                                      </Badge>
+                                    </div>
+                                  </div>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </ScrollArea>
+                      </CardContent>
+                      <CardFooter className="flex-shrink-0">
+                        <div className="text-sm text-muted-foreground">
+                          {selectedPlan.chiTietInKeHoachBaoTris.filter((t: any) => t.trangThai === 3).length} của {selectedPlan.chiTietInKeHoachBaoTris.length} công việc đã hoàn thành
+                        </div>
+                      </CardFooter>
+                    </Card>
+                  </TabsContent>
+
+                  <TabsContent value="history" className="pt-4 h-full">
+                    <Card className="h-full flex flex-col">
+                      <CardHeader className="pb-2 flex-shrink-0">
+                        <CardTitle>Lịch sử bảo trì</CardTitle>
+                        <CardDescription>
+                          Danh sách các lần bảo trì đã thực hiện cho kế hoạch này
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="flex-1 overflow-hidden">
+                        <ScrollArea className="h-full">
+                          {(selectedPlan?.lichSuBaoTriKeHoaches?.length || 0) === 0 ? (
+                            <div className="text-center py-8 text-muted-foreground">
+                              <FileText className="h-12 w-12 mx-auto mb-2" />
+                              <p>Chưa có lịch sử bảo trì nào</p>
+                            </div>
+                          ) : (
+                            <ul className="space-y-3">
+                              {selectedPlan?.lichSuBaoTriKeHoaches?.map((history, index) => (
+                                <li key={index} className="flex items-start space-x-3 border-b pb-3 last:border-b-0">
+                                  <FileText className="h-5 w-5 text-muted-foreground mt-0.5" />
+                                  <div className="flex-1">
+                                    <p className="font-medium">{history.tieuDe}</p>
+                                    <p className="text-sm text-muted-foreground">
+                                      {new Date(history.ngayCapNhat).toLocaleDateString('vi-VN')}
+                                    </p>
+                                    <p className="text-sm mt-1">{history.noiDung}</p>
+                                  </div>
+                                </li>
+                              )) || []}
+                            </ul>
+                          )}
+                        </ScrollArea>
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
                 </div>
-              </TabsContent>
+              </Tabs>
+            </div>
 
-              <TabsContent value="tasks" className="pt-4">
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle>Maintenance Tasks</CardTitle>
-                    <CardDescription>Tasks to be completed for this maintenance plan</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <ul className="space-y-2">
-                      {selectedPlan.tasks.map((task: any, index: number) => (
-                        <li key={task.id} className="flex items-start space-x-2 p-2 rounded-md hover:bg-muted/50">
-                          <div
-                            className={`mt-0.5 h-5 w-5 flex-shrink-0 ${task.completed ? "text-green-500" : "text-muted-foreground"}`}
-                          >
-                            {task.completed ? <CheckCircle2 className="h-5 w-5" /> : <Clock className="h-5 w-5" />}
-                          </div>
-                          <div className="flex-1">
-                            <p className={`${task.completed ? "line-through text-muted-foreground" : ""}`}>
-                              {index + 1}. {task.description}
-                            </p>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  </CardContent>
-                  <CardFooter>
-                    <div className="text-sm text-muted-foreground">
-                      {selectedPlan.tasks.filter((t: any) => t.completed).length} of {selectedPlan.tasks.length} tasks
-                      completed
-                    </div>
-                  </CardFooter>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="history" className="pt-4">
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle>Maintenance History</CardTitle>
-                    <CardDescription>Previous maintenance activities for this plan</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <ul className="space-y-3">
-                      <li className="flex items-start space-x-3 border-b pb-3">
-                        <FileText className="h-5 w-5 text-muted-foreground mt-0.5" />
-                        <div>
-                          <p className="font-medium">Maintenance completed</p>
-                          <p className="text-sm text-muted-foreground">March 15, 2025</p>
-                          <p className="text-sm">All tasks completed successfully. No issues found.</p>
-                        </div>
-                      </li>
-                      <li className="flex items-start space-x-3 border-b pb-3">
-                        <FileText className="h-5 w-5 text-muted-foreground mt-0.5" />
-                        <div>
-                          <p className="font-medium">Maintenance completed</p>
-                          <p className="text-sm text-muted-foreground">December 10, 2024</p>
-                          <p className="text-sm">Replaced fan belt and lubricated moving parts.</p>
-                        </div>
-                      </li>
-                      <li className="flex items-start space-x-3">
-                        <FileText className="h-5 w-5 text-muted-foreground mt-0.5" />
-                        <div>
-                          <p className="font-medium">Maintenance completed</p>
-                          <p className="text-sm text-muted-foreground">September 5, 2024</p>
-                          <p className="text-sm">
-                            Routine inspection and cleaning. System operating at optimal efficiency.
-                          </p>
-                        </div>
-                      </li>
-                    </ul>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
-
-            <DialogFooter className="flex justify-between items-center sm:justify-between">
+            <DialogFooter className="flex-shrink-0 border-t pt-4 flex justify-between items-center sm:justify-between">
               <Button variant="outline" onClick={() => setIsViewPlanDialogOpen(false)}>
-                Close
+                Đóng
               </Button>
               <div className="flex space-x-2">
-                {selectedPlan.status === "scheduled" && (
-                  <Button variant="default">
+                {selectedPlan.trangThai === 1 && (
+                  <Button onClick={() => batDau(selectedPlan.maKeHoach)} variant="default">
                     <Wrench className="mr-2 h-4 w-4" />
-                    Start Maintenance
+                    Bắt đầu kế hoạch
                   </Button>
                 )}
-                {selectedPlan.status === "in_progress" && (
-                  <Button variant="default">
-                    <CheckCircle2 className="mr-2 h-4 w-4" />
-                    Mark as Completed
-                  </Button>
-                )}
-              </div>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      )}
-
-      {/* Edit Plan Dialog */}
-      {selectedPlan && (
-        <Dialog open={isEditPlanDialogOpen} onOpenChange={setIsEditPlanDialogOpen}>
-          <DialogContent className="sm:max-w-[700px]">
-            <DialogHeader>
-              <DialogTitle>Edit Maintenance Plan</DialogTitle>
-              <DialogDescription>Update the details of this maintenance plan</DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2">
-                  <Label htmlFor="edit-title">Plan Title</Label>
-                  <Input id="edit-title" defaultValue={selectedPlan.title} />
-                </div>
-                <div>
-                  <Label htmlFor="edit-system">Building System</Label>
-                  <Select defaultValue={selectedPlan.systemId.toString()}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {systemsForSelection.map((system) => (
-                        <SelectItem key={system.id} value={system.id.toString()}>
-                          {system.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="edit-frequency">Frequency</Label>
-                  <Select defaultValue={selectedPlan.frequency}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {frequencies.map((frequency) => (
-                        <SelectItem key={frequency} value={frequency}>
-                          {frequency}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="edit-scheduledDate">Scheduled Date</Label>
-                  <Input
-                    id="edit-scheduledDate"
-                    type="date"
-                    defaultValue={selectedPlan.nextScheduledDate.split("T")[0]}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="edit-assignedTo">Assigned To</Label>
-                  <Select defaultValue={selectedPlan.assignedTo}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {staffMembers.map((staff) => (
-                        <SelectItem key={staff} value={staff}>
-                          {staff}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="col-span-2">
-                  <Label htmlFor="edit-description">Description</Label>
-                  <Textarea id="edit-description" defaultValue={selectedPlan.description} />
-                </div>
-                <div className="col-span-2">
-                  <div className="flex justify-between items-center mb-2">
-                    <Label>Tasks</Label>
-                  </div>
-                  <div className="rounded-md border">
-                    <ul className="divide-y">
-                      {selectedPlan.tasks.map((task: any) => (
-                        <li key={task.id} className="flex items-center justify-between p-3">
-                          <div className="flex items-center">
-                            <Checkbox id={`task-${task.id}`} defaultChecked={task.completed} className="mr-2" />
-                            <Label htmlFor={`task-${task.id}`}>{task.description}</Label>
-                          </div>
-                          <Button variant="ghost" size="sm">
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-                <div className="col-span-2">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <Input placeholder="Add new task..." />
-                    <Button type="button" size="sm">
-                      Add
+                {selectedPlan.trangThai === 2 && (
+                  <div className="flex space-x-2">
+                    <Button onClick={() => hoanThanh(selectedPlan.maKeHoach)} variant="default">
+                      <CheckCircle2 className="mr-2 h-4 w-4" />
+                      Đánh dấu hoàn thành
+                    </Button>
+                    <Button onClick={() => huyKeHoach(selectedPlan.maKeHoach)} variant="destructive">
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Hủy kế hoạch
                     </Button>
                   </div>
-                </div>
+                )}
               </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsEditPlanDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" onClick={() => setIsEditPlanDialogOpen(false)}>
-                Save Changes
-              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       )}
 
       {/* Reassign Dialog */}
+      {/* Reassign Dialog */}
       {selectedPlan && (
         <Dialog open={isReassignDialogOpen} onOpenChange={setIsReassignDialogOpen}>
-          <DialogContent className="sm:max-w-[500px]">
+          <DialogContent className="sm:max-w-[500px] max-h-[80vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Reassign Maintenance Plan</DialogTitle>
-              <DialogDescription>Change the staff assigned to this maintenance plan</DialogDescription>
+              <DialogTitle>Giao việc cho nhân viên: {selectedPlan.tenKeHoach}</DialogTitle>
+              <DialogDescription>
+                Chọn nhân viên mới để giao kế hoạch bảo trì này và cung cấp lý do cho việc giao việc lại.
+              </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div>
                 <div className="mb-4">
-                  <div className="font-medium">Current Plan: {selectedPlan.title}</div>
-                  <div className="text-sm text-muted-foreground">For {selectedPlan.systemName}</div>
+                  <div className="font-medium">Kế hoạch hiện tại: {selectedPlan.tenKeHoach}</div>
+                  <div className="text-sm text-muted-foreground">Cho {selectedPlan.tenHeThong}</div>
                 </div>
                 <div className="grid grid-cols-1 gap-4">
                   <div>
-                    <Label htmlFor="reassign-current">Currently Assigned To</Label>
-                    <Input id="reassign-current" value={selectedPlan.assignedTo} disabled />
-                  </div>
-                  <div>
-                    <Label htmlFor="reassign-new">Reassign To</Label>
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select staff member" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {staffMembers
-                          .filter((staff) => staff !== selectedPlan.assignedTo)
-                          .map((staff) => (
-                            <SelectItem key={staff} value={staff}>
-                              {staff}
-                            </SelectItem>
+                    <Label htmlFor="reassign-current">Nhân viên hiện tại</Label>
+                    <div className="mt-1 p-2 border rounded-md bg-muted">
+                      {selectedPlan.nhanVienInBaoTris.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {selectedPlan.nhanVienInBaoTris.map((staff, index) => (
+                            <Badge key={index} variant="secondary">
+                              {staff.tenNV}
+                            </Badge>
                           ))}
-                      </SelectContent>
-                    </Select>
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">Chưa phân công</span>
+                      )}
+                    </div>
                   </div>
                   <div>
-                    <Label htmlFor="reassign-reason">Reason for Reassignment</Label>
-                    <Textarea
-                      id="reassign-reason"
-                      placeholder="Provide a reason for reassigning this maintenance plan"
+                    <Label htmlFor="reassign-new">Giao việc cho nhân viên mới</Label>
+                    <StaffMultiSelect
+                      staffList={staffList || []}
+                      selectedStaff={reassignStaff} // Sử dụng state mới
+                      onStaffChange={setReassignStaff} // Cập nhật state
                     />
                   </div>
                   <div>
-                    <Label htmlFor="notify">Notification</Label>
-                    <div className="flex items-center space-x-2 mt-1">
-                      <Checkbox id="notify-old" defaultChecked />
-                      <Label htmlFor="notify-old" className="text-sm">
-                        Notify current assignee
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2 mt-1">
-                      <Checkbox id="notify-new" defaultChecked />
-                      <Label htmlFor="notify-new" className="text-sm">
-                        Notify new assignee
-                      </Label>
+                    <Label>Thông báo</Label>
+                    <div className="space-y-2 mt-1">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="notify-old"
+                          checked={notifyOldStaff}
+                          onCheckedChange={(checked) => setNotifyOldStaff(!!checked)}
+                        />
+                        <Label htmlFor="notify-old" className="text-sm">
+                          Thông báo nhân viên cũ
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="notify-new"
+                          checked={notifyNewStaff}
+                          onCheckedChange={(checked) => setNotifyNewStaff(!!checked)}
+                        />
+                        <Label htmlFor="notify-new" className="text-sm">
+                          Thông báo nhân viên mới
+                        </Label>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsReassignDialogOpen(false)}>
-                Cancel
+              <Button variant="outline" onClick={() => {
+                setIsReassignDialogOpen(false)
+                setReassignStaff([]) // Reset state
+              }}>
+                Hủy
               </Button>
-              <Button type="submit" onClick={() => setIsReassignDialogOpen(false)}>
-                Reassign
+              <Button
+                type="submit"
+                onClick={handleGiaoViec}
+                disabled={reassignStaff.length === 0} // Disable nếu chưa chọn nhân viên
+              >
+                Giao việc
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       )}
 
-      {/* Reschedule Dialog */}
+      {/* Reschedule Dialog - Giữ nguyên như cũ */}
       {selectedPlan && (
         <Dialog open={isRescheduleDialogOpen} onOpenChange={setIsRescheduleDialogOpen}>
-          <DialogContent className="sm:max-w-[500px]">
+          <DialogContent className="sm:max-w-[500px] max-h-[80vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Reschedule Maintenance Plan</DialogTitle>
-              <DialogDescription>Change the scheduled date for this maintenance plan</DialogDescription>
+              <DialogTitle>Đặt lại lịch bảo trì: {selectedPlan.tenKeHoach}</DialogTitle>
+              <DialogDescription>
+                Chọn ngày mới cho kế hoạch bảo trì này và cung cấp lý do cho việc đặt lại lịch.
+              </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div>
                 <div className="mb-4">
-                  <div className="font-medium">Current Plan: {selectedPlan.title}</div>
-                  <div className="text-sm text-muted-foreground">For {selectedPlan.systemName}</div>
+                  <div className="font-medium">Kế hoạch hiện tại: {selectedPlan.tenKeHoach}</div>
+                  <div className="text-sm text-muted-foreground">Cho {selectedPlan.tenHeThong}</div>
                 </div>
                 <div className="grid grid-cols-1 gap-4">
                   <div>
-                    <Label htmlFor="current-date">Current Scheduled Date</Label>
+                    <Label htmlFor="current-date">Ngày hiện tại</Label>
                     <Input
                       id="current-date"
                       type="date"
-                      value={selectedPlan.nextScheduledDate.split("T")[0]}
+                      value={selectedPlan.ngayBaoTri.split("T")[0]}
                       disabled
                     />
                   </div>
                   <div>
-                    <Label htmlFor="new-date">New Scheduled Date</Label>
+                    <Label htmlFor="new-date">Ngày mới</Label>
                     <Input id="new-date" type="date" />
                   </div>
                   <div>
-                    <Label htmlFor="reschedule-reason">Reason for Rescheduling</Label>
+                    <Label htmlFor="reschedule-reason">Lý do đặt lại lịch</Label>
                     <Textarea
                       id="reschedule-reason"
-                      placeholder="Provide a reason for rescheduling this maintenance plan"
+                      placeholder="Cung cấp lý do cho việc đặt lại lịch kế hoạch bảo trì này"
                     />
                   </div>
                   <div>
-                    <Label>Adjust Future Recurring Dates</Label>
+                    <Label>Điều chỉnh ngày bảo trì</Label>
                     <div className="flex items-center space-x-2 mt-1">
                       <Checkbox id="adjust-future" />
                       <Label htmlFor="adjust-future" className="text-sm">
-                        Also adjust all future recurring dates by the same time interval
+                        Điều chỉnh ngày bảo trì trong tương lai
                       </Label>
                     </div>
                   </div>
                   <div>
-                    <Label>Notifications</Label>
-                    <div className="flex items-center space-x-2 mt-1">
-                      <Checkbox id="notify-assigned" defaultChecked />
-                      <Label htmlFor="notify-assigned" className="text-sm">
-                        Notify assigned staff
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2 mt-1">
-                      <Checkbox id="notify-manager" defaultChecked />
-                      <Label htmlFor="notify-manager" className="text-sm">
-                        Notify building manager
-                      </Label>
+                    <Label>Thông báo</Label>
+                    <div className="space-y-2 mt-1">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox id="notify-assigned" defaultChecked />
+                        <Label htmlFor="notify-assigned" className="text-sm">
+                          Thông báo nhân viên được giao
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox id="notify-manager" defaultChecked />
+                        <Label htmlFor="notify-manager" className="text-sm">
+                          Thông báo quản lý
+                        </Label>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -969,10 +1175,10 @@ export function MaintenancePlanManagement() {
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsRescheduleDialogOpen(false)}>
-                Cancel
+                Hủy
               </Button>
               <Button type="submit" onClick={() => setIsRescheduleDialogOpen(false)}>
-                Reschedule
+                Đặt lại lịch
               </Button>
             </DialogFooter>
           </DialogContent>

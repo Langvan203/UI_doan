@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "./AuthContext";
 import { toast } from "react-toastify";
 import { headers } from "next/headers";
-import { CraeteDichVuSuDung, DanhSachDangSuDung, DanhSachDangSuDungPaged, DichVuSuDung, GetDSYeuCauSuDungPaged , GetThongKeSuDungPaged} from "../type/serviceUsage";
+import { CraeteDichVuSuDung, DanhSachDangSuDung, DanhSachDangSuDungPaged, DichVuSuDung, GetDSYeuCauSuDungPaged, GetThongKeSuDungPaged } from "../type/serviceUsage";
 import { get } from "http";
 import { da } from "date-fns/locale";
 
@@ -15,14 +15,15 @@ interface ServicesUsageContextType {
     danhSachDangSuDung: DanhSachDangSuDungPaged | undefined;
     danhsachThongKeSuDung: GetThongKeSuDungPaged | undefined;
     getDanhSachYeuCauSuDung: (pageNumber: number, ngayBatDau: Date, ngayKetThuc: Date) => Promise<void>;
-    getDanhSachDangSuDung: (pageNumber: number, ngayBatDau: Date, ngayKetThuc: Date) => Promise<void>;
+    getDanhSachDangSuDung: (pageNumber: number) => Promise<void>;
     getDanhSachThongKeSuDung: (pageNumber: number, ngayBatDau: Date, ngayKetThuc: Date) => Promise<void>;
     duyetYeuCauSuDung: (maDVSD: number, ngayBatDau: Date, ngayKetThuc: Date) => Promise<boolean>;
-    tuChoiYeuCauSuDung: (maDVSD: number,ngayBatDau: Date, ngayKetThuc: Date) => Promise<boolean>;
+    tuChoiYeuCauSuDung: (maDVSD: number, ngayBatDau: Date, ngayKetThuc: Date) => Promise<boolean>;
     createDichVuSuDung: (dichVuSuDung: CraeteDichVuSuDung) => Promise<void>;
     ngungSuDungDichVu: (maDVSD: number) => Promise<void>;
     tiepTucSuDungDichVu: (maDVSD: number) => Promise<void>;
     exportToExcel: (ngayBatDau: Date, ngayKetThuc: Date) => Promise<void>;
+    duyetSangHoaDon: (maDVSD: number, ngayBatDau: Date, ngayKetThuc: Date) => Promise<boolean>;
 }
 
 const ServicesUsageContext = createContext<ServicesUsageContextType | undefined>(undefined);
@@ -37,7 +38,7 @@ export const ServicesUsageProvider = ({ children }: { children: React.ReactNode 
     startDate.setDate(startDate.getDate() - 30);
     useEffect(() => {
         getDanhSachYeuCauSuDung(1, startDate, endDate); // Fetch the first page on mount
-        getDanhSachDangSuDung(1, startDate, endDate); // Fetch the first page on mount
+        getDanhSachDangSuDung(1); // Fetch the first page on mount
         getDanhSachThongKeSuDung(1, startDate, endDate); // Fetch the first page on mount
     }, [token]);
 
@@ -54,10 +55,8 @@ export const ServicesUsageProvider = ({ children }: { children: React.ReactNode 
         return data;
     }
 
-    const getDanhSachDangSuDung = async (pageNumber: number, ngayBatDau: Date, ngayKetThuc: Date) => {
-        const startDateStr = ngayBatDau.toISOString().split('T')[0];
-        const endDateStr = ngayKetThuc.toISOString().split('T')[0];
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/DichVuSuDung/GetDSDangSuDung/?pageNumber=${pageNumber}&ngayBatDau=${startDateStr}&ngayKetThuc=${endDateStr}`, {
+    const getDanhSachDangSuDung = async (pageNumber: number) => {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/DichVuSuDung/GetDSDangSuDung/?pageNumber=${pageNumber}`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -113,7 +112,7 @@ export const ServicesUsageProvider = ({ children }: { children: React.ReactNode 
             return false;
         }
     }
-    const tuChoiYeuCauSuDung = async (maDVSD: number,ngayBatDau: Date, ngayKetThuc: Date) => {
+    const tuChoiYeuCauSuDung = async (maDVSD: number, ngayBatDau: Date, ngayKetThuc: Date) => {
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/DichVuSuDung/TuChoiYeuCau/?maDVSD=${maDVSD}`, {
             method: 'POST',
             headers: {
@@ -185,10 +184,7 @@ export const ServicesUsageProvider = ({ children }: { children: React.ReactNode 
                     closeOnClick: true,
                     pauseOnHover: true,
                 });
-                const endDate = new Date();
-                const startDate = new Date();
-                startDate.setDate(startDate.getDate() - 30);
-                getDanhSachDangSuDung(1, startDate, endDate); // Refresh the list after creation
+                getDanhSachDangSuDung(1); // Refresh the list after creation
             } else {
                 const errorData = await response.json();
                 toast.error(`Không thể gửi yêu cầu sử dụng dịch vụ: ${errorData.message}`, {
@@ -227,10 +223,7 @@ export const ServicesUsageProvider = ({ children }: { children: React.ReactNode 
                 closeOnClick: true,
                 pauseOnHover: true,
             });
-            const endDate = new Date();
-            const startDate = new Date();
-            startDate.setDate(startDate.getDate() - 30);
-            getDanhSachDangSuDung(1, startDate, endDate); // Refresh the list after stopping service
+            getDanhSachDangSuDung(1); // Refresh the list after stopping service
         }
         else {
             toast.error("Lỗi không xác định khi ngừng sử dụng dịch vụ", {
@@ -258,10 +251,7 @@ export const ServicesUsageProvider = ({ children }: { children: React.ReactNode 
                 closeOnClick: true,
                 pauseOnHover: true,
             });
-            const endDate = new Date();
-            const startDate = new Date();
-            startDate.setDate(startDate.getDate() - 30);
-            getDanhSachDangSuDung(1, startDate, endDate); // Refresh the list after resuming service
+            getDanhSachDangSuDung(1); // Refresh the list after resuming service
         }
         else {
             toast.error("Lỗi không xác định khi tiếp tục sử dụng dịch vụ", {
@@ -328,11 +318,43 @@ export const ServicesUsageProvider = ({ children }: { children: React.ReactNode 
         }
     }
 
+    const duyetSangHoaDon = async (maDVSD: number, ngayBatDau: Date, ngayKetThuc: Date) => {
+        const startDateStr = ngayBatDau.toISOString().split('T')[0];
+        const endDateStr = ngayKetThuc.toISOString().split('T')[0];
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/DichVuSuDung/DuyetSangHoaDon/?maDVSD=${maDVSD}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+            }
+        });
+        if (response.ok) {
+            toast.success("Đã duyệt sang hóa đơn thành công", {
+                position: "top-right",
+                autoClose: 500,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+            });
+
+            getDanhSachThongKeSuDung(1, new Date(startDateStr), new Date(endDateStr));
+            return true;
+        } else {
+            toast.error("Lỗi không xác định khi duyệt sang hóa đơn", {
+                position: "top-right",
+                autoClose: 500,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+            });
+            return false;
+        }
+    }
+
 
 
     return (
         <ServicesUsageContext.Provider value={{
-            danhSachYeuCauSuDung, danhSachDangSuDung,danhsachThongKeSuDung,
+            danhSachYeuCauSuDung, danhSachDangSuDung, danhsachThongKeSuDung,
             exportToExcel,
             getDanhSachYeuCauSuDung,
             getDanhSachDangSuDung,
@@ -341,7 +363,8 @@ export const ServicesUsageProvider = ({ children }: { children: React.ReactNode 
             tuChoiYeuCauSuDung,
             createDichVuSuDung,
             ngungSuDungDichVu,
-            tiepTucSuDungDichVu
+            tiepTucSuDungDichVu,
+            duyetSangHoaDon
         }}>
             {children}
         </ServicesUsageContext.Provider>
