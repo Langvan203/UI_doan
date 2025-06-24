@@ -5,7 +5,6 @@ export interface NhanVienInYeuCau {
 
 export interface YeuCauSuaChuaDTO {
   tieuDe: string;
-
   maYC: number;
   maTN: number;
   maKN: number;
@@ -45,4 +44,15 @@ export interface GetYeuCauSuaChuaPaged {
   totalPages: number;
   hasNextPage: boolean;
   hasPreviousPage: boolean;
+}
+
+export interface StatusMaintanceRequest {
+  maTrangThai: number;
+  tenTrangThai: string;
+}
+
+export interface GiaoViecYeuCauChoNhanVien {
+  maYC: number;
+  danhSachNhanVien: number[];
+  isSendNotification: boolean;
 }

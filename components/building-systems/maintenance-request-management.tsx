@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -20,6 +20,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import {
   CheckCircle2,
   ClipboardList,
@@ -33,319 +34,343 @@ import {
   ThumbsUp,
   UserCog,
   X,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
 } from "lucide-react"
+import { useBuildingSystem } from "../context/BuildingSystemContext"
+import { useAuth } from "../context/AuthContext"
+import { useMaintanceRequest } from "../context/MaintanceRequest"
+import { useStaff } from "../context/StaffContext"
+import { GiaoViecYeuCauChoNhanVien, YeuCauSuaChuaDTO } from "../type/maintanceRequest"
+import { Checkbox } from "@/components/ui/checkbox"
 
-// Mock data for maintenance requests
-const maintenanceRequestsData = [
-  {
-    id: 1,
-    title: "Bathroom Faucet Leaking",
-    description: "The bathroom faucet in my apartment has been leaking continuously for the past two days.",
-    location: "Block A, Floor 5, Unit 502",
-    category: "Plumbing",
-    priority: "medium",
-    status: "pending_approval",
-    submittedBy: "Nguyễn Văn A",
-    submittedDate: "2025-05-05T10:30:00",
-    assignedTo: null,
-    attachments: ["faucet_leak.jpg"],
-    notes: [],
-  },
-  {
-    id: 2,
-    title: "Air Conditioner Not Cooling",
-    description: "The air conditioner in the living room is running but not cooling the room. It's blowing warm air.",
-    location: "Block B, Floor 3, Unit 305",
-    category: "HVAC",
-    priority: "high",
-    status: "approved",
-    submittedBy: "Trần Thị B",
-    submittedDate: "2025-05-04T14:15:00",
-    assignedTo: "HVAC Team",
-    assignedDate: "2025-05-05T09:00:00",
-    scheduledDate: "2025-05-07T10:00:00",
-    attachments: [],
-    notes: [
-      {
-        id: 1,
-        text: "Scheduled technician visit for May 7th, 10:00 AM",
-        addedBy: "Service Manager",
-        addedDate: "2025-05-05T09:15:00",
-      },
-    ],
-  },
-  {
-    id: 3,
-    title: "Ceiling Light Flickering",
-    description: "The ceiling light in the kitchen is flickering constantly and making buzzing noises.",
-    location: "Block A, Floor 2, Unit 201",
-    category: "Electrical",
-    priority: "medium",
-    status: "in_progress",
-    submittedBy: "Lê Văn C",
-    submittedDate: "2025-05-03T16:45:00",
-    assignedTo: "Electrical Team",
-    assignedDate: "2025-05-04T08:30:00",
-    scheduledDate: "2025-05-06T14:00:00",
-    attachments: ["light_issue.jpg"],
-    notes: [
-      {
-        id: 2,
-        text: "Initial inspection shows it may need full replacement of the fixture",
-        addedBy: "Electrician",
-        addedDate: "2025-05-06T14:30:00",
-      },
-    ],
-  },
-  {
-    id: 4,
-    title: "Door Lock Broken",
-    description: "The front door lock is difficult to turn and sometimes gets stuck completely.",
-    location: "Block C, Floor 4, Unit 405",
-    category: "Locks & Keys",
-    priority: "high",
-    status: "completed",
-    submittedBy: "Phạm Thị D",
-    submittedDate: "2025-05-01T09:20:00",
-    assignedTo: "Maintenance Team",
-    assignedDate: "2025-05-01T10:00:00",
-    scheduledDate: "2025-05-02T11:00:00",
-    completedDate: "2025-05-02T11:45:00",
-    attachments: ["door_lock.jpg"],
-    notes: [
-      {
-        id: 3,
-        text: "Lock cylinder was worn out. Replaced with new deadbolt lock.",
-        addedBy: "Maintenance Staff",
-        addedDate: "2025-05-02T11:50:00",
-      },
-    ],
-  },
-  {
-    id: 5,
-    title: "Water Heater Not Working",
-    description: "No hot water in the entire apartment. The water heater appears to be off.",
-    location: "Block B, Floor 6, Unit 602",
-    category: "Plumbing",
-    priority: "high",
-    status: "in_progress",
-    submittedBy: "Hoàng Văn E",
-    submittedDate: "2025-05-04T18:30:00",
-    assignedTo: "Plumbing Team",
-    assignedDate: "2025-05-05T08:15:00",
-    scheduledDate: "2025-05-06T09:00:00",
-    attachments: ["water_heater.jpg"],
-    notes: [
-      {
-        id: 4,
-        text: "Initial inspection shows electrical issue with the heater element. Ordered replacement part.",
-        addedBy: "Plumber",
-        addedDate: "2025-05-06T09:45:00",
-      },
-    ],
-  },
-  {
-    id: 6,
-    title: "Elevator Button Stuck",
-    description: "The button for floor 7 in elevator #1 is stuck and doesn't work properly.",
-    location: "Block A, Elevator #1",
-    category: "Elevator",
-    priority: "medium",
-    status: "approved",
-    submittedBy: "Building Manager",
-    submittedDate: "2025-05-05T07:45:00",
-    assignedTo: "OTIS Service Technician",
-    assignedDate: "2025-05-05T09:30:00",
-    scheduledDate: "2025-05-08T10:00:00",
-    attachments: [],
-    notes: [],
-  },
-  {
-    id: 7,
-    title: "Window Seal Broken",
-    description: "The window in the bedroom has a broken seal allowing water to leak in during rain.",
-    location: "Block C, Floor 8, Unit 805",
-    category: "Windows & Doors",
-    priority: "medium",
-    status: "pending_approval",
-    submittedBy: "Vũ Thị G",
-    submittedDate: "2025-05-05T15:20:00",
-    assignedTo: null,
-    attachments: ["window_leak.jpg"],
-    notes: [],
-  },
-  {
-    id: 8,
-    title: "Common Area Light Out",
-    description: "The light in the 3rd floor hallway near Unit 302 is completely out.",
-    location: "Block B, Floor 3, Hallway",
-    category: "Electrical",
-    priority: "low",
-    status: "completed",
-    submittedBy: "Building Manager",
-    submittedDate: "2025-05-02T11:10:00",
-    assignedTo: "Maintenance Team",
-    assignedDate: "2025-05-02T13:00:00",
-    scheduledDate: "2025-05-03T10:00:00",
-    completedDate: "2025-05-03T10:25:00",
-    attachments: [],
-    notes: [
-      {
-        id: 5,
-        text: "Replaced bulb with LED equivalent for better efficiency",
-        addedBy: "Maintenance Staff",
-        addedDate: "2025-05-03T10:30:00",
-      },
-    ],
-  },
-]
+// Component multi-select cho nhân viên (cải tiến)
+function StaffMultiSelect({ 
+  staffList, 
+  selectedStaff, 
+  onStaffChange 
+}: { 
+  staffList: any[]
+  selectedStaff: number[]
+  onStaffChange: (staffIds: number[]) => void
+}) {
+  const [isOpen, setIsOpen] = useState(false)
 
-// Maintenance request categories
-const requestCategories = [
-  "All Categories",
-  "HVAC",
-  "Electrical",
-  "Plumbing",
-  "Locks & Keys",
-  "Windows & Doors",
-  "Appliances",
-  "Elevator",
-  "Common Areas",
-  "Structural",
-  "Others",
-]
+  const toggleStaff = (staffId: number) => {
+    const updatedSelection = selectedStaff.includes(staffId)
+      ? selectedStaff.filter(id => id !== staffId)
+      : [...selectedStaff, staffId]
+    onStaffChange(updatedSelection)
+  }
 
-// Priority options
-const priorityOptions = ["All Priorities", "low", "medium", "high", "emergency"]
+  const getSelectedStaffNames = () => {
+    if (selectedStaff.length === 0) return "Chọn nhân viên..."
+    if (selectedStaff.length === 1) {
+      const staff = staffList.find(s => s.maNV === selectedStaff[0])
+      return staff?.tenNV || "Nhân viên không tồn tại"
+    }
+    return `Đã chọn ${selectedStaff.length} nhân viên`
+  }
 
-// Status options
-const statusOptions = [
-  "All Statuses",
-  "pending_approval",
-  "approved",
-  "in_progress",
-  "on_hold",
-  "completed",
-  "rejected",
-]
-
-// Staff for assignment
-const staffMembers = [
-  "Maintenance Team",
-  "Plumbing Team",
-  "Electrical Team",
-  "HVAC Team",
-  "Cleaning Team",
-  "OTIS Service Technician",
-  "Nguyễn Văn X",
-  "Trần Văn Y",
-  "Lê Thị Z",
-]
+  return (
+    <div className="relative">
+      <Button
+        variant="outline"
+        role="combobox"
+        aria-expanded={isOpen}
+        className="w-full justify-between"
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        {getSelectedStaffNames()}
+        <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+      </Button>
+      
+      {isOpen && (
+        <div className="absolute top-full left-0 right-0 z-50 mt-1 max-h-60 overflow-auto rounded-md border bg-popover p-1 text-popover-foreground shadow-md">
+          {staffList?.length === 0 ? (
+            <div className="px-2 py-1.5 text-sm text-muted-foreground">
+              Không có nhân viên nào
+            </div>
+          ) : (
+            staffList?.map((staff) => (
+              <div
+                key={staff.maNV}
+                className="flex items-center space-x-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground cursor-pointer"
+                onClick={() => toggleStaff(staff.maNV)}
+              >
+                <Checkbox 
+                  checked={selectedStaff.includes(staff.maNV)}
+                  onChange={() => toggleStaff(staff.maNV)}
+                />
+                <span className="flex-1">{staff.tenNV}</span>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+      
+      {/* Selected staff display */}
+      {selectedStaff.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-1">
+          {selectedStaff.map((staffId) => {
+            const staff = staffList.find(s => s.maNV === staffId)
+            return staff ? (
+              <Badge key={staffId} variant="secondary" className="text-xs">
+                {staff.tenNV}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="ml-1 h-auto p-0 text-muted-foreground hover:text-foreground"
+                  onClick={() => toggleStaff(staffId)}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </Badge>
+            ) : null
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
 
 export function MaintenanceRequestManagement() {
   const [searchTerm, setSearchTerm] = useState("")
-  const [selectedCategory, setSelectedCategory] = useState("All Categories")
-  const [selectedPriority, setSelectedPriority] = useState("All Priorities")
-  const [selectedStatus, setSelectedStatus] = useState("All Statuses")
+  const [selectedCategory, setSelectedCategory] = useState("0")
+  const [selectedPriority, setSelectedPriority] = useState("all")
+  const [selectedStatus, setSelectedStatus] = useState("all")
   const [activeTab, setActiveTab] = useState("all")
+  const [currentPage, setCurrentPage] = useState(1)
+
+  // Dialog states
   const [isCreateRequestOpen, setIsCreateRequestOpen] = useState(false)
   const [isViewRequestOpen, setIsViewRequestOpen] = useState(false)
   const [isAssignRequestOpen, setIsAssignRequestOpen] = useState(false)
   const [isUpdateRequestOpen, setIsUpdateRequestOpen] = useState(false)
-  const [selectedRequest, setSelectedRequest] = useState<any>(null)
+  
+  // Selected request and form states
+  const [selectedRequest, setSelectedRequest] = useState<YeuCauSuaChuaDTO | null>(null)
   const [newNote, setNewNote] = useState("")
+  const [assignedStaff, setAssignedStaff] = useState<number[]>([])
+  const [scheduledDate, setScheduledDate] = useState("")
+  const [sendNotification, setSendNotification] = useState(true) // Thêm state cho notification
 
-  // Handler functions for request actions
-  const handleApproveRequest = (requestId: number) => {
-    // In a real application, this would call an API to update the request status
-    alert(`Request #${requestId} approved successfully`)
-  }
+  // New request form state
+  const [newRequest, setNewRequest] = useState({
+    tieuDe: "",
+    maHeThong: 0,
+    mucDoYeuCau: 1,
+    moTa: "",
+    maVT: "",
+    imagePath: ""
+  })
 
-  const handleRejectRequest = (requestId: number) => {
-    // In a real application, this would call an API to update the request status
-    alert(`Request #${requestId} rejected`)
-  }
+  // Context hooks
+  const { token } = useAuth()
+  const { heThong, getDanhSachHeThong } = useBuildingSystem()
+  const { 
+    yeuCauSuaChua, 
+    trangThaiYeuCau,
+    getDanhSachYeuCauSuaChua, 
+    addYeuCauSuaChua,
+    updateYeuCauSuaChua,
+    getTrangThaiYeuCau,
+    duyetYeuCauSuaChua,
+    tuChoiYeuCauSuaChua,
+    danhDauDaHoanThanh,
+    giaoViecYeuCauChoNhanVien
+  } = useMaintanceRequest()
+  const { staffList, getStaffList } = useStaff()
 
-  const handleCompleteRequest = (requestId: number) => {
-    // In a real application, this would call an API to update the request status
-    alert(`Request #${requestId} marked as completed`)
-  }
+  // Fetch data on component mount
+  useEffect(() => {
+    if (token) {
+      getDanhSachHeThong(0)
+      getDanhSachYeuCauSuaChua(currentPage)
+      getTrangThaiYeuCau()
+      getStaffList()
+    }
+  }, [token, currentPage])
 
+  const currentSystem = heThong?.data || []
+  const currentRequest = yeuCauSuaChua?.data || []
+
+  // Priority options (cập nhật theo yêu cầu mới)
+  const priorityOptions = [
+    { value: "all", label: "Tất cả mức độ" },
+    { value: "1", label: "Thấp" },
+    { value: "2", label: "Bình thường" },
+    { value: "3", label: "Cao" },
+    { value: "4", label: "Khẩn cấp" }
+  ]
+
+  // Status options từ API
+  const statusOptions = [
+    { value: "all", label: "Tất cả trạng thái" },
+    ...(trangThaiYeuCau?.map(status => ({
+      value: status.maTrangThai.toString(),
+      label: status.tenTrangThai
+    })) || [])
+  ]
+
+  console.log(statusOptions)
   // Filter requests based on search, filters, and active tab
-  const filteredRequests = maintenanceRequestsData.filter((request) => {
+  const filteredRequests = currentRequest.filter((request) => {
     // Filter by tab
-    if (activeTab === "pending" && !["pending_approval"].includes(request.status)) return false
-    if (activeTab === "approved" && !["approved"].includes(request.status)) return false
-    if (activeTab === "inProgress" && !["in_progress"].includes(request.status)) return false
-    if (activeTab === "completed" && !["completed", "rejected"].includes(request.status)) return false
+    if (activeTab === "pending" && request.idTrangThai !== 1) return false
+    if (activeTab === "approved" && request.idTrangThai !== 2) return false
+    if (activeTab === "inProgress" && request.idTrangThai !== 3) return false
+    if (activeTab === "completed" && request.idTrangThai !== 4) return false
 
     // Filter by search
     const matchesSearch =
-      request.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      request.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      request.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (request.submittedBy && request.submittedBy.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (request.assignedTo && request.assignedTo.toLowerCase().includes(searchTerm.toLowerCase()))
+      request.tieuDe.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      request.moTa.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      request.nguoiYeuCau.toLowerCase().includes(searchTerm.toLowerCase())
 
     // Filter by category, priority, and status
-    const matchesCategory = selectedCategory === "All Categories" || request.category === selectedCategory
-    const matchesPriority = selectedPriority === "All Priorities" || request.priority === selectedPriority
-    const matchesStatus = selectedStatus === "All Statuses" || request.status === selectedStatus
+    const matchesCategory = selectedCategory === "0" || request.maHeThong.toString() === selectedCategory
+    const matchesPriority = selectedPriority === "all" || request.mucDoYeuCau?.toString() === selectedPriority
+    const matchesStatus = selectedStatus === "all" || request.idTrangThai.toString() === selectedStatus
 
     return matchesSearch && matchesCategory && matchesPriority && matchesStatus
   })
 
   // Function to get priority badge variant
-  const getPriorityBadgeVariant = (priority: string) => {
+  const getPriorityBadgeVariant = (priority: number | null | undefined) => {
     switch (priority) {
-      case "low":
-        return "outline"
-      case "medium":
-        return "secondary"
-      case "high":
-        return "default"
-      case "emergency":
-        return "destructive"
-      default:
-        return "outline"
+      case 1: return "outline"    // Chờ duyệt
+      case 2: return "secondary"  // Đã duyệt  
+      case 3: return "default"    // Đang thực hiện
+      case 4: return "success"    // Đã hoàn thành
+      default: return "outline"
     }
   }
 
   // Function to get status badge variant
-  const getStatusBadgeVariant = (status: string) => {
-    switch (status) {
-      case "pending_approval":
-        return "outline"
-      case "approved":
-        return "secondary"
-      case "in_progress":
-        return "default"
-      case "on_hold":
-        return "warning"
-      case "completed":
-        return "success"
-      case "rejected":
-        return "destructive"
-      default:
-        return "outline"
+  const getStatusBadgeVariant = (statusId: number) => {
+    switch (statusId) {
+      case 1: return "outline"     // Chờ duyệt
+      case 2: return "secondary"   // Đã duyệt
+      case 3: return "default"     // Đang thực hiện
+      case 4: return "success"// Đã hoàn thành
+      case 6: return "destructive" // Từ chối
+      default: return "outline"
     }
   }
 
-  // Function to format status or priority for display
-  const formatText = (text: string) => {
-    return text
-      .split("_")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ")
+  // Function to format priority for display
+  const formatPriority = (priority: number | null | undefined) => {
+    const priorityItem = priorityOptions.find(p => p.value === priority?.toString())
+    return priorityItem?.label || "Không xác định"
+  }
+
+  // Handler functions for request actions
+  const handleApproveRequest = async (requestId: number) => {
+    try {
+      // Cập nhật trạng thái thành "Đã duyệt" (2)
+      if (duyetYeuCauSuaChua) {
+        await duyetYeuCauSuaChua(requestId)
+      } else {
+        console.error("duyetYeuCauSuaChua function is undefined")
+      }
+    } catch (error) {
+      console.error("Error approving request:", error)
+    }
+  }
+
+  const handleRejectRequest = async (requestId: number) => {
+    try {
+      // Cập nhật trạng thái thành "Đã duyệt" (2)
+      if (tuChoiYeuCauSuaChua) {
+        await tuChoiYeuCauSuaChua(requestId)
+      } else {
+        console.error("duyetYeuCauSuaChua function is undefined")
+      }
+    } catch (error) {
+      console.error("Error approving request:", error)
+    }
+  }
+
+  const handleCompleteRequest = async (requestId: number) => {
+    try {
+      // Cập nhật trạng thái thành "Đã duyệt" (2)
+      if (danhDauDaHoanThanh) {
+        await danhDauDaHoanThanh(requestId)
+      } else {
+        console.error("duyetYeuCauSuaChua function is undefined")
+      }
+    } catch (error) {
+      console.error("Error approving request:", error)
+    }
+  }
+
+  // Cập nhật hàm handleAssignRequest
+  const handleAssignRequest = async () => {
+    try {
+      if (!selectedRequest || assignedStaff.length === 0) {
+        console.error("Chưa chọn yêu cầu hoặc nhân viên")
+        return
+      }
+      
+      // Sử dụng interface GiaoViecYeuCauChoNhanVien
+      const assignData: GiaoViecYeuCauChoNhanVien = {
+        maYC: selectedRequest.maYC,
+        danhSachNhanVien: assignedStaff,
+        isSendNotification: sendNotification
+      }
+      
+      // Gọi API giao việc từ context
+      if (giaoViecYeuCauChoNhanVien) {
+        await giaoViecYeuCauChoNhanVien(assignData)
+        
+        // Reset form và đóng dialog
+        setIsAssignRequestOpen(false)
+        setAssignedStaff([])
+        setScheduledDate("")
+        setSendNotification(true)
+        
+        // Refresh data
+        getDanhSachYeuCauSuaChua(currentPage)
+        
+        console.log("Giao việc thành công!")
+      } else {
+        console.error("giaoViecYeuCauChoNhanVien function is undefined")
+      }
+    } catch (error) {
+      console.error("Error assigning request:", error)
+    }
+  }
+
+  const handleCreateRequest = async () => {
+    try {
+      await addYeuCauSuaChua(newRequest)
+      setIsCreateRequestOpen(false)
+      setNewRequest({
+        tieuDe: "",
+        maHeThong: 0,
+        mucDoYeuCau: 1,
+        moTa: "",
+        maVT: "",
+        imagePath: ""
+      })
+      getDanhSachYeuCauSuaChua(currentPage)
+    } catch (error) {
+      console.error("Error creating request:", error)
+    }
   }
 
   // Calculate counts for tabs
-  const pendingCount = maintenanceRequestsData.filter((req) => req.status === "pending_approval").length
-  const approvedCount = maintenanceRequestsData.filter((req) => req.status === "approved").length
-  const inProgressCount = maintenanceRequestsData.filter((req) => req.status === "in_progress").length
-  const completedCount = maintenanceRequestsData.filter(
-    (req) => req.status === "completed" || req.status === "rejected",
-  ).length
+  const pendingCount = currentRequest.filter((req) => req.idTrangThai === 1).length
+  const approvedCount = currentRequest.filter((req) => req.idTrangThai === 2).length
+  const inProgressCount = currentRequest.filter((req) => req.idTrangThai === 3).length
+  const completedCount = currentRequest.filter((req) => req.idTrangThai === 4).length
+
+  // Handle page change
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page)
+  }
 
   return (
     <div className="space-y-4">
@@ -358,12 +383,9 @@ export function MaintenanceRequestManagement() {
               Thêm yêu cầu mới
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[600px]">
+          <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>
-                Tạo yêu cầu sửa chữa
-                <span className="text-sm text-muted-foreground ml-2">Thông tin yêu cầu</span>
-              </DialogTitle>
+              <DialogTitle>Tạo yêu cầu sửa chữa</DialogTitle>
               <DialogDescription>
                 Vui lòng điền đầy đủ thông tin để gửi yêu cầu sửa chữa. Các trường bắt buộc được đánh dấu sao (*).
               </DialogDescription>
@@ -371,66 +393,85 @@ export function MaintenanceRequestManagement() {
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
-                  <Label htmlFor="title">
-                    Tiêu đề yêu cầu <span className="text-red-500">*</span>
-                  </Label>
-                  <Input id="title" placeholder="Brief description of the issue" />
+                  <Label htmlFor="title">Tiêu đề yêu cầu <span className="text-red-500">*</span></Label>
+                  <Input 
+                    id="title" 
+                    placeholder="Mô tả ngắn gọn về vấn đề" 
+                    value={newRequest.tieuDe}
+                    onChange={(e) => setNewRequest({ ...newRequest, tieuDe: e.target.value })}
+                  />
                 </div>
                 <div>
-                  <Label htmlFor="category">
-                    Danh mục yêu cầu <span className="text-red-500">*</span>
-                  </Label>
-                  <Select>
+                  <Label htmlFor="category">Hệ thống <span className="text-red-500">*</span></Label>
+                  <Select 
+                    value={newRequest.maHeThong.toString()}
+                    onValueChange={(value) => setNewRequest({ ...newRequest, maHeThong: Number(value) })}
+                  >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
+                      <SelectValue placeholder="Chọn hệ thống" />
                     </SelectTrigger>
                     <SelectContent>
-                      {requestCategories.slice(1).map((category) => (
-                        <SelectItem key={category} value={category}>
-                          {category}
+                      {currentSystem.map((system) => (
+                        <SelectItem key={system.maHeThong} value={system.maHeThong.toString()}>
+                          {system.tenHeThong}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="priority">
-                    Mức độ ưu tiên <span className="text-red-500">*</span>
-                  </Label>
-                  <Select defaultValue="medium">
+                  <Label htmlFor="priority">Mức độ ưu tiên <span className="text-red-500">*</span></Label>
+                  <Select 
+                    value={newRequest.mucDoYeuCau.toString()}
+                    onValueChange={(value) => setNewRequest({ ...newRequest, mucDoYeuCau: Number(value) })}
+                  >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select priority" />
+                      <SelectValue placeholder="Chọn mức độ" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="low">
-                        Thấp
-                      </SelectItem>
-                      <SelectItem value="medium">Vừa</SelectItem>
-                      <SelectItem value="high">Cao</SelectItem>
-                      <SelectItem value="emergency">Khẩn cấp</SelectItem>
+                      {priorityOptions.slice(1).map((priority) => (
+                        <SelectItem key={priority.value} value={priority.value}>
+                          {priority.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="col-span-2">
                   <Label htmlFor="location">Vị trí</Label>
-                  <Input id="location" placeholder="Building, floor, unit, or specific area" />
-                </div>
-                <div className="col-span-2">
-                  <Label htmlFor="description">
-                    Mô tả chi tiết <span className="text-red-500">*</span>
-                  </Label>
-                  <Textarea
-                    id="description"
-                    placeholder="Please provide detailed information about the issue..."
-                    rows={4}
+                  <Input 
+                    id="location" 
+                    placeholder="Tòa nhà, tầng, đơn vị hoặc khu vực cụ thể" 
+                    value={newRequest.maVT}
+                    onChange={(e) => setNewRequest({ ...newRequest, maVT: e.target.value })}
                   />
                 </div>
                 <div className="col-span-2">
-                  <Label htmlFor="attachment">
-                    Tệp đính kèm (nếu có)
-                  </Label>
+                  <Label htmlFor="description">Mô tả chi tiết <span className="text-red-500">*</span></Label>
+                  <Textarea
+                    id="description"
+                    placeholder="Vui lòng cung cấp thông tin chi tiết về vấn đề..."
+                    rows={4}
+                    value={newRequest.moTa}
+                    onChange={(e) => setNewRequest({ ...newRequest, moTa: e.target.value })}
+                  />
+                </div>
+                <div className="col-span-2">
+                  <Label htmlFor="attachment">Tệp đính kèm (nếu có)</Label>
                   <div className="mt-1 flex items-center gap-2">
-                    <Input id="attachment" type="file" className="flex-1" />
+                    <Input 
+                      id="attachment" 
+                      type="file" 
+                      className="flex-1"
+                      onChange={(e) => {
+                        // Handle file upload
+                        const file = e.target.files?.[0]
+                        if (file) {
+                          // Logic upload file và lấy path
+                          setNewRequest({ ...newRequest, imagePath: file.name })
+                        }
+                      }}
+                    />
                   </div>
                   <p className="mt-1 text-xs text-muted-foreground">
                     Bạn có thể đính kèm hình ảnh hoặc tài liệu liên quan đến yêu cầu sửa chữa.
@@ -442,7 +483,11 @@ export function MaintenanceRequestManagement() {
               <Button variant="outline" onClick={() => setIsCreateRequestOpen(false)}>
                 Hủy
               </Button>
-              <Button type="submit">
+              <Button 
+                type="submit" 
+                onClick={handleCreateRequest}
+                disabled={!newRequest.tieuDe || !newRequest.moTa || newRequest.maHeThong === 0}
+              >
                 Gửi yêu cầu
               </Button>
             </DialogFooter>
@@ -452,42 +497,35 @@ export function MaintenanceRequestManagement() {
 
       <Card>
         <CardHeader>
-          <CardTitle>
-            Quản lý yêu cầu sửa chữa
-          </CardTitle>
+          <CardTitle>Quản lý yêu cầu sửa chữa</CardTitle>
           <CardDescription>
             Quản lý tất cả yêu cầu sửa chữa từ cư dân, bao gồm duyệt, phân công, cập nhật trạng thái và ghi chú.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="all">Tất cả yêu cầu</TabsTrigger>
               <TabsTrigger value="pending">
-                Đang chờ duyệt{" "}
-                <Badge variant="outline" className="ml-1">
-                  {pendingCount}
-                </Badge>
+                Chờ duyệt <Badge variant="outline" className="ml-1">{pendingCount}</Badge>
               </TabsTrigger>
               <TabsTrigger value="approved">
-                Đã duyệt{" "}
-                <Badge variant="outline" className="ml-1">
-                  {approvedCount}
-                </Badge>
+                Đã duyệt <Badge variant="outline" className="ml-1">{approvedCount}</Badge>
               </TabsTrigger>
               <TabsTrigger value="inProgress">
-                Đang xử lý{" "}
-                <Badge variant="outline" className="ml-1">
-                  {inProgressCount}
-                </Badge>
+                Đang thực hiện <Badge variant="outline" className="ml-1">{inProgressCount}</Badge>
+              </TabsTrigger>
+              <TabsTrigger value="completed">
+                Hoàn thành <Badge variant="outline" className="ml-1">{completedCount}</Badge>
               </TabsTrigger>
             </TabsList>
 
+            {/* Search and Filters */}
             <div className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:space-x-2 sm:space-y-0">
               <div className="flex items-center gap-2 sm:w-1/3">
                 <Search className="h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search requests..."
+                  placeholder="Tìm kiếm yêu cầu..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="flex-1"
@@ -496,40 +534,45 @@ export function MaintenanceRequestManagement() {
 
               <div className="flex flex-1 items-center gap-2">
                 <Filter className="h-4 w-4 text-muted-foreground" />
+                
+                {/* Category Filter */}
                 <Select value={selectedCategory} onValueChange={setSelectedCategory}>
                   <SelectTrigger className="w-full md:w-[140px]">
-                    <SelectValue placeholder="Category" />
+                    <SelectValue placeholder="Hệ thống" />
                   </SelectTrigger>
                   <SelectContent>
-                    {requestCategories.map((category) => (
-                      <SelectItem key={category} value={category}>
-                        {category}
+                    <SelectItem value="0">Tất cả hệ thống</SelectItem>
+                    {currentSystem.map((system) => (
+                      <SelectItem key={system.maHeThong} value={system.maHeThong.toString()}>
+                        {system.tenHeThong}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
 
+                {/* Priority Filter */}
                 <Select value={selectedPriority} onValueChange={setSelectedPriority}>
                   <SelectTrigger className="w-full md:w-[140px]">
-                    <SelectValue placeholder="Priority" />
+                    <SelectValue placeholder="Mức độ" />
                   </SelectTrigger>
                   <SelectContent>
                     {priorityOptions.map((priority) => (
-                      <SelectItem key={priority} value={priority}>
-                        {priority === "All Priorities" ? priority : formatText(priority)}
+                      <SelectItem key={priority.value} value={priority.value}>
+                        {priority.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
 
+                {/* Status Filter */}
                 <Select value={selectedStatus} onValueChange={setSelectedStatus}>
                   <SelectTrigger className="w-full md:w-[140px]">
-                    <SelectValue placeholder="Status" />
+                    <SelectValue placeholder="Trạng thái" />
                   </SelectTrigger>
                   <SelectContent>
                     {statusOptions.map((status) => (
-                      <SelectItem key={status} value={status}>
-                        {status === "All Statuses" ? status : formatText(status)}
+                      <SelectItem key={status.value} value={status.value}>
+                        {status.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -537,110 +580,193 @@ export function MaintenanceRequestManagement() {
               </div>
             </div>
 
+            {/* Request Table */}
             <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Tiêu đề</TableHead>
-                    <TableHead>Vị trí</TableHead>
-                    <TableHead>Người yêu cầu</TableHead>
-                    <TableHead>Ngày yêu cầu</TableHead>
-                    <TableHead>Mức độ</TableHead>
-                    <TableHead>Trạng thái</TableHead>
-                    <TableHead className="text-right">Hành động</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredRequests.length === 0 ? (
+              {/* Fixed Table Header */}
+              <div className="border-b bg-background sticky top-0 z-10">
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-4">
-                        Không có yêu cầu nào phù hợp với tiêu chí tìm kiếm của bạn.
-                      </TableCell>
+                      <TableHead className="w-[200px]">Tiêu đề</TableHead>
+                      <TableHead className="w-[150px]">Hệ thống</TableHead>
+                      <TableHead className="w-[120px]">Người yêu cầu</TableHead>
+                      <TableHead className="w-[120px]">Ngày yêu cầu</TableHead>
+                      <TableHead className="w-[100px]">Mức độ</TableHead>
+                      <TableHead className="w-[120px]">Trạng thái</TableHead>
+                      <TableHead className="w-[100px] text-right">Hành động</TableHead>
                     </TableRow>
-                  ) : (
-                    filteredRequests.map((request) => (
-                      <TableRow key={request.id}>
-                        <TableCell className="font-medium">{request.title}</TableCell>
-                        <TableCell>{request.location}</TableCell>
-                        <TableCell>{request.submittedBy}</TableCell>
-                        <TableCell>{new Date(request.submittedDate).toLocaleDateString()}</TableCell>
-                        <TableCell>
-                          <Badge variant={getPriorityBadgeVariant(request.priority) as any}>
-                            {formatText(request.priority)}
-                          </Badge>
+                  </TableHeader>
+                </Table>
+              </div>
+
+              {/* Scrollable Table Body */}
+              <ScrollArea className="h-[460px]">
+                <Table>
+                  <TableBody>
+                    {filteredRequests.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-10">
+                          <div className="flex flex-col items-center justify-center text-muted-foreground">
+                            <Filter className="h-10 w-10 mb-2" />
+                            <p>Không có yêu cầu nào phù hợp với tìm kiếm của bạn.</p>
+                          </div>
                         </TableCell>
-                        <TableCell>
-                          <Badge variant={getStatusBadgeVariant(request.status) as any}>
-                            {formatText(request.status)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm">
-                                <MoreHorizontal className="h-4 w-4" />
-                                <span className="sr-only">Hành động</span>
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                onClick={() => {
-                                  setSelectedRequest(request)
-                                  setIsViewRequestOpen(true)
-                                }}
-                              >
-                                <Eye className="mr-2 h-4 w-4" />
-                                Xem chi tiết
-                              </DropdownMenuItem>
-                              {request.status === "pending_approval" && (
-                                <>
-                                  <DropdownMenuItem onClick={() => handleApproveRequest(request.id)}>
-                                    <ThumbsUp className="mr-2 h-4 w-4" />
-                                    Duyệt yêu cầu
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    className="text-destructive"
-                                    onClick={() => handleRejectRequest(request.id)}
-                                  >
-                                    <X className="mr-2 h-4 w-4" />
-                                    Từ chối yêu cầu
-                                  </DropdownMenuItem>
-                                </>
-                              )}
-                              {request.status === "approved" && (
+                      </TableRow>
+                    ) : (
+                      filteredRequests.map((request) => (
+                        <TableRow key={request.maYC}>
+                          <TableCell className="w-[200px] font-medium">{request.tieuDe}</TableCell>
+                          <TableCell className="w-[150px]">{request.tenHeThong}</TableCell>
+                          <TableCell className="w-[120px]">{request.nguoiYeuCau}</TableCell>
+                          <TableCell className="w-[120px]">
+                            {new Date(request.ngayYeuCau).toLocaleDateString('vi-VN')}
+                          </TableCell>
+                          <TableCell className="w-[100px]">
+                            <Badge variant={getPriorityBadgeVariant(request.mucDoYeuCau) as any}>
+                              {formatPriority(request.mucDoYeuCau)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="w-[120px]">
+                            <Badge variant={getStatusBadgeVariant(request.idTrangThai) as any}>
+                              {request.tenTrangThai}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="w-[100px] text-right">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                  <span className="sr-only">Hành động</span>
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
                                 <DropdownMenuItem
                                   onClick={() => {
                                     setSelectedRequest(request)
-                                    setIsAssignRequestOpen(true)
+                                    setIsViewRequestOpen(true)
                                   }}
                                 >
-                                  <UserCog className="mr-2 h-4 w-4" />
-                                  Giao cho nhân viên
+                                  <Eye className="mr-2 h-4 w-4" />
+                                  Xem chi tiết
                                 </DropdownMenuItem>
-                              )}
-                              {request.status === "in_progress" && (
-                                <DropdownMenuItem onClick={() => handleCompleteRequest(request.id)}>
-                                  <CheckCircle2 className="mr-2 h-4 w-4" />
-                                  Đánh dấu hoàn thành
+                                {request.idTrangThai === 1 && (
+                                  <>
+                                    <DropdownMenuItem onClick={() => handleApproveRequest(request.maYC)}>
+                                      <ThumbsUp className="mr-2 h-4 w-4" />
+                                      Duyệt yêu cầu
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      className="text-destructive"
+                                      onClick={() => handleRejectRequest(request.maYC)}
+                                    >
+                                      <X className="mr-2 h-4 w-4" />
+                                      Từ chối yêu cầu
+                                    </DropdownMenuItem>
+                                  </>
+                                )}
+                                {request.idTrangThai === 2 && (
+                                  <DropdownMenuItem
+                                    onClick={() => {
+                                      setSelectedRequest(request)
+                                      setIsAssignRequestOpen(true)
+                                    }}
+                                  >
+                                    <UserCog className="mr-2 h-4 w-4" />
+                                    Giao cho nhân viên
+                                  </DropdownMenuItem>
+                                )}
+                                {request.idTrangThai === 3 && (
+                                  <DropdownMenuItem onClick={() => handleCompleteRequest(request.maYC)}>
+                                    <CheckCircle2 className="mr-2 h-4 w-4" />
+                                    Đánh dấu hoàn thành
+                                  </DropdownMenuItem>
+                                )}
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    setSelectedRequest(request)
+                                    setIsUpdateRequestOpen(true)
+                                  }}
+                                >
+                                  <Pencil className="mr-2 h-4 w-4" />
+                                  Cập nhật yêu cầu
                                 </DropdownMenuItem>
-                              )}
-                              <DropdownMenuItem
-                                onClick={() => {
-                                  setSelectedRequest(request)
-                                  setIsUpdateRequestOpen(true)
-                                }}
-                              >
-                                <Pencil className="mr-2 h-4 w-4" />
-                                Cập nhật yêu cầu
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </ScrollArea>
+
+              {/* Pagination */}
+              {yeuCauSuaChua && yeuCauSuaChua.totalCount > 0 && (
+                <div className="border-t bg-background px-4 py-3 flex items-center justify-between">
+                  <div className="text-sm text-muted-foreground">
+                    Hiển thị <span className="font-medium">{((yeuCauSuaChua.pageNumber || 1) - 1) * (yeuCauSuaChua.pageSize || 10) + 1}</span> đến{" "}
+                    <span className="font-medium">
+                      {Math.min(yeuCauSuaChua.pageNumber * yeuCauSuaChua.pageSize, yeuCauSuaChua.totalCount)}
+                    </span>{" "}
+                    trong tổng số <span className="font-medium">{yeuCauSuaChua.totalCount}</span> yêu cầu
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={!yeuCauSuaChua.hasPreviousPage}
+                    >
+                      <ChevronLeft className="h-4 w-4 mr-1" />
+                      Trước
+                    </Button>
+
+                    <div className="flex items-center space-x-1">
+                      {Array.from(
+                        { length: Math.min(5, yeuCauSuaChua.totalPages || 1) },
+                        (_, i) => {
+                          const currentPageNumber = yeuCauSuaChua.pageNumber || 1;
+                          const totalPages = yeuCauSuaChua.totalPages || 1;
+
+                          let pageNumber;
+                          if (totalPages <= 5) {
+                            pageNumber = i + 1;
+                          } else if (currentPageNumber <= 3) {
+                            pageNumber = i + 1;
+                          } else if (currentPageNumber >= totalPages - 2) {
+                            pageNumber = totalPages - 4 + i;
+                          } else {
+                            pageNumber = currentPageNumber - 2 + i;
+                          }
+
+                          return (
+                            <Button
+                              key={pageNumber}
+                              variant={pageNumber === currentPageNumber ? "default" : "outline"}
+                              size="sm"
+                              className="w-8 h-8 p-0"
+                              onClick={() => handlePageChange(pageNumber)}
+                            >
+                              {pageNumber}
+                            </Button>
+                          );
+                        }
+                      )}
+                    </div>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={!yeuCauSuaChua.hasNextPage}
+                    >
+                      Sau
+                      <ChevronRight className="h-4 w-4 ml-1" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </Tabs>
         </CardContent>
@@ -649,12 +775,12 @@ export function MaintenanceRequestManagement() {
       {/* View Request Details Dialog */}
       {selectedRequest && (
         <Dialog open={isViewRequestOpen} onOpenChange={setIsViewRequestOpen}>
-          <DialogContent className="sm:max-w-[700px]">
+          <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>{selectedRequest.title}</DialogTitle>
+              <DialogTitle>{selectedRequest.tieuDe}</DialogTitle>
               <DialogDescription>
-                Chi tiết yêu cầu sửa chữa từ {selectedRequest.submittedBy} vào{" "}
-                {new Date(selectedRequest.submittedDate).toLocaleString()}
+                Chi tiết yêu cầu sửa chữa từ {selectedRequest.nguoiYeuCau} vào{" "}
+                {new Date(selectedRequest.ngayYeuCau).toLocaleString('vi-VN')}
               </DialogDescription>
             </DialogHeader>
 
@@ -662,108 +788,75 @@ export function MaintenanceRequestManagement() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="text-muted-foreground">Hệ thống</Label>
-                  <p className="font-medium">{selectedRequest.category}</p>
+                  <p className="font-medium">{selectedRequest.tenHeThong}</p>
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Vị trí</Label>
-                  <p className="font-medium">{selectedRequest.location}</p>
+                  <p className="font-medium">{selectedRequest.maVT || "Chưa xác định"}</p>
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Người yêu cầu</Label>
-                  <p className="font-medium">{selectedRequest.submittedBy}</p>
+                  <p className="font-medium">{selectedRequest.nguoiYeuCau}</p>
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Ngày yêu cầu</Label>
-                  <p className="font-medium">{new Date(selectedRequest.submittedDate).toLocaleString()}</p>
+                  <p className="font-medium">{new Date(selectedRequest.ngayYeuCau).toLocaleString('vi-VN')}</p>
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Mức độ</Label>
                   <div className="pt-1">
-                    <Badge variant={getPriorityBadgeVariant(selectedRequest.priority) as any}>
-                      {formatText(selectedRequest.priority)}
+                    <Badge variant={getPriorityBadgeVariant(selectedRequest.mucDoYeuCau) as any}>
+                      {formatPriority(selectedRequest.mucDoYeuCau)}
                     </Badge>
                   </div>
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Trạng thái</Label>
                   <div className="pt-1">
-                    <Badge variant={getStatusBadgeVariant(selectedRequest.status) as any}>
-                      {formatText(selectedRequest.status)}
+                    <Badge variant={getStatusBadgeVariant(selectedRequest.idTrangThai) as any}>
+                      {selectedRequest.tenTrangThai}
                     </Badge>
                   </div>
                 </div>
 
-                {selectedRequest.assignedTo && (
-                  <>
-                    <div>
-                      <Label className="text-muted-foreground">Giao cho nhân viên</Label>
-                      <p className="font-medium">{selectedRequest.assignedTo}</p>
-                    </div>
-                    <div>
-                      <Label className="text-muted-foreground">Ngày sửa</Label>
-                      <p className="font-medium">
-                        {selectedRequest.scheduledDate
-                          ? new Date(selectedRequest.scheduledDate).toLocaleString()
-                          : "Not scheduled yet"}
-                      </p>
-                    </div>
-                  </>
-                )}
-
-                <div className="col-span-2">
-                  <Label className="text-muted-foreground">
-                    Mô tả yêu cầu
-                  </Label>
-                  <p className="mt-1 whitespace-pre-line">{selectedRequest.description}</p>
-                </div>
-
-                {selectedRequest.attachments && selectedRequest.attachments.length > 0 && (
+                {selectedRequest.nhanVienInYeuCaus && selectedRequest.nhanVienInYeuCaus.length > 0 && (
                   <div className="col-span-2">
-                    <Label className="text-muted-foreground">
-                      Tệp đính kèm
-                    </Label>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {selectedRequest.attachments.map((attachment: string, index: number) => (
-                        <div key={index} className="relative rounded-md border p-2 flex items-center gap-2">
-                          <ImageIcon className="h-4 w-4" />
-                          <span className="text-sm">{attachment}</span>
-                        </div>
-                      ))}
+                    <Label className="text-muted-foreground">Nhân viên được giao</Label>
+                    <div className="pt-1">
+                      <div className="flex flex-wrap gap-1">
+                        {selectedRequest.nhanVienInYeuCaus.map((staff, index) => (
+                          <Badge key={index} variant="secondary">
+                            {staff.tenNV}
+                          </Badge>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 )}
 
                 <div className="col-span-2">
-                  <Label className="text-muted-foreground mb-2 block">
-                    Ghi chú
-                  </Label>
-                  {selectedRequest.notes && selectedRequest.notes.length > 0 ? (
-                    <div className="space-y-3 rounded-md border p-3">
-                      {selectedRequest.notes.map((note: any) => (
-                        <div key={note.id} className="border-b pb-3 last:border-b-0 last:pb-0">
-                          <div className="flex items-center gap-2 text-sm font-medium">
-                            <span>{note.addedBy}</span>
-                            <span className="text-muted-foreground">{new Date(note.addedDate).toLocaleString()}</span>
-                          </div>
-                          <p className="mt-1 text-sm">{note.text}</p>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">Không có ghi chú nào</p>
-                  )}
+                  <Label className="text-muted-foreground">Mô tả yêu cầu</Label>
+                  <p className="mt-1 whitespace-pre-line">{selectedRequest.moTa}</p>
                 </div>
 
-                <div className="col-span-2">
-                  <Label htmlFor="newNote">Thêm ghi chú</Label>
-                  <Textarea
-                    id="newNote"
-                    placeholder="Add a note about this maintenance request..."
-                    value={newNote}
-                    onChange={(e) => setNewNote(e.target.value)}
-                    className="mt-1"
-                  />
-                </div>
+                {selectedRequest.imagePath && (
+                  <div className="col-span-2">
+                    <Label className="text-muted-foreground">Tệp đính kèm</Label>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <div className="relative rounded-md border p-2 flex items-center gap-2">
+                        <ImageIcon className="h-4 w-4" />
+                        <span className="text-sm">{selectedRequest.imagePath}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {selectedRequest.ghiChu && (
+                  <div className="col-span-2">
+                    <Label className="text-muted-foreground">Ghi chú</Label>
+                    <p className="mt-1">{selectedRequest.ghiChu}</p>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -772,18 +865,31 @@ export function MaintenanceRequestManagement() {
                 Đóng
               </Button>
               <div className="flex gap-2">
-                <Button onClick={() => setNewNote("")} disabled={!newNote.trim()}>
-                  <ClipboardList className="mr-2 h-4 w-4" />
-                  Thêm ghi chú
-                </Button>
-                {selectedRequest.status === "pending_approval" && (
-                  <Button>
-                    <ThumbsUp className="mr-2 h-4 w-4" />
-                    Duyệt yêu cầu
+                {selectedRequest.idTrangThai === 1 && (
+                  <>
+                    <Button onClick={() => handleApproveRequest(selectedRequest.maYC)}>
+                      <ThumbsUp className="mr-2 h-4 w-4" />
+                      Duyệt yêu cầu
+                    </Button>
+                    <Button variant="destructive" onClick={() => handleRejectRequest(selectedRequest.maYC)}>
+                      <X className="mr-2 h-4 w-4" />
+                      Từ chối
+                    </Button>
+                  </>
+                )}
+                {selectedRequest.idTrangThai === 2 && (
+                  <Button 
+                    onClick={() => {
+                      setIsAssignRequestOpen(true)
+                      setIsViewRequestOpen(false)
+                    }}
+                  >
+                    <UserCog className="mr-2 h-4 w-4" />
+                    Giao việc
                   </Button>
                 )}
-                {selectedRequest.status === "in_progress" && (
-                  <Button>
+                {selectedRequest.idTrangThai === 3 && (
+                  <Button onClick={() => handleCompleteRequest(selectedRequest.maYC)}>
                     <CheckCircle2 className="mr-2 h-4 w-4" />
                     Hoàn thành
                   </Button>
@@ -794,56 +900,114 @@ export function MaintenanceRequestManagement() {
         </Dialog>
       )}
 
-      {/* Assign Technician Dialog */}
+      {/* Assign Request Dialog */}
       {selectedRequest && (
         <Dialog open={isAssignRequestOpen} onOpenChange={setIsAssignRequestOpen}>
-          <DialogContent className="sm:max-w-[500px]">
+          <DialogContent className="sm:max-w-[500px] max-h-[80vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>
-                Giao việc cho kỹ thuật viên
-              </DialogTitle>
+              <DialogTitle>Giao việc cho nhân viên</DialogTitle>
               <DialogDescription>
-                Chọn kỹ thuật viên và lên lịch sửa chữa cho yêu cầu bảo trì này.
+                Chọn nhân viên và thiết lập thông báo cho yêu cầu sửa chữa này.
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
-              <div>
-                <Label className="text-base font-medium">Yêu cầu {selectedRequest.title}</Label>
-                <p className="text-sm text-muted-foreground mt-1">{selectedRequest.location}</p>
+              <div className="mb-4">
+                <div className="font-medium">Yêu cầu: {selectedRequest.tieuDe}</div>
+                <div className="text-sm text-muted-foreground">
+                  Hệ thống: {selectedRequest.tenHeThong}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Vị trí: {selectedRequest.maVT || "Chưa xác định"}
+                </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2">
-                  <Label htmlFor="assignedTo">Giao việc đến</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select staff member" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {staffMembers.map((staff) => (
-                        <SelectItem key={staff} value={staff}>
-                          {staff}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <Label htmlFor="current-staff">Nhân viên hiện tại</Label>
+                  <div className="mt-1 p-2 border rounded-md bg-muted">
+                    {selectedRequest.nhanVienInYeuCaus && selectedRequest.nhanVienInYeuCaus.length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {selectedRequest.nhanVienInYeuCaus.map((staff, index) => (
+                          <Badge key={index} variant="secondary">
+                            {staff.tenNV}
+                          </Badge>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground">Chưa có nhân viên được giao</span>
+                    )}
+                  </div>
                 </div>
-                <div className="col-span-2">
-                  <Label htmlFor="scheduledDate">Lịch sửa chữa</Label>
-                  <Input id="scheduledDate" type="datetime-local" />
+
+                <div>
+                  <Label htmlFor="assignedTo">Giao việc cho nhân viên <span className="text-red-500">*</span></Label>
+                  <StaffMultiSelect
+                    staffList={staffList || []}
+                    selectedStaff={assignedStaff}
+                    onStaffChange={setAssignedStaff}
+                  />
                 </div>
-                <div className="col-span-2">
-                  <Label htmlFor="assignmentNote">Ghi chú</Label>
-                  <Textarea id="assignmentNote" placeholder="Add any specific instructions for the technician..." />
+
+                <div>
+                  <Label htmlFor="scheduledDate">Lịch sửa chữa dự kiến</Label>
+                  <Input 
+                    id="scheduledDate" 
+                    type="datetime-local" 
+                    value={scheduledDate}
+                    onChange={(e) => setScheduledDate(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Thời gian dự kiến để nhân viên thực hiện sửa chữa
+                  </p>
                 </div>
+
+                <div>
+                  <Label>Thông báo</Label>
+                  <div className="flex items-center space-x-2 mt-2">
+                    <Checkbox 
+                      id="sendNotification" 
+                      checked={sendNotification}
+                      onCheckedChange={(checked) => setSendNotification(!!checked)}
+                    />
+                    <Label htmlFor="sendNotification" className="text-sm">
+                      Gửi thông báo cho nhân viên được giao việc
+                    </Label>
+                  </div>
+                </div>
+
+                {scheduledDate && (
+                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+                    <div className="text-sm">
+                      <strong>Thông tin giao việc:</strong>
+                    </div>
+                    <div className="text-sm text-muted-foreground mt-1">
+                      • Nhân viên: {assignedStaff.length} người được chọn<br/>
+                      • Thời gian: {new Date(scheduledDate).toLocaleString('vi-VN')}<br/>
+                      • Thông báo: {sendNotification ? "Có" : "Không"}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsAssignRequestOpen(false)}>
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setIsAssignRequestOpen(false)
+                  setAssignedStaff([])
+                  setScheduledDate("")
+                  setSendNotification(true)
+                }}
+              >
                 Hủy
               </Button>
-              <Button type="submit" onClick={() => setIsAssignRequestOpen(false)}>
+              <Button 
+                type="submit" 
+                onClick={handleAssignRequest}
+                disabled={assignedStaff.length === 0}
+              >
                 <UserCog className="mr-2 h-4 w-4" />
-                Giao yêu cầu
+                Giao yêu cầu ({assignedStaff.length} nhân viên)
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -853,29 +1017,29 @@ export function MaintenanceRequestManagement() {
       {/* Update Request Dialog */}
       {selectedRequest && (
         <Dialog open={isUpdateRequestOpen} onOpenChange={setIsUpdateRequestOpen}>
-          <DialogContent className="sm:max-w-[600px]">
+          <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Cập nhật yêu cầu</DialogTitle>
               <DialogDescription>
-                Cập nhật thông tin yêu cầu bảo trì để phản ánh tình trạng hiện tại và các thay đổi cần thiết.
+                Cập nhật thông tin yêu cầu bảo trì để phản ánh tình trạng hiện tại.
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
                   <Label htmlFor="update-title">Tiêu đề yêu cầu</Label>
-                  <Input id="update-title" defaultValue={selectedRequest.title} />
+                  <Input id="update-title" defaultValue={selectedRequest.tieuDe} />
                 </div>
                 <div>
-                  <Label htmlFor="update-category">Danh mục</Label>
-                  <Select defaultValue={selectedRequest.category}>
+                  <Label htmlFor="update-category">Hệ thống</Label>
+                  <Select defaultValue={selectedRequest.maHeThong.toString()}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {requestCategories.slice(1).map((category) => (
-                        <SelectItem key={category} value={category}>
-                          {category}
+                      {currentSystem.map((system) => (
+                        <SelectItem key={system.maHeThong} value={system.maHeThong.toString()}>
+                          {system.tenHeThong}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -883,50 +1047,42 @@ export function MaintenanceRequestManagement() {
                 </div>
                 <div>
                   <Label htmlFor="update-priority">Mức độ</Label>
-                  <Select defaultValue={selectedRequest.priority}>
+                  <Select defaultValue={selectedRequest.mucDoYeuCau?.toString()}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="low">
-                        Thấp
-                      </SelectItem>
-                      <SelectItem value="medium">Vừa</SelectItem>
-                      <SelectItem value="high">Cao</SelectItem>
-                      <SelectItem value="emergency">Khẩn cấp</SelectItem>
+                      {priorityOptions.slice(1).map((priority) => (
+                        <SelectItem key={priority.value} value={priority.value}>
+                          {priority.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="col-span-2">
-                  <Label htmlFor="update-location">
-                    vị trí
-                  </Label>
-                  <Input id="update-location" defaultValue={selectedRequest.location} />
+                  <Label htmlFor="update-location">Vị trí</Label>
+                  <Input id="update-location" defaultValue={selectedRequest.maVT} />
                 </div>
                 <div className="col-span-2">
-                  <Label htmlFor="update-description">
-                    Chi tiết mô tả
-                  </Label>
-                  <Textarea id="update-description" defaultValue={selectedRequest.description} rows={4} />
+                  <Label htmlFor="update-description">Chi tiết mô tả</Label>
+                  <Textarea id="update-description" defaultValue={selectedRequest.moTa} rows={4} />
                 </div>
-                {selectedRequest.status !== "pending_approval" && (
-                  <div className="col-span-2">
-                    <Label htmlFor="update-status">Trạng thái</Label>
-                    <Select defaultValue={selectedRequest.status}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="pending_approval">Đang chờ duyệt</SelectItem>
-                        <SelectItem value="approved">Duyệt</SelectItem>
-                        <SelectItem value="in_progress">Đang xử lý</SelectItem>
-                        <SelectItem value="on_hold">Chờ xác nhận</SelectItem>
-                        <SelectItem value="completed">Hoàn thành</SelectItem>
-                        <SelectItem value="rejected">Từ chối</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
+                <div>
+                  <Label htmlFor="update-status">Trạng thái</Label>
+                  <Select defaultValue={selectedRequest.idTrangThai.toString()}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {statusOptions.slice(1).map((status) => (
+                        <SelectItem key={status.value} value={status.value}>
+                          {status.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
             <DialogFooter>

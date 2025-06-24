@@ -1,240 +1,234 @@
 "use client"
 
-import { useState } from "react"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Eye, Mail, MoreHorizontal, Printer, QrCode, Trash } from "lucide-react"
-import { formatCurrency } from "@/lib/utils"
-import { InvoiceDetailsDialog } from "./invoice-details-dialog"
-import { InvoicePdfDialog } from "./invoice-pdf-dialog"
-import { SendEmailDialog } from "./send-email-dialog"
-
-// Mock data for invoices
-const mockInvoices = [
-  {
-    id: "INV-001",
-    resident: "Lăng Văn A",
-    premise: "Block A, Floor 5, Unit 501",
-    amount: 1250.75,
-    status: "pending",
-    dueDate: "2023-06-15",
-    items: [
-      { name: "Điện", amount: 450.25 },
-      { name: "Nước", amount: 320.5 },
-      { name: "Gửi xe", amount: 480.0 },
-    ],
-  },
-  {
-    id: "INV-002",
-    resident: "Lăng Văn B ",
-    premise: "Block B, Floor 3, Unit 302",
-    amount: 980.5,
-    status: "paid",
-    dueDate: "2023-06-10",
-    items: [
-      { name: "Điện", amount: 380.0 },
-      { name: "Nước", amount: 220.5 },
-      { name: "Phí quản lý", amount: 380.0 },
-    ],
-  },
-  {
-    id: "INV-003",
-    resident: "Lăng Văn C",
-    premise: "Block C, Floor 7, Unit 703",
-    amount: 1450.0,
-    status: "overdue",
-    dueDate: "2023-05-30",
-    items: [
-      { name: "Điện", amount: 520.0 },
-      { name: "Nước", amount: 350.0 },
-      { name: "GYM", amount: 580.0 },
-    ],
-  },
-  {
-    id: "INV-004",
-    resident: "Emily Davis",
-    premise: "Block A, Floor 2, Unit 201",
-    amount: 1100.25,
-    status: "pending",
-    dueDate: "2023-06-20",
-    items: [
-      { name: "Electricity", amount: 420.25 },
-      { name: "Water", amount: 280.0 },
-      { name: "Maintenance", amount: 400.0 },
-    ],
-  },
-  {
-    id: "INV-005",
-    resident: "Michael Wilson",
-    premise: "Block D, Floor 4, Unit 405",
-    amount: 1320.75,
-    status: "paid",
-    dueDate: "2023-06-05",
-    items: [
-      { name: "Electricity", amount: 480.75 },
-      { name: "Water", amount: 340.0 },
-      { name: "Maintenance", amount: 500.0 },
-    ],
-  },
-]
+import { Badge } from "@/components/ui/badge"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { ScrollArea } from "@/components/ui/scroll-area" // Thêm import ScrollArea
+import { Eye, FileDown, Mail, MoreHorizontal, ChevronLeft, ChevronRight } from "lucide-react"
+import { GetDSHoaDon, HoaDonPaged } from "../type/invoices"
 
 interface InvoiceListProps {
-  status: string
-  filters: {
-    status: string
-    dateRange: string
-    building: string
-    resident: string
-  }
+  invoices: GetDSHoaDon[]
+  pagination?: HoaDonPaged
+  currentPage: number
+  onPageChange: (page: number) => void
+  onViewDetails: (invoice: GetDSHoaDon) => void
+  onGeneratePdf: (invoice: GetDSHoaDon) => void
+  onSendEmail: (invoice: GetDSHoaDon) => void
 }
 
-export function InvoiceList({ status, filters }: InvoiceListProps) {
-  const [selectedInvoice, setSelectedInvoice] = useState<any>(null)
-  const [isDetailsOpen, setIsDetailsOpen] = useState(false)
-  const [isPdfOpen, setIsPdfOpen] = useState(false)
-  const [isEmailOpen, setIsEmailOpen] = useState(false)
+export function InvoiceList({
+  invoices,
+  pagination,
+  currentPage,
+  onPageChange,
+  onViewDetails,
+  onGeneratePdf,
+  onSendEmail,
+}: InvoiceListProps) {
+  
+  const getStatusBadge = (invoice: GetDSHoaDon) => {
+    const today = new Date()
+    const currentMonth = today.getMonth()
+    const currentYear = today.getFullYear()
+    const paymentDate = new Date(invoice.ngayThanhToan)
 
-  // Filter invoices based on status and other filters
-  const filteredInvoices = mockInvoices.filter((invoice) => {
-    if (status !== "all" && invoice.status !== status) return false
-    if (filters.resident && !invoice.resident.toLowerCase().includes(filters.resident.toLowerCase())) return false
-    return true
-  })
-
-  const handleViewDetails = (invoice: any) => {
-    setSelectedInvoice(invoice)
-    setIsDetailsOpen(true)
-  }
-
-  const handleViewPdf = (invoice: any) => {
-    setSelectedInvoice(invoice)
-    setIsPdfOpen(true)
-  }
-
-  const handleSendEmail = (invoice: any) => {
-    setSelectedInvoice(invoice)
-    setIsEmailOpen(true)
-  }
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "pending":
-        return (
-          <Badge variant="outline" className="bg-yellow-50 text-yellow-700">
-            Pending
-          </Badge>
-        )
-      case "paid":
-        return (
-          <Badge variant="outline" className="bg-green-50 text-green-700">
-            Paid
-          </Badge>
-        )
-      case "overdue":
-        return (
-          <Badge variant="outline" className="bg-red-50 text-red-700">
-            Overdue
-          </Badge>
-        )
-      default:
-        return <Badge variant="outline">Unknown</Badge>
+    if (invoice.isThanhToan) {
+      return (
+        <Badge variant="outline" className="bg-green-50 text-green-700">
+          Đã thanh toán
+        </Badge>
+      )
+    } else if (paymentDate.getMonth() === currentMonth && 
+               paymentDate.getFullYear() === currentYear && 
+               paymentDate < today) {
+      return (
+        <Badge variant="outline" className="bg-red-50 text-red-700">
+          Hết hạn
+        </Badge>
+      )
+    } else {
+      return (
+        <Badge variant="outline" className="bg-yellow-50 text-yellow-700">
+          Chờ thanh toán
+        </Badge>
+      )
     }
   }
 
-  return (
-    <div>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Invoice ID</TableHead>
-            <TableHead>Resident</TableHead>
-            <TableHead>Premise</TableHead>
-            <TableHead>Amount</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Due Date</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {filteredInvoices.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={7} className="text-center">
-                No invoices found
-              </TableCell>
-            </TableRow>
-          ) : (
-            filteredInvoices.map((invoice) => (
-              <TableRow key={invoice.id}>
-                <TableCell>{invoice.id}</TableCell>
-                <TableCell>{invoice.resident}</TableCell>
-                <TableCell>{invoice.premise}</TableCell>
-                <TableCell>{formatCurrency(invoice.amount)}</TableCell>
-                <TableCell>{getStatusBadge(invoice.status)}</TableCell>
-                <TableCell>{new Date(invoice.dueDate).toLocaleDateString()}</TableCell>
-                <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="h-8 w-8 p-0">
-                        <span className="sr-only">Open menu</span>
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                      <DropdownMenuItem onClick={() => handleViewDetails(invoice)}>
-                        <Eye className="mr-2 h-4 w-4" />
-                        View Details
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleViewPdf(invoice)}>
-                        <QrCode className="mr-2 h-4 w-4" />
-                        Generate PDF with QR
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleSendEmail(invoice)}>
-                        <Mail className="mr-2 h-4 w-4" />
-                        Send Email
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem>
-                        <Printer className="mr-2 h-4 w-4" />
-                        Print Invoice
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <Trash className="mr-2 h-4 w-4" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
+  const formatVietnameseCurrency = (amount: number) => {
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND'
+    }).format(amount)
+  }
 
-      {selectedInvoice && (
-        <>
-          <InvoiceDetailsDialog invoice={selectedInvoice} open={isDetailsOpen} onOpenChange={setIsDetailsOpen} />
-          <InvoicePdfDialog
-            invoice={selectedInvoice}
-            open={isPdfOpen}
-            onOpenChange={setIsPdfOpen}
-            onSendEmail={() => {
-              setIsPdfOpen(false)
-              setIsEmailOpen(true)
-            }}
-          />
-          <SendEmailDialog invoice={selectedInvoice} open={isEmailOpen} onOpenChange={setIsEmailOpen} />
-        </>
-      )}
-    </div>
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Danh sách hóa đơn</CardTitle>
+        <CardDescription>
+          Hiển thị {invoices.length} hóa đơn
+          {pagination && ` trong tổng số ${pagination.totalCount} hóa đơn`}
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {invoices.length === 0 ? (
+          <div className="text-center py-12">
+            <FileDown className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Không có hóa đơn nào</h3>
+            <p className="text-muted-foreground">
+              Không tìm thấy hóa đơn nào phù hợp với bộ lọc hiện tại.
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="rounded-md border">
+              {/* Fixed Table Header */}
+              <div className="border-b bg-background sticky top-0 z-10">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[120px]">Mã hóa đơn</TableHead>
+                      <TableHead className="w-[200px]">Khách hàng</TableHead>
+                      <TableHead className="w-[200px]">Vị trí</TableHead>
+                      <TableHead className="w-[130px]">Ngày thanh toán</TableHead>
+                      <TableHead className="w-[150px] text-right">Số tiền</TableHead>
+                      <TableHead className="w-[120px]">Trạng thái</TableHead>
+                      <TableHead className="w-[100px] text-right">Hành động</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                </Table>
+              </div>
+
+              {/* Scrollable Table Body */}
+              <ScrollArea className="h-[500px]">
+                <Table>
+                  <TableBody>
+                    {invoices.map((invoice) => (
+                      <TableRow key={invoice.maHD}>
+                        <TableCell className="w-[120px] font-medium">
+                          HD-{invoice.maHD.toString().padStart(4, '0')}
+                        </TableCell>
+                        <TableCell className="w-[200px]">{invoice.tenKhachHang}</TableCell>
+                        <TableCell className="w-[200px]">
+                          <div className="text-sm">
+                            <div className="font-medium">{invoice.tenTN}</div>
+                            <div className="text-muted-foreground">{invoice.tenTL}, {invoice.tenKN}</div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="w-[130px]">
+                          {new Date(invoice.ngayThanhToan).toLocaleDateString('vi-VN')}
+                        </TableCell>
+                        <TableCell className="w-[150px] text-right font-medium">
+                          {formatVietnameseCurrency(invoice.phaiThu)}
+                        </TableCell>
+                        <TableCell className="w-[120px]">
+                          {getStatusBadge(invoice)}
+                        </TableCell>
+                        <TableCell className="w-[100px] text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <MoreHorizontal className="h-4 w-4" />
+                                <span className="sr-only">Mở menu</span>
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => onViewDetails(invoice)}>
+                                <Eye className="mr-2 h-4 w-4" />
+                                Xem chi tiết
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => onGeneratePdf(invoice)}>
+                                <FileDown className="mr-2 h-4 w-4" />
+                                Tạo PDF
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => onSendEmail(invoice)}>
+                                <Mail className="mr-2 h-4 w-4" />
+                                Gửi Email
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </ScrollArea>
+            </div>
+
+            {/* Pagination */}
+            {pagination && pagination.totalCount > 0 && (
+              <div className="mt-4 flex items-center justify-between">
+                <div className="text-sm text-muted-foreground">
+                  Hiển thị <span className="font-medium">{((pagination.pageNumber || 1) - 1) * (pagination.pageSize || 10) + 1}</span> đến{" "}
+                  <span className="font-medium">
+                    {Math.min(pagination.pageNumber * pagination.pageSize, pagination.totalCount)}
+                  </span>{" "}
+                  trong tổng số <span className="font-medium">{pagination.totalCount}</span> hóa đơn
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onPageChange(currentPage - 1)}
+                    disabled={!pagination.hasPreviousPage}
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-1" />
+                    Trước
+                  </Button>
+
+                  <div className="flex items-center space-x-1">
+                    {Array.from(
+                      { length: Math.min(5, pagination.totalPages || 1) },
+                      (_, i) => {
+                        const currentPageNumber = pagination.pageNumber || 1;
+                        const totalPages = pagination.totalPages || 1;
+
+                        let pageNumber;
+                        if (totalPages <= 5) {
+                          pageNumber = i + 1;
+                        } else if (currentPageNumber <= 3) {
+                          pageNumber = i + 1;
+                        } else if (currentPageNumber >= totalPages - 2) {
+                          pageNumber = totalPages - 4 + i;
+                        } else {
+                          pageNumber = currentPageNumber - 2 + i;
+                        }
+
+                        return (
+                          <Button
+                            key={pageNumber}
+                            variant={pageNumber === currentPageNumber ? "default" : "outline"}
+                            size="sm"
+                            className="w-8 h-8 p-0"
+                            onClick={() => onPageChange(pageNumber)}
+                          >
+                            {pageNumber}
+                          </Button>
+                        );
+                      }
+                    )}
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onPageChange(currentPage + 1)}
+                    disabled={!pagination.hasNextPage}
+                  >
+                    Sau
+                    <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </CardContent>
+    </Card>
   )
 }

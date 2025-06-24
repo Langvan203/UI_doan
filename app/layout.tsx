@@ -22,6 +22,8 @@ import { BuildingSystemProvider } from "@/components/context/BuildingSystemConte
 import { StaffProvider } from "@/components/context/StaffContext"
 import { StatusMaintanceProvider } from "@/components/context/StatusMaintance"
 import { MaintancePlanProvider } from "@/components/context/MaintancePlan"
+import { MaintanceRequestProvider } from "@/components/context/MaintanceRequest"
+import { InvoiceProvider } from "@/components/context/InvoiceContext"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata = {
@@ -57,7 +59,11 @@ export default function RootLayout({
                                         <StaffProvider>
                                           <StatusMaintanceProvider>
                                             <MaintancePlanProvider>
-                                              {children}
+                                              <MaintanceRequestProvider>
+                                                <InvoiceProvider>
+                                                  {children}
+                                                </InvoiceProvider>
+                                              </MaintanceRequestProvider>
                                             </MaintancePlanProvider>
                                           </StatusMaintanceProvider>
                                         </StaffProvider>
