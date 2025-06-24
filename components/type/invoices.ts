@@ -6,6 +6,10 @@ export interface GetDSHoaDon {
     maMB: number;
     maKH: number;
     tenTN: string;
+    nganHangThanhToan: string;
+    soTaiKhoan: string;
+    acqId: string;
+    tenTaiKhoan: string;
     tenKN: string;
     tenTL: string;
     maVT: string;
