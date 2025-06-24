@@ -18,6 +18,7 @@ export interface GetDSHoaDon {
     isThanhToan: boolean;
     ngayThanhToan: string;
     hoaDonDetails: HoaDonDetail[];
+    emailKhachHang:string;
 }
 
 export interface HoaDonDetail {
@@ -39,4 +40,25 @@ export interface HoaDonPaged {
     totalPages: number;
     hasNextPage: boolean;
     hasPreviousPage: boolean;
+}
+
+export interface BuildingInfo {
+  tenCongTy: string;
+  diaChi: string;
+  dienThoai: string;
+  email: string;
+  website?: string;
+  maSoThue?: string;
+  nguoiDaiDien?: string;
+  chucVu?: string;
+  logo?: string;
+  footer?: string;
+}
+
+export interface BankInfo {
+  tenNganHang: string;
+  soTaiKhoan: string;
+  tenTaiKhoan: string;
+  acqId: string;
+  logo?: string;
 }

@@ -1,9 +1,9 @@
 export interface UserLogin {
-    tenNV: string;
-    userName: string;
-    email: string;
-    sdt: string;
-    accessToken: string;
-    roleName: string[];
-    permissions: string[];
+    TenNV: string;
+    UserName: string;
+    Email: string;
+    SDT: string;
+    AccessToken: string;
+    RoleName: string[];
+    Permissions: string[];
 }

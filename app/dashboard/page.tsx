@@ -7,7 +7,7 @@ import { DashboardServiceManager } from "@/components/dashboard/dashboard-servic
 import { DashboardFinancialManager } from "@/components/dashboard/dashboard-financial-manager"
 import { DashboardCustomerService } from "@/components/dashboard/dashboard-customer-service"
 import { DashboardTenant } from "@/components/dashboard/dashboard-tenant"
-
+import { PaymentNotificationBell } from  "@/components/invoices/PaymennotificationBell"
 export const metadata: Metadata = {
   title: "Dashboard | Building Management System",
   description: "Dashboard for the Building Management System",
@@ -22,22 +22,22 @@ export default async function DashboardPage() {
 
   // roleName is now an array, so we need to check if it includes specific roles
   // Priority order for dashboard display
-  if (user.roleName.includes("Quản lý tòa nhà")) {
+  if (user.roleName?.includes("Quản lý tòa nhà")) {
     return <DashboardSuperAdmin />
-  } else if (user.roleName.includes("Kế toán")) {
+  } else if (user.roleName?.includes("Kế toán")) {
     return <DashboardFinancialManager />
-  } else if (user.roleName.includes("Nhân viên kỹ thuật")) {
+  } else if (user.roleName?.includes("Nhân viên kỹ thuật")) {
     return <DashboardServiceManager />
-  } else if (user.roleName.includes("Nhân viên tòa nhà")) {
+  } else if (user.roleName?.includes("Nhân viên tòa nhà")) {
     return <DashboardCustomerService />
-  } else if (user.roleName.includes("Cư dân")) {
+  } else if (user.roleName?.includes("Cư dân")) {
     return <DashboardTenant />
   } else {
     // Fallback for unknown roles
     return (
       <div className="p-6">
         <h1 className="text-2xl font-bold mb-4">Chào mừng đến với Hệ thống Quản lý tòa nhà</h1>
-        <p>Vai trò của bạn: {user.roleName.join(", ")}</p>
+        <p>Vai trò của bạn: {user.roleName?.join(", ")}</p>
       </div>
     )
   }

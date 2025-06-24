@@ -24,6 +24,8 @@ import { StatusMaintanceProvider } from "@/components/context/StatusMaintance"
 import { MaintancePlanProvider } from "@/components/context/MaintancePlan"
 import { MaintanceRequestProvider } from "@/components/context/MaintanceRequest"
 import { InvoiceProvider } from "@/components/context/InvoiceContext"
+import { PaymentProvider } from "@/components/context/PaymentContext"
+import { PaymentNotificationProvider } from "@/components/context/PaymentNotificationContext"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata = {
@@ -61,8 +63,13 @@ export default function RootLayout({
                                             <MaintancePlanProvider>
                                               <MaintanceRequestProvider>
                                                 <InvoiceProvider>
-                                                  {children}
+                                                  <PaymentProvider>
+                                                    <PaymentNotificationProvider>
+                                                      {children}
+                                                    </PaymentNotificationProvider>
+                                                  </PaymentProvider>
                                                 </InvoiceProvider>
+
                                               </MaintanceRequestProvider>
                                             </MaintancePlanProvider>
                                           </StatusMaintanceProvider>

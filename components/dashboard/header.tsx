@@ -32,13 +32,15 @@ export function Header({ user }: HeaderProps) {
   const { logout } = useAuth()
   const [notifications, setNotifications] = useState(3)
 
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-  }
+  const getInitials = (name?: string) => {
+  if (!name) return "?"
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+}
+
 
   return (
     <header className="sticky top-0 z-40 border-b bg-background">
